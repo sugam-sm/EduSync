@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Alan Sans";
+
+  --color-bg: #010101;
+  --color-surface: #16161a;
+  --color-primary: #7f5af0;
+  --color-text-heading: #fffffe;
+  --color-light: #b8c1ec;
+  --color-text-body: #94a1b2;
+  --color-text-muted: #72757e;
+  --color-successBg: #1a3326;
+  --color-success: #2cb67d;
+  --color-failureBg: #441a1a;
+  --color-failure: #e45858;
+  --color-infoBg: #163C59;
+  --color-info: #3da9fc;
+}
+
+body {
+  @apply box-border;
+  background-color: var(--color-bg);
+  font-family: var(--font-sans);
+}
+
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0) inset !important;
+  -webkit-text-fill-color: var(--color-text-heading) !important;
+  caret-color: transparent !important;
+  background-color: transparent !important;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+::-webkit-scrollbar {
+  width: 0px;
+}
+
+/* Thumb */
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-primary);
+  background-clip: content-box;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+/* Kill button space even if browser insists */
+::-webkit-scrollbar-button {
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+
+
