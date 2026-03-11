@@ -1,4 +1,3 @@
-from rest_framework.permissions import IsAuthenticated
 from rest_framework import viewsets, permissions
 from django.contrib.auth import get_user_model
 from .serializers import UserListSerializer, UserDetailSerializer, UserCreationSerializer, UserUpdateSerializer
@@ -13,7 +12,7 @@ class IsOrganizationAdmin(permissions.BasePermission):
         )
 
 class UserViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated, IsOrganizationAdmin]
+    permission_classes = [permissions.IsAuthenticated, IsOrganizationAdmin]
     
     def get_queryset(self):
         # Only show users belonging to the Admin's organization
