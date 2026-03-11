@@ -33,6 +33,8 @@ urlpatterns = [
     path('api/organizations/', include('organizations.urls')),
     # adding the users urls.
     path('api/', include('users.urls')),
+    # adding the learning urls
+    path('api/learning/', include('learning.urls'))
 ]
 
 if settings.DEBUG:
