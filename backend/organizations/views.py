@@ -41,11 +41,7 @@ class GradeViewSet(viewsets.ModelViewSet):
         
         # if teacher, return only the grades that the teacher is assigned to
         if user.role.role_name == 'Teacher':
-            assigned_grade_ids = AssignSubject.objects.filter(
-                teacher__user=user
-            ).values_list('grade_id', flat=True).distinct()
-
-            return base_query.filter(id__in=assigned_grade_ids)
+            return base_query.filter(assignsubject__teacher__user=user).distinct()
         
         # if student, return only the grade that the student is assigned to
         if user.role.role_name == 'Student':
@@ -71,17 +67,11 @@ class SubjectViewSet(viewsets.ModelViewSet):
         
         # if teacher, return only the subjects that the particular teacher is assigned to.
         if user.role.role_name == "Teacher":
-            assigned_subject_ids = AssignSubject.objects.filter(
-                teacher__user=user
-            ).values_list('subject_id', flat=True)
-            return base_query.filter(id__in=assigned_subject_ids).distinct()
+            return base_query.filter(assign__subject__teacher__user=user).distinct()
 
         # if student, return only the subjects that is related to the grade that the student is assigned to.
         if user.role.role_name == "Student":
-            assigned_subject_ids = AssignSubject.objects.filter(
-                grade=user.student_profile.grade
-            ).values_list('subject_id', flat=True)
-            return base_query.filter(id__in=assigned_subject_ids).distinct()
+            return base_query.filter(assignsubject__grade=user.student_profile.grade).distinct()
 
         return base_query.none()
     
