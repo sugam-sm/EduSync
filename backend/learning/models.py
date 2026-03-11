@@ -5,8 +5,8 @@ from users.models import Teacher
 class ResourceFolder(models.Model):
     name = models.CharField(max_length=255)
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='folders')
-    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='subfolders')
-    created_at = models.DateTimeField(auto_now_add=True)
+    uploaded_by = models.ForeignKey(Teacher, on_delete=models.CASCADE)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name_plural = "Resource Folders"
@@ -27,8 +27,7 @@ class Resource(models.Model):
     file = models.FileField(upload_to='learning_resources/', null=True, blank=True)
     url = models.URLField(null=True, blank=True)
     
-    uploaded_by = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.title} [{self.type}]"
