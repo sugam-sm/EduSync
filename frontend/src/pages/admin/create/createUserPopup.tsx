@@ -15,6 +15,7 @@ import { type RootState, type AppDispatch } from '../../../store';
 import { type User, createUser, resetUserState } from '../../../features/management/userSlice';
 import { addToast } from '../../../features/toasts/toastSlice';
 import { fetchGrades } from '../../../features/management/gradeSlice';
+import { fetchUsers } from '../../../features/management/userSlice';
 
 export const CreateUserPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const dispatch = useDispatch<AppDispatch>();
@@ -149,6 +150,8 @@ export const CreateUserPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose:
           element.href = URL.createObjectURL(file);
           element.download = `${username}_credentials.txt`;
           element.click();
+
+          dispatch(fetchUsers())
 
           handleClose();
         }

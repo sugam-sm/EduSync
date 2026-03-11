@@ -16,6 +16,7 @@ import { type RootState, type AppDispatch } from '../../../store';
 import { type User, updateUser, resetUserState } from '../../../features/management/userSlice';
 import { addToast } from '../../../features/toasts/toastSlice';
 import { fetchGrades } from '../../../features/management/gradeSlice';
+import { fetchUsers } from '../../../features/management/userSlice';
 
 interface UpdateUserPopupProps {
   isOpen: boolean;
@@ -148,8 +149,8 @@ export const UpdateUserPopup = ({ isOpen, onClose, user }: UpdateUserPopupProps)
 
         if (updateUser.fulfilled.match(resultAction)) {
           dispatch(addToast({ message: 'User Updated Successfully.', type: 'success' }));
+          dispatch(fetchUsers())
           handleClose();
-          onClose();
         }
       }
     });
