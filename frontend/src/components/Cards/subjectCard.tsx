@@ -1,4 +1,4 @@
-import { BookOpen, Pencil, Trash2, Settings2 } from "lucide-react";
+import { BookOpen, Pencil, Trash2, Link } from "lucide-react";
 import { ActionButton } from "../Buttons/actionButton";
 import { type SubjectDetails } from "../../features/management/subjectSlice";
 
@@ -27,7 +27,7 @@ export const SubjectCard = ({ subjectData, onEdit, onDelete, onConfigure }: Subj
       
       <div className="flex gap-2 justify-center items-center">
         <ActionButton Icon={Pencil} label="Edit" variant='custom' className="lg:w-full h-full" onClick={onEdit} />
-        <ActionButton Icon={Settings2} label="Configure" variant='custom' className="lg:w-full h-full" onClick={onConfigure} />
+        <ActionButton Icon={Link} label="Assign" variant='custom' className="lg:w-full h-full" onClick={onConfigure} />
         <ActionButton Icon={Trash2} label="Delete" variant='failure' className="lg:w-full h-full" onClick={onDelete} />
       </div>
     </div>
