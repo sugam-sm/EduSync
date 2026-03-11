@@ -32,7 +32,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 
 # Application definition
@@ -52,9 +52,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -137,10 +137,16 @@ STATIC_URL = 'static/'
 AUTH_USER_MODEL = 'users.User'
 
 # CORS settings
-CORS_ALLOWED_ORIGINS = [
-    os.getenv('CORS_ORIGIN_1'),
-    os.getenv('CORS_ORIGIN_2'),
+raw_origins = [
+    os.getenv('CORS_ORIGIN_f1_1'),
+    os.getenv('CORS_ORIGIN_f1_2'),
+    os.getenv('CORS_ORIGIN_f2_1'),
+    os.getenv('CORS_ORIGIN_f2_2'),
+    os.getenv('CORS_ORIGIN_f3_1'),
+    os.getenv('CORS_ORIGIN_f3_2'),
 ]
+
+CORS_ALLOWED_ORIGINS = [origin for origin in raw_origins if origin is not None]
 
 # configuring rest framework to use JWT authentication
 REST_FRAMEWORK = {
@@ -151,8 +157,8 @@ REST_FRAMEWORK = {
 
 # configuring JWT settings for token expiration and refresh
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
-    'REFRESH_TOKEN_LIFETIME': timedelta(hours=24),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(hours=48),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': True,
     'ALGORITHM': 'HS256',
