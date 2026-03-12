@@ -41,7 +41,13 @@ export const Layout = () => {
         </>
       ), icon: <LayoutDashboard size={20} />, roles: ['Administrator', 'Teacher', 'Student'] },
     { to: "/resources", label: "Resources", icon: <FolderOpen size={20} />, roles: ['Teacher', 'Student'] },
-    { to: "/assessments", label: "Assessments", icon: <FileText size={20} />, roles: ['Teacher', 'Student'] },
+    { to: "/assessments",
+      label: (
+        <>
+          <span className="lg:hidden">Assess</span>
+          <span className="hidden lg:inline">Assessments</span>
+        </>
+      ), icon: <FileText size={20} />, roles: ['Teacher', 'Student'] },
     { to: "/sessions", label: "Sessions", icon: <CalendarRange size={20} />, roles: [ 'Teacher', 'Student'] },
     { to: "/manageOrganization",
       label: (
