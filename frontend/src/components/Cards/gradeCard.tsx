@@ -1,6 +1,6 @@
 import { Calendar, UserRound, Circle, Pencil, Trash2 } from "lucide-react";
 import { ActionButton } from "../Buttons/actionButton";
-import { type GradeDetails } from "../../features/management/gradeSlice"
+import { type GradeDetails } from "../../features/organization/gradeSlice"
 
 interface GradeCardProps {
   gradeData: GradeDetails;

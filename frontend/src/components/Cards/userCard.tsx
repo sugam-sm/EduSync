@@ -1,5 +1,5 @@
 import { AtSign, UserRoundPen, UserRoundX, Eye, Mail, Phone, VenusAndMars, Circle } from "lucide-react";
-import { type  UserSummary } from '../../features/management/userSlice';
+import { type  UserSummary } from '../../features/organization/userSlice';
 
 import { ActionButton } from '../Buttons/actionButton';
 import { DecisionPopup } from '../decision popup';
@@ -7,7 +7,7 @@ import { DecisionPopup } from '../decision popup';
 import { useDispatch } from 'react-redux';
 import { type AppDispatch } from '../../store';
 
-import { deleteUser } from '../../features/management/userSlice'; 
+import { deleteUser } from '../../features/organization/userSlice'; 
 import { addToast } from '../../features/toasts/toastSlice';
 
 interface UserCardProps {

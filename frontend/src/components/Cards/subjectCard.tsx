@@ -1,6 +1,6 @@
 import { BookOpen, Pencil, Trash2, Link } from "lucide-react";
 import { ActionButton } from "../Buttons/actionButton";
-import { type SubjectDetails } from "../../features/management/subjectSlice";
+import { type SubjectDetails } from "../../features/organization/subjectSlice";
 
 interface SubjectCardProps {
   subjectData: SubjectDetails;

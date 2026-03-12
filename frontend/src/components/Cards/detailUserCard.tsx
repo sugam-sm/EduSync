@@ -2,7 +2,7 @@ import {
   AtSign, Mail, Phone, VenusAndMars, UserRound, GraduationCap, 
   School, HeartHandshake, Link, BookOpen, Contact, X
 } from "lucide-react";
-import { type User } from '../../features/management/userSlice';
+import { type User } from '../../features/organization/userSlice';
 import { Portal } from "../Portal";
 
 interface UserDetailCardProps {
