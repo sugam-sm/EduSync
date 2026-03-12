@@ -7,7 +7,7 @@ export const CustomDropdown = ({
   onChange,
   icon: Icon,
   label,
-  width = "100%"
+  className,
 }: any) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -30,7 +30,7 @@ export const CustomDropdown = ({
   };
 
   return (
-    <div className="relative" ref={dropdownRef} style={{ width }}>
+    <div className={`relative flex flex-col justify-end ${className}`} ref={dropdownRef}>
       {label && (
         <label className="text-[10px] uppercase font-bold text-text-muted tracking-wider ml-1 mb-1 block">
           {label}
@@ -39,9 +39,7 @@ export const CustomDropdown = ({
 
       {isOpen && (
         <div
-          className="absolute top-full mt-1 z-9999 bg-surface/80 border-2 border-light/10 rounded-xl backdrop-blur-sm overflow-hidden duration-200"
-          style={{ width }}
-        >
+          className={`absolute top-full mt-1 z-999 bg-surface/80 border-2 border-light/10 rounded-xl backdrop-blur-sm overflow-hidden duration-200 ${className}`} >
           <div className="max-h-33 overflow-y-auto custom-scrollbar">
             {options.length > 0 ? (
               options.map((opt: any, index: number) => {
@@ -68,9 +66,7 @@ export const CustomDropdown = ({
 
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center justify-between bg-light/5 border-2 rounded-xl px-3 py-3 cursor-pointer transition-all ${isOpen ? 'border-primary' : 'border-light/10 hover:border-light/20'}`}
-        style={{ width }}
-      >
+        className={`flex items-center justify-between bg-light/5 border-2 rounded-xl px-3 py-3 cursor-pointer transition-all ${isOpen ? 'border-primary' : 'border-light/10 hover:border-light/20'} ${className}`} >
         <div className="flex items-center h-5 gap-2">
           {Icon && <Icon size={16} className="text-light/40" />}
           <span className="text-sm font-semibold text-text-muted">{getDisplayLabel()}</span>
