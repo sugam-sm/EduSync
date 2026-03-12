@@ -1,12 +1,12 @@
 import { configureStore } from "@reduxjs/toolkit";
 
 import loginReducer from "./features/login/loginSlice";
-import organizationReducer from "./features/management/organizationSlice"
+import organizationReducer from "./features/organization/organizationSlice"
 import toastReducer from "./features/toasts/toastSlice";
-import usersReducer from "./features/management/userSlice"
-import gradesReducer from "./features/management/gradeSlice"
-import subjectsReducer from "./features/management/subjectSlice"
-import assignSubReducer from "./features/management/assignSubjectSlice"
+import usersReducer from "./features/organization/userSlice"
+import gradesReducer from "./features/organization/gradeSlice"
+import subjectsReducer from "./features/organization/subjectSlice"
+import assignSubReducer from "./features/organization/assignSubjectSlice"
 
 export const store = configureStore({
     reducer: {
