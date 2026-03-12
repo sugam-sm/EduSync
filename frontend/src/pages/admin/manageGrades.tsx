@@ -8,7 +8,7 @@ import { UpdateGradePopup } from "./update/updateGradePopup";
 import { DecisionPopup } from "../../components/decision popup";
 import { CustomDropdown } from "../../components/Custom/customDropdown";
 import { type AppDispatch, type RootState } from "../../store";
-import { fetchGrades, deleteGrade, type GradeDetails } from "../../features/management/gradeSlice";
+import { fetchGrades, deleteGrade, type GradeDetails } from "../../features/organization/gradeSlice";
 import { addToast } from "../../features/toasts/toastSlice";
 
 export const ManageGrades = () => {

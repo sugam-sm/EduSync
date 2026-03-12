@@ -6,7 +6,7 @@ import { CustomInput } from '../../../components/Custom/customInput';
 import { FormButton } from '../../../components/Buttons/formButton';
 import { Button } from '../../../components/Buttons/customButton';
 import { DecisionPopup } from '../../../components/decision popup';
-import { createSubject } from '../../../features/management/subjectSlice';
+import { createSubject } from '../../../features/organization/subjectSlice';
 import { addToast } from '../../../features/toasts/toastSlice';
 
 export const CreateSubjectPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {

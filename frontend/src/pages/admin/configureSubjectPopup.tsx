@@ -9,11 +9,11 @@ import { DecisionPopup } from '../../components/decision popup';
 import { Portal } from '../../components/Portal';
 
 import { type RootState, type AppDispatch } from '../../store';
-import { fetchAssignSubs, createAssignSub, deleteAssignSub } from '../../features/management/assignSubjectSlice';
-import { fetchGrades } from '../../features/management/gradeSlice';
-import { fetchUsers } from '../../features/management/userSlice';
+import { fetchAssignSubs, createAssignSub, deleteAssignSub } from '../../features/organization/assignSubjectSlice';
+import { fetchGrades } from '../../features/organization/gradeSlice';
+import { fetchUsers } from '../../features/organization/userSlice';
 import { addToast } from '../../features/toasts/toastSlice';
-import { type SubjectDetails } from '../../features/management/subjectSlice';
+import { type SubjectDetails } from '../../features/organization/subjectSlice';
 
 interface ConfigureSubjectPopupProps {
     isOpen: boolean;
@@ -182,6 +182,7 @@ export const ConfigureSubjectPopup = ({ isOpen, onClose, subject }: ConfigureSub
                                         icon={School} 
                                         value={selectedGrade} 
                                         onChange={setSelectedGrade} 
+                                        className='w-full'
                                         options={gradeOptions} 
                                     />
                                     <CustomDropdown 
@@ -189,6 +190,7 @@ export const ConfigureSubjectPopup = ({ isOpen, onClose, subject }: ConfigureSub
                                         icon={UserRound} 
                                         value={selectedTeacher} 
                                         onChange={setSelectedTeacher} 
+                                        className='w-full'
                                         options={teacherOptions} 
                                     />
                                 </form>

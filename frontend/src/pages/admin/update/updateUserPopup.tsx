@@ -13,10 +13,10 @@ import { Portal } from '../../../components/Portal';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { type RootState, type AppDispatch } from '../../../store';
-import { type User, updateUser, resetUserState } from '../../../features/management/userSlice';
+import { type User, updateUser, resetUserState } from '../../../features/organization/userSlice';
 import { addToast } from '../../../features/toasts/toastSlice';
-import { fetchGrades } from '../../../features/management/gradeSlice';
-import { fetchUsers } from '../../../features/management/userSlice';
+import { fetchGrades } from '../../../features/organization/gradeSlice';
+import { fetchUsers } from '../../../features/organization/userSlice';
 
 interface UpdateUserPopupProps {
   isOpen: boolean;
@@ -211,7 +211,7 @@ export const UpdateUserPopup = ({ isOpen, onClose, user }: UpdateUserPopupProps)
               </div>
 
               <div className = "grid grid-cols-1 md:grid-cols-2 gap-4">
-                <CustomDropdown label="Gender" icon={VenusAndMars} value={gender} onChange={setGender} options={['Male', 'Female', 'Other']} />
+                <CustomDropdown label="Gender" icon={VenusAndMars} value={gender} onChange={setGender} className='w-full' options={['Male', 'Female', 'Other']} />
                 <CustomInput label="New Password" name="password" value={password} onChange={(e: any) => setPassword(e.target.value)} icon={KeyRound} placeholder="Type a new password" type="password" roleColor={roleColor} />
               </div>
 
@@ -230,6 +230,7 @@ export const UpdateUserPopup = ({ isOpen, onClose, user }: UpdateUserPopupProps)
                                   icon={School} 
                                   value={selectedClassId} 
                                   onChange={setSelectedClassId} 
+                                  className='w-full'
                                   options={classOptions}
                               />
                               <CustomInput label="Guardian Name" name="student_profile.guardian_name" value={formData.student_profile?.guardian_name} onChange={handleInputChange} icon={HeartHandshake} placeholder="Name" roleColor="primary" />

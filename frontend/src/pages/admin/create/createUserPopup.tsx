@@ -12,10 +12,10 @@ import { DecisionPopup } from '../../../components/decision popup';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { type RootState, type AppDispatch } from '../../../store';
-import { type User, createUser, resetUserState } from '../../../features/management/userSlice';
+import { type User, createUser, resetUserState } from '../../../features/organization/userSlice';
 import { addToast } from '../../../features/toasts/toastSlice';
-import { fetchGrades } from '../../../features/management/gradeSlice';
-import { fetchUsers } from '../../../features/management/userSlice';
+import { fetchGrades } from '../../../features/organization/gradeSlice';
+import { fetchUsers } from '../../../features/organization/userSlice';
 
 export const CreateUserPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const dispatch = useDispatch<AppDispatch>();
@@ -215,7 +215,7 @@ export const CreateUserPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose:
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <CustomInput label="Email Address" name="email" value={formData.email} onChange={handleInputChange} icon={Mail} placeholder="email@domain.com" type="email" roleColor={roleColor} />
-                <CustomDropdown label="Gender" icon={VenusAndMars} value={gender} onChange={setGender} options={['Male', 'Female', 'Other']} />
+                <CustomDropdown label="Gender" icon={VenusAndMars} value={gender} onChange={setGender} className="w-full" options={['Male', 'Female', 'Other']} />
             </div>
 
             <div className="pt-4 border-t border-light/10">
@@ -236,6 +236,7 @@ export const CreateUserPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose:
                               icon={School} 
                               value={selectedGradeId} 
                               onChange={setSelectedGradeId} 
+                              className="w-full"
                               options={gradeOptions}
                             />
                             <CustomInput label="Guardian Name" name="student_profile.guardian_name" value={formData.student_profile?.guardian_name} onChange={handleInputChange} icon={HeartHandshake} placeholder="Name" roleColor="primary" />

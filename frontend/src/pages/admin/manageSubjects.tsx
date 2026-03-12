@@ -7,7 +7,7 @@ import { CreateSubjectPopup } from "./create/createSubjectPopup";
 import { UpdateSubjectPopup } from "./update/updateSubjectPopup";
 import { ConfigureSubjectPopup } from "./configureSubjectPopup";
 import { DecisionPopup } from "../../components/decision popup";
-import { fetchSubjects, deleteSubject, type SubjectDetails } from "../../features/management/subjectSlice";
+import { fetchSubjects, deleteSubject, type SubjectDetails } from "../../features/organization/subjectSlice";
 import { addToast } from "../../features/toasts/toastSlice";
 import { type AppDispatch, type RootState } from "../../store";
 

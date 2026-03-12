@@ -3,7 +3,7 @@ import { Camera, Building2, Mail, Pen,  Trash2} from 'lucide-react';
 import { FormButton } from '../../components/Buttons/formButton';
 
 import { type AppDispatch, type RootState } from '../../store';
-import { fetchOrganization, updateOrganization, resetOrgState } from '../../features/management/organizationSlice'
+import { fetchOrganization, updateOrganization, resetOrgState } from '../../features/organization/organizationSlice'
 import { useSelector, useDispatch } from 'react-redux';
 import { addToast } from '../../features/toasts/toastSlice';
 

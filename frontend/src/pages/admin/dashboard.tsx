@@ -12,10 +12,10 @@ import {
 } from "lucide-react";
 
 import { type AppDispatch, type RootState } from "../../store";
-import { fetchUsers } from "../../features/management/userSlice";
-import { fetchGrades } from "../../features/management/gradeSlice";
-import { fetchSubjects } from "../../features/management/subjectSlice";
-import { fetchAssignSubs } from "../../features/management/assignSubjectSlice";
+import { fetchUsers } from "../../features/organization/userSlice";
+import { fetchGrades } from "../../features/organization/gradeSlice";
+import { fetchSubjects } from "../../features/organization/subjectSlice";
+import { fetchAssignSubs } from "../../features/organization/assignSubjectSlice";
 
 export const AdminDashboard = () => {
     const dispatch = useDispatch<AppDispatch>();

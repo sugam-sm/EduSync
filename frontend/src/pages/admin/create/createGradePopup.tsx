@@ -7,8 +7,8 @@ import { CustomDropdown } from '../../../components/Custom/customDropdown';
 import { FormButton } from '../../../components/Buttons/formButton';
 import { Button } from '../../../components/Buttons/customButton';
 import { DecisionPopup } from '../../../components/decision popup';
-import { createGrade } from '../../../features/management/gradeSlice';
-import { fetchUsers } from '../../../features/management/userSlice';
+import { createGrade } from '../../../features/organization/gradeSlice';
+import { fetchUsers } from '../../../features/organization/userSlice';
 import { addToast } from '../../../features/toasts/toastSlice';
 
 export const CreateGradePopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
@@ -122,6 +122,7 @@ export const CreateGradePopup = ({ isOpen, onClose }: { isOpen: boolean; onClose
                         value={form.class_teacher}
                         options={teacherOptions}
                         onChange={(val: any) => setForm({...form, class_teacher: val})}
+                        className="w-full"
                         icon={UserRound}
                     />
 
@@ -136,6 +137,7 @@ export const CreateGradePopup = ({ isOpen, onClose }: { isOpen: boolean; onClose
                         value={form.section}
                         options={sectionOptions}
                         onChange={(val: any) => setForm({...form, section: val})}
+                        className='w-full'
                         icon={Hash}
                     />
                 </div>

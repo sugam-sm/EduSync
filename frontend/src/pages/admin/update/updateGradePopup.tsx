@@ -7,8 +7,8 @@ import { CustomDropdown } from '../../../components/Custom/customDropdown';
 import { FormButton } from '../../../components/Buttons/formButton';
 import { Button } from '../../../components/Buttons/customButton';
 import { DecisionPopup } from '../../../components/decision popup';
-import { updateGrade, type GradeDetails } from '../../../features/management/gradeSlice';
-import { fetchUsers } from '../../../features/management/userSlice';
+import { updateGrade, type GradeDetails } from '../../../features/organization/gradeSlice';
+import { fetchUsers } from '../../../features/organization/userSlice';
 import { addToast } from '../../../features/toasts/toastSlice';
 import { Portal } from '../../../components/Portal';
 
@@ -126,7 +126,7 @@ export const UpdateGradePopup = ({ isOpen, onClose, grade }: { isOpen: boolean; 
     return (
         <Portal>
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface/90 backdrop-blur-sm">
-                <form onSubmit={handleSubmit} className="w-full max-w-lg overflow-hidden flex flex-col gap-2">
+                <form onSubmit={handleSubmit} className="w-full max-w-lg flex flex-col gap-2">
                     <div className="flex justify-between items-center p-3 border-2 border-light/10 bg-surface rounded-3xl">
                         <div className="flex items-center gap-3">
                             <div className="p-2 rounded-2xl bg-primary/10 text-primary">
@@ -153,6 +153,7 @@ export const UpdateGradePopup = ({ isOpen, onClose, grade }: { isOpen: boolean; 
                             value={form.class_teacher}
                             options={teacherOptions}
                             onChange={(val: any) => setForm({...form, class_teacher: val})}
+                            className='w-full'
                             icon={UserRound}
                         />
 
@@ -169,6 +170,7 @@ export const UpdateGradePopup = ({ isOpen, onClose, grade }: { isOpen: boolean; 
                             value={form.section}
                             options={sectionOptions}
                             onChange={(val: any) => setForm({...form, section: val})}
+                            className='w-full'
                             icon={Hash}
                         />
                     </div>

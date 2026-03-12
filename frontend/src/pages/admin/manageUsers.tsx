@@ -4,8 +4,8 @@ import { UserRoundPlus, Users, Filter, Search, Loader2, X, School, UserCircle, A
 import { Button } from '../../components/Buttons/customButton';
 import { CustomDropdown } from '../../components/Custom/customDropdown';
 import { type AppDispatch, type RootState } from "../../store";
-import { fetchUsers, fetchUser } from "../../features/management/userSlice";
-import { fetchGrades } from "../../features/management/gradeSlice";
+import { fetchUsers, fetchUser } from "../../features/organization/userSlice";
+import { fetchGrades } from "../../features/organization/gradeSlice";
 import { UserCard } from "../../components/Cards/userCard";
 import { UserDetailCard } from "../../components/Cards/detailUserCard";
 import { CreateUserPopup } from "./create/createUserPopup";
