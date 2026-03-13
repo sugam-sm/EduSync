@@ -1,6 +1,6 @@
+import datetime, string, secrets
 from rest_framework import serializers
 from .models import User, Teacher, Student, Role
-import datetime, string, secrets
 
 class RoleSerializer(serializers.ModelSerializer):
     class Meta:
@@ -53,7 +53,7 @@ class UserListSerializer(serializers.ModelSerializer):
         fields = ['id', 'username', 'fullname', 'email', 'is_active', 'role_name', 'gender', 'teacher_profile', 'student_profile', 'grade_id' ]
     
     def get_grade_id(self, obj):
-        if hasattr(obj, 'student_profile') and obj.student_profile and obj.student_profile:
+        if hasattr(obj, 'student_profile') and obj.student_profile:
             return obj.student_profile.grade_id
         return None
 
@@ -103,13 +103,25 @@ class UserCreationSerializer(serializers.ModelSerializer):
         role_prefix = "T" if teacher_data else "S"
         year_short = datetime.datetime.now().strftime('%y')
         
-        user_count = User.objects.filter(
-            organization=org,
-            date_joined__year=datetime.datetime.now().year,
-            role=validated_data.get('role')
-        ).count()
+        prefix = f"{role_prefix}{org.id}{year_short}"
+        last_user = User.objects.filter(
+            username__startswith=prefix
+        ).order_by('-username').first()
 
-        generated_username = f"{role_prefix}{org.id}{year_short}{user_count + 1:04d}"
+        if last_user:
+            try:
+                last_number = int(last_user.username[-4:])
+                new_number = last_number + 1
+            except (ValueError, IndexError):
+                new_number = 1
+        else:
+            new_number = 1
+
+        generated_username = f"{prefix}{new_number:04d}"
+
+        while User.objects.filter(username=generated_username).exists():
+            new_number += 1
+            generated_username = f"{prefix}{new_number:04d}"
 
         user = User.objects.create_user(
             username=generated_username,
