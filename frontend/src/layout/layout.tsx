@@ -1,15 +1,14 @@
 import { Outlet } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { NavButton } from '../components/navItem.tsx';
 import { DecisionPopup } from '../components/decision popup.tsx';
 import { type RootState } from '../store';
 import { LayoutDashboard, Power, FileText, FolderOpen, CalendarRange, UserCog2, BarChart3, Settings, Building, School,  BookCopy} from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 // Logos
 import Logo from '../assets/logos/medium-logo.svg';
 
-import { useDispatch } from 'react-redux';
 import { logout, reset } from '../features/login/loginSlice.ts';
 import { addToast } from '../features/toasts/toastSlice.ts';
 
@@ -17,20 +16,22 @@ export const Layout = () => {
   const { user, isSuccess } = useSelector((state: RootState) => state.login);
   const userRole = user?.role;
   const dispatch = useDispatch();
+  const hasShownWelcome = useRef(false);
 
   const { openDecidePopup, DecidePopup } = DecisionPopup();
 
   useEffect(() => {
-    // Only run if login succeds
-    if (isSuccess && user) {
+    if (isSuccess && user && !hasShownWelcome.current) {
       dispatch(addToast({
         message: `Welcome back, ${user.full_name}!`,
         type: 'success'
       }));
       
+      hasShownWelcome.current = true;
       dispatch(reset());
     }
   }, [isSuccess, user, dispatch]);
+
   // Defining navigation configuration
   const navItems = [
     { to: "/",
