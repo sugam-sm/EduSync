@@ -5,17 +5,17 @@ from .models import Organization, Grade, Subject, AssignSubject
 from datetime import datetime
 
 class OrganizationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Organization
-        fields = ['id', 'name', 'email', 'logo']
-        read_only_fields = ['id']
-
     email = serializers.EmailField(
         validators=[UniqueValidator(
             queryset=Organization.objects.all(),
             message="An organization with this email already exists."
         )]
     )
+
+    class Meta:
+        model = Organization
+        fields = ['id', 'name', 'email', 'logo']
+        read_only_fields = ['id']
 
 class GradeSerializer(serializers.ModelSerializer):
     teacher_name = serializers.CharField(source='class_teacher.full_name', read_only=True)
@@ -32,9 +32,7 @@ class GradeSerializer(serializers.ModelSerializer):
     def validate_section(self, value):
         cleaned_value = value.strip().upper()
         if not re.fullmatch(r'[A-Z]+|[0-9]+', cleaned_value):
-            raise serializers.ValidationError(
-                "Section must be either entirely letters or entirely numbers."
-            )
+            raise serializers.ValidationError("Section must be either entirely letters or entirely numbers.")
         return cleaned_value
 
     def validate_class_teacher(self, value):

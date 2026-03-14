@@ -9,7 +9,7 @@ class Organization(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.name
+        return f"{self.id} {self.name}"
 
 class Grade(models.Model):
     name = models.CharField(max_length=50)
@@ -23,7 +23,7 @@ class Grade(models.Model):
         unique_together = ('name', 'section', 'academic_year', 'organization')
 
     def __str__(self):
-        return f"{self.name} {self.section} ({self.academic_year})"
+        return f"{self.id} {self.name} {self.section} ({self.academic_year})"
 
 class Subject(models.Model):
     name = models.CharField(max_length=100)
@@ -33,7 +33,7 @@ class Subject(models.Model):
         unique_together = ('name', 'organization')
 
     def __str__(self):
-        return f"{self.name} ({self.organization.name})"
+        return f"{self.id} {self.name} ({self.organization.name})"
     
 class AssignSubject(models.Model):
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
@@ -45,4 +45,4 @@ class AssignSubject(models.Model):
         unique_together = ('subject', 'grade')
 
     def __str__(self):
-        return f"{self.subject.name} {self.grade} - {self.teacher.user.full_name if self.teacher else 'No Teacher'}"
+        return f"{self.id} {self.subject.name} {self.grade} - {self.teacher.user.full_name if self.teacher else 'No Teacher'}"

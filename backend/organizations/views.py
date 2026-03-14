@@ -2,22 +2,22 @@ from rest_framework import generics, permissions, viewsets
 from .serializers import OrganizationSerializer, GradeSerializer, SubjectSerializer, AssignSubjectSerializer
 from .models import Grade, Subject, AssignSubject
 
-# custom permission for cheking if the user is an admin.
+# custom permission for checking if the user is an admin.
 class IsOrganizationAdmin(permissions.BasePermission):
-    # restriciting write operations for students and teachers
+    # restricting write operations for students and teachers
     def has_permission(self, request, view):
         if request.method in permissions.SAFE_METHODS:
             return request.user and request.user.is_authenticated
         
-        return(
+        return (
             request.user.role.role_name == 'Administrator'
         )
 
 # Class for retrieving and updating the organizations data using generics
 class OrganizationDetailView(generics.RetrieveUpdateAPIView):
-    # using the OrganizationSerilizer for converting the data
+    # using the OrganizationSerializer for converting the data
     serializer_class = OrganizationSerializer
-    # checks if the user is authenticated (logged in) and if ther user is admin.
+    # checks if the user is authenticated (logged in) and if the user is admin.
     permission_classes = [permissions.IsAuthenticated, IsOrganizationAdmin]
 
     def get_object(self):
@@ -49,9 +49,6 @@ class GradeViewSet(viewsets.ModelViewSet):
         
         return base_query.none()
 
-    def perform_create(self, serializer):
-        serializer.save()
-
 # control access to subjects
 class SubjectViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, IsOrganizationAdmin]
@@ -67,7 +64,7 @@ class SubjectViewSet(viewsets.ModelViewSet):
         
         # if teacher, return only the subjects that the particular teacher is assigned to.
         if user.role.role_name == "Teacher":
-            return base_query.filter(assign__subject__teacher__user=user).distinct()
+            return base_query.filter(assignsubject__teacher__user=user).distinct()
 
         # if student, return only the subjects that is related to the grade that the student is assigned to.
         if user.role.role_name == "Student":
@@ -91,6 +88,3 @@ class AssignSubjectViewSet(viewsets.ModelViewSet):
         if user.role.role_name == 'Student':
             return base_query.filter(grade=user.student_profile.grade)
         return base_query.none()
-
-    def perform_create(self, serializer):
-        serializer.save()
