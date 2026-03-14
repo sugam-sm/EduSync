@@ -13,12 +13,12 @@ const toastSlice = createSlice({
   initialState,
   reducers: {
     addToast: (state, action: PayloadAction<Omit<ToastItem, 'id'>>) => {
-      if (state.length >= 1) {
-        state.shift();
+      if (state.length >= 5) {
+        state.pop();
       }
-      state.push({
+      state.unshift({
         ...action.payload,
-        id: Date.now(),
+        id: Date.now() + Math.random(),
       });
     },
 
