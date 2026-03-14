@@ -46,12 +46,12 @@ export const CreateFolderPopup = ({ isOpen, onClose, gradeId }: CreateFolderPopu
             question: `Create resource folder "${folderName}"?`,
             confirmText: "Yes, Create",
             cancelText: "Cancel",
-            variant: "secondary",
+            variant: "primary",
             onConfirm: async () => {
                 const result = await dispatch(createResourceFolder({ 
                     name: folderName, 
                     grade_id: gradeId as number 
-                } as any));
+                } as any)); 
 
                 if (createResourceFolder.fulfilled.match(result)) {
                     dispatch(addToast({ message: 'Folder created successfully.', type: 'success' }));
@@ -78,7 +78,7 @@ export const CreateFolderPopup = ({ isOpen, onClose, gradeId }: CreateFolderPopu
                     </button>
                 </div>
 
-                <div className="p-5 space-y-2">
+                <div className="p-5 space-y-5">
                     <CustomInput 
                         label="Folder Name" 
                         value={folderName} 

@@ -182,24 +182,24 @@ export const ManageResources = ({ isOpen, onClose, folder }: ManageResourcesProp
                                                     </div>
                                                     <p className="font-bold text-text-heading truncate">{res.title}</p>
                                                 </div>
-                                                <div className="flex items-center gap-1 shrink-0">
+                                                <div className="flex items-center gap-2 shrink-0">
                                                     <button 
                                                         onClick={() => handleAction(res)}
                                                         className="p-2 text-text-muted hover:text-primary hover:bg-primary/10 rounded-full transition-all duration-300 cursor-pointer"
                                                     >
                                                         {res.type === 'LINK' ? (
-                                                            <ExternalLink size={22} strokeWidth={2} />
+                                                            <ExternalLink size={20} />
                                                         ) : res.type === 'FILE' && res.file && isViewable(res.file) ? (
-                                                            <Eye size={22} strokeWidth={2.5} />
+                                                            <Eye size={20} />
                                                         ) : (
-                                                            <Download size={22} strokeWidth={2} />
+                                                            <Download size={20} />
                                                         )}
                                                     </button>
                                                     <button 
                                                         onClick={() => handleDelete(res.id!)}
                                                         className="p-2 text-text-muted hover:text-failure hover:bg-failure/10 rounded-full transition-all duration-300 cursor-pointer hover:rotate-270"
                                                     >
-                                                        <X size={22} strokeWidth={3} />
+                                                        <X size={25} strokeWidth={3} />
                                                     </button>
                                                 </div>
                                             </div>
