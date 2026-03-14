@@ -13,7 +13,7 @@ import { type AppDispatch, type RootState } from "../../store";
 import { fetchGrades } from "../../features/organization/gradeSlice";
 import { fetchResourceFolders, type ResourceFolder } from "../../features/learning/resourceSlice";
 
-export const ManageResourceFolders = () => {
+export const ManageLearningResources = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { grades } = useSelector((state: RootState) => state.grade);
     const { folders, isLoading } = useSelector((state: RootState) => state.resource);
@@ -92,7 +92,7 @@ export const ManageResourceFolders = () => {
                         </div>
                     ) : selectedGrade === "All" ? (
                         <div className="text-center mt-20 text-text-muted">
-                            <p className="text-xl font-bold">Select a class to manage content.</p>
+                            <p className="text-md font-bold">Select a class to manage content.</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
