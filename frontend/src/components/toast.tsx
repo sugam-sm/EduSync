@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 
 interface ToastProps {
   toast: {
@@ -9,7 +9,7 @@ interface ToastProps {
   onClose: () => void;
 }
 
-export const Toast = ({ toast, onClose }: ToastProps) => {
+export const Toast = memo(({ toast, onClose }: ToastProps) => {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -17,17 +17,16 @@ export const Toast = ({ toast, onClose }: ToastProps) => {
 
     const lifeTimer = setTimeout(() => {
       setIsVisible(false);
-      const removeTimer = setTimeout(() => {
+      setTimeout(() => {
         onClose();
       }, 300);
-      return () => clearTimeout(removeTimer);
     }, 3000);
 
     return () => {
       clearTimeout(entranceTimer);
       clearTimeout(lifeTimer);
     };
-  }, [onClose]);
+  }, []);
 
   const getTypeStyles = () => {
     switch (toast.type) {
@@ -49,8 +48,10 @@ export const Toast = ({ toast, onClose }: ToastProps) => {
 
   return (
     <div
-      className={`transition-all duration-300 ease-in-out transform ${
-        isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+      className={`transition-all duration-300 ease-in-out overflow-hidden ${
+        isVisible 
+          ? 'max-h-40 translate-y-0 opacity-100' 
+          : 'max-h-0 -translate-y-4 opacity-0'
       }`}
     >
       <div className={`flex flex-col gap-1 px-5 py-3 rounded-xl border-2 shadow-lg w-80 ${getTypeStyles()}`}>
@@ -66,4 +67,4 @@ export const Toast = ({ toast, onClose }: ToastProps) => {
       </div>
     </div>
   );
-};
+});

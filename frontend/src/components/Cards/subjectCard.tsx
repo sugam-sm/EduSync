@@ -18,7 +18,7 @@ export const SubjectCard = ({ subjectData, onEdit, onDelete, onConfigure }: Subj
             <BookOpen size={20} strokeWidth={3} className="text-primary" />
           </div>
           <div>
-            <h3 className="uppercase text-sm font-semibold text-primary group-hover:text-primary transition-all duration-300">
+            <h3 className="uppercase sm:text-md font-semibold text-primary group-hover:text-primary transition-all duration-300">
               {subjectData.name}
             </h3>
           </div>

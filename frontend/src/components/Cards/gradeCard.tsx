@@ -12,8 +12,8 @@ export const GradeCard = ({ gradeData, onEdit, onDelete }: GradeCardProps) => {
   const isActive = gradeData.is_active === true;
 
   return (
-    <div className="w-full flex justify-around bg-surface border-3 border-light/10 rounded-xl p-3 hover:-translate-y-1 transition-all duration-300 group shadow-md hover:shadow-primary/50 hover:border-primary">
-      <div className="w-[70%] flex flex-col justify-between">
+    <div className="w-full flex justify-between bg-surface border-3 border-light/10 rounded-xl p-3 hover:-translate-y-1 transition-all duration-300 group shadow-md hover:shadow-primary/50 hover:border-primary">
+      <div className="w-[72%] flex flex-col justify-between">
         <div className="grow bg-light/5 border-2 border-light/5 rounded-xl p-3 space-y-4 overflow-clip">
             <div className="flex justify-between items-start">
               <div>

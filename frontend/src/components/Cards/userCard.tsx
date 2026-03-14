@@ -64,11 +64,10 @@ export const UserCard = ({ user, onEdit, onView }: UserCardProps) => {
       
       <div className="flex justify-between items-start mb-2">
         <div>
-          <h3 className={` uppercase font-bold text-xl transition-all duration-300 ${
+          <h3 className={` uppercase font-bold text-lg transition-all duration-300 ${
           isTeacher ? 'text-info' : 
           'text-primary'
-          } `}
-            title={user.fullname}>
+          } `}>
             {user.fullname}
           </h3>
         </div>
@@ -129,7 +128,7 @@ export const UserCard = ({ user, onEdit, onView }: UserCardProps) => {
       </div>
 
       {/* Actions */}
-      <div className="flex flex-col gap-2 lg:gap-0 lg:flex-row justify-between">
+      <div className="flex gap-2 lg:gap-0 justify-between">
         <ActionButton
           label='View'
           Icon={Eye}
