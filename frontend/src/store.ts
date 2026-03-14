@@ -7,6 +7,8 @@ import usersReducer from "./features/organization/userSlice"
 import gradesReducer from "./features/organization/gradeSlice"
 import subjectsReducer from "./features/organization/subjectSlice"
 import assignSubReducer from "./features/organization/assignSubjectSlice"
+import resourceReducer from "./features/learning/resourceSlice"
+
 
 export const store = configureStore({
     reducer: {
@@ -17,6 +19,7 @@ export const store = configureStore({
         grade: gradesReducer, 
         subject: subjectsReducer,
         assignsub: assignSubReducer,
+        resource: resourceReducer,
     }
 });
 
