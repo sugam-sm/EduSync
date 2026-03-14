@@ -70,7 +70,7 @@ export const CreateSubjectPopup = ({ isOpen, onClose }: { isOpen: boolean; onClo
                     </button>
                 </div>
 
-                <div className="p-8">
+                <div className="p-5">
                     <CustomInput 
                         label="Subject Name" 
                         value={form.name} 

@@ -129,16 +129,16 @@ export const ConfigureSubjectPopup = ({ isOpen, onClose, subject }: ConfigureSub
                     </div>
 
                     <div className="flex flex-col overflow-hidden">
-                        <div className="px-8 pt-6">
+                        <div className="px-2">
                             <div className="p-3 rounded-2xl uppercase border border-light/10 text-center font-bold text-lg bg-primary/10 text-primary">
-                                Subject: {subject.name}
+                                {subject.name}
                             </div>
                         </div>
 
-                        <div className="p-8 space-y-6">
+                        <div className="p-5 space-y-2">
                             <div>
-                                <h3 className="text-sm font-bold text-text-muted uppercase tracking-widest mb-4">Current Configurations</h3>
-                                <div className="space-y-3 max-h-[40vh] overflow-y-auto custom-scrollbar">
+                                <h3 className="text-sm font-bold text-text-muted uppercase tracking-widest mb-2">Current Configurations</h3>
+                                <div className="space-y-3 h-[33vh] sm:h-[46vh] overflow-y-auto border-2 border-dashed border-light/10 rounded-3xl p-2">
                                     {assignSubs.length > 0 ? (
                                         assignSubs.map(a => {
                                             const gradeData = grades.find(g => g.id === a.grade);
@@ -167,14 +167,14 @@ export const ConfigureSubjectPopup = ({ isOpen, onClose, subject }: ConfigureSub
                                             );
                                         })
                                     ) : (
-                                        <div className="text-center py-10 border-2 border-dashed border-light/10 rounded-3xl">
+                                        <div className="flex items-center justify-center text-center py-10 h-full">
                                             <p className="text-text-muted font-medium italic">No active assignments for this subject.</p>
                                         </div>
                                     )}
                                 </div>
                             </div>
 
-                            <div className="pt-6 border-t border-light/10">
+                            <div className="pt-1">
                                 <h3 className="text-sm font-bold text-text-muted uppercase tracking-widest mb-4">Add New Configuration</h3>
                                 <form onSubmit={handleAddAssignment} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <CustomDropdown 

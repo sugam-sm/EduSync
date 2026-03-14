@@ -132,7 +132,7 @@ export const CreateUserPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose:
     console.log(finalPayload)
 
     openDecidePopup({
-      question: `Create this ${role}?`,
+      question: `Create ${role} ${finalPayload.first_name} ${finalPayload.last_name} ?`,
       confirmText: "Yes, Create",
       cancelText: "Cancel",
       variant: "secondary",
@@ -198,15 +198,14 @@ export const CreateUserPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose:
           </button>
         </div>
 
-
-        <div className="px-8 pt-6">
-          <div className="flex gap-2 p-1 bg-light/5 rounded-2xl border-2 border-light/10">
+        <div className="px-2 pt-4">
+          <div className="flex gap-2 p-1 rounded-2xl border-2 border-light/10">
             <button type="button" onClick={() => setRole('Student')} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold transition-all cursor-pointer ${role === 'Student' ? 'bg-primary/35 text-primary' : 'text-text-muted hover:bg-primary/10'}`}><Users size={20} strokeWidth={3}/> Student</button>
             <button type="button" onClick={() => setRole('Teacher')} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold transition-all cursor-pointer ${role === 'Teacher' ? 'bg-info/35 text-info' : 'text-text-muted hover:bg-info/10'}`}><GraduationCap size={20} strokeWidth={3}/> Teacher</button>
           </div>
         </div>
 
-        <div className="p-8 space-y-5 max-h-[60vh] md:overflow-y-visible overflow-y-auto">
+        <div className="p-5 space-y-5 max-h-[60vh] md:overflow-y-visible overflow-y-auto">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <CustomInput label="First Name" name="first_name" value={formData.first_name} onChange={handleInputChange} icon={UserRound} placeholder="First Name" roleColor={roleColor} />
                 <CustomInput label="Middle Name" name="middle_name" value={formData.middle_name} onChange={handleInputChange} placeholder="Middle" roleColor={roleColor} />
@@ -218,7 +217,7 @@ export const CreateUserPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose:
                 <CustomDropdown label="Gender" icon={VenusAndMars} value={gender} onChange={setGender} className="w-full" options={['Male', 'Female', 'Other']} />
             </div>
 
-            <div className="pt-4 border-t border-light/10">
+            <div className="pt-3 border-t border-light/10">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {role === 'Teacher' ? (
                         <>

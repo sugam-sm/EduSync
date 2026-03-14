@@ -84,7 +84,7 @@ export const UpdateSubjectPopup = ({ isOpen, onClose, subject }: { isOpen: boole
                     </button>
                 </div>
 
-                <div className="p-8">
+                <div className="p-5">
                     <CustomInput 
                         label="Subject Name" 
                         value={form.name} 

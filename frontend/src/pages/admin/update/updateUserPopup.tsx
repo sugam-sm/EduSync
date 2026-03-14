@@ -91,9 +91,17 @@ export const UpdateUserPopup = ({ isOpen, onClose, user }: UpdateUserPopupProps)
       formData.gender === user?.gender &&
       formData.is_active === user?.is_active &&
       password === '' &&
-      Number(selectedClassId) === Number(user?.student_profile?.grade) &&
-      formData.student_profile?.guardian_name === user?.student_profile?.guardian_name &&
-      JSON.stringify(formData.teacher_profile) === JSON.stringify(user?.teacher_profile);
+      (role === 'Teacher' || (
+        Number(selectedClassId) === Number(user?.student_profile?.grade) &&
+        formData.student_profile?.guardian_name === user?.student_profile?.guardian_name &&
+        formData.student_profile?.guardian_relation === user?.student_profile?.guardian_relation &&
+        formData.student_profile?.guardian_contact === user?.student_profile?.guardian_contact
+      )) &&
+      (role === 'Student' || (
+        formData.teacher_profile?.contact_number === user?.teacher_profile?.contact_number &&
+        formData.teacher_profile?.specialization === user?.teacher_profile?.specialization &&
+        formData.teacher_profile?.qualification === user?.teacher_profile?.qualification
+      ));
 
     if (isUnchanged) {
       dispatch(addToast({ message: "No changes detected.", type: 'info' }));
@@ -181,19 +189,19 @@ export const UpdateUserPopup = ({ isOpen, onClose, user }: UpdateUserPopupProps)
             </button>
           </div>
 
-          <div className="px-8 pt-6">
+          <div className="px-1/2 pt-3">
             <div className={`p-3 rounded-2xl uppercase border border-light/10 text-center font-bold text-lg ${role === 'Teacher' ? 'bg-info/10 text-info' : 'bg-primary/10 text-primary'}`}>
-                {role}: {user?.username}
+                {user?.username}
             </div>
           </div>
 
-          <div className="p-8 space-y-5 max-h-[65vh] overflow-y-auto custom-scrollbar">
+          <div className="p-5 space-y-5 max-h-[65vh] overflow-y-auto custom-scrollbar">
               <div className="flex items-center gap-4 py-2 border-b border-light/10 pb-4">
                 <label className="text-sm font-semibold text-text-muted">Account Status:</label>
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, is_active: !prev.is_active }))}
-                  className={`w-14 h-7 rounded-full transition-colors duration-300 relative ${formData.is_active ? 'bg-success/50' : 'bg-failure'}`}
+                  className={`w-14 h-7 rounded-full transition-colors duration-300 relative hover:cursor-pointer ${formData.is_active ? 'bg-success/50' : 'bg-failure'}`}
                 >
                   <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform duration-300 ${formData.is_active ? 'left-8' : 'left-1'}`} />
                 </button>

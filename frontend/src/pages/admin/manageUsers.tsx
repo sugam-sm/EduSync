@@ -89,11 +89,11 @@ export const ManageUsers = () => {
             </div>
             
             <section className="w-[90%] sm:w-[80%] md:w-[75%] mx-auto">
-                <div className="bg-surface border-2 border-light/3 rounded-2xl mb-2 flex items-center justify-between p-3 gap-1 ">
+                <div className="bg-surface border-2 border-light/3 rounded-2xl mb-2 flex items-center justify-between p-3 gap-1 h-auto">
                     <div className="hidden sm:flex w-[15%] items-center gap-2 px-2 text-primary">
                         <Users size={25} strokeWidth={3}/>
                     </div>
-                    <div className="group flex items-center w-[70%] sm:w-[60%] text-text-heading border-2 border-light/20 rounded-2xl focus-within:border-primary font-semibold text-md transition-all duration-400">
+                    <div className="group flex items-center w-[80%] sm:w-[60%] text-text-heading border-2 border-light/20 rounded-2xl focus-within:border-primary font-semibold text-md transition-all duration-400">
                         <input 
                             type="text" 
                             placeholder="Search for User" 
@@ -103,8 +103,8 @@ export const ManageUsers = () => {
                         />
                         <Search size={20} className="mr-3 text-light/30 group-focus-within:text-primary" />
                     </div>
-                    <div className="relative w-[15%]">
-                        <Button label="" Icon={Filter} onClick={() => setIsFilterOpen(!isFilterOpen)} variant="primary" className="w-full">
+                    <div className="relative w-[15%] h-auto">
+                        <Button label="" Icon={Filter} onClick={() => setIsFilterOpen(!isFilterOpen)} variant="primary" className="w-full h-full">
                             <span className="hidden lg:block">Filter</span>
                         </Button>
                         
@@ -135,7 +135,12 @@ export const ManageUsers = () => {
                         <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 w-full">
                             {filteredUsers.length > 0 ? (
                                 filteredUsers.map((user) => (
-                                    <UserCard key={user.id} user={user} onEdit={() => handleEdit(user.id!)} onView={() => handleView(user.id!)} />
+                                    <UserCard 
+                                        key={user.id} 
+                                        user={user} 
+                                        onEdit={() => handleEdit(user.id!)} 
+                                        onView={() => handleView(user.id!)} 
+                                    />
                                 ))
                             ) : (
                                 <div className="col-span-full w-full mt-20 text-center">

@@ -139,7 +139,7 @@ export const UpdateGradePopup = ({ isOpen, onClose, grade }: { isOpen: boolean; 
                         </button>
                     </div>
 
-                    <div className=" rounded-3xl p-8 space-y-5">
+                    <div className=" rounded-3xl p-5 space-y-5">
                         <CustomInput 
                             label="Grade Name" 
                             value={form.name} 
