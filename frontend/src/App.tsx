@@ -20,7 +20,7 @@ import { StudentResources } from './pages/student/resources';
 
 // pages for teachers
 import { TeacherDashboard } from './pages/teacher/dashboard';
-import { ManageResources } from './pages/teacher/manageResources'
+import { ManageResourceFolders } from './pages/teacher/manageResourceFolders';
 
 import { removeToast } from './features/toasts/toastSlice';
 import { verifyUserToken, setVerifying } from './features/login/loginSlice';
@@ -47,7 +47,7 @@ const Resources = () => {
 
     switch (user?.role) {
         case 'Teacher':
-            return <ManageResources />;
+            return <ManageResourceFolders />;
         case 'Student':
             return <StudentResources />;
         default:
