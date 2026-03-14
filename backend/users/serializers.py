@@ -70,14 +70,18 @@ class UserDetailSerializer(serializers.ModelSerializer):
 class UserCreationSerializer(serializers.ModelSerializer):
     teacher_profile = TeacherSerializer(required=False)
     student_profile = StudentSerializer(required=False)
-    generated_password = serializers.CharField(source='plain_password', read_only=True)
+    generated_password = serializers.CharField(read_only=True)
 
     class Meta:
         model = User
         fields = [
             'id', 'username', 'first_name', 'middle_name', 'last_name', 'email', 'role', 'gender', 'teacher_profile', 'student_profile', 'generated_password'
         ]
-        read_only_fields = ['id', 'username']
+        read_only_fields = ['id', 'username', 'generated_password']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.temp_password = None
 
     def validate(self, attrs):
         email = attrs.get('email')
@@ -96,7 +100,7 @@ class UserCreationSerializer(serializers.ModelSerializer):
         student_data = validated_data.pop('student_profile', None)
 
         alphabet = string.ascii_letters + string.digits
-        generated_password = ''.join(secrets.choice(alphabet) for i in range(8))
+        self.temp_password = ''.join(secrets.choice(alphabet) for i in range(8))
 
         admin_user = self.context['request'].user
         org = admin_user.organization
@@ -125,18 +129,21 @@ class UserCreationSerializer(serializers.ModelSerializer):
 
         user = User.objects.create_user(
             username=generated_username,
-            password=generated_password,
+            password=self.temp_password,
             organization=org,
             **validated_data
         )
-
-        user.plain_password = generated_password
 
         if teacher_data:
             Teacher.objects.create(user=user, **teacher_data)
         elif student_data:
             Student.objects.create(user=user, **student_data)
         return user
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['generated_password'] = self.temp_password
+        return representation
 
 class UserUpdateSerializer(serializers.ModelSerializer):
     teacher_profile = TeacherSerializer(required=False)

@@ -5,7 +5,7 @@ class Role(models.Model):
     role_name = models.CharField(max_length=50, unique=True)
 
     def __str__(self):
-        return self.role_name
+        return f"{self.id} {self.role_name}"
 
 class User(AbstractUser):
     organization = models.ForeignKey(
@@ -36,7 +36,7 @@ class User(AbstractUser):
         return " ".join([name for name in names if name])
 
     def __str__(self):
-        return f"{self.username} ({self.full_name if self.full_name else 'super admin'}) ({self.role.role_name if self.role else 'No Role'})"
+        return f"{self.id} {self.username} ({self.full_name if self.full_name else 'super admin'}) ({self.role.role_name if self.role else 'No Role'})"
 
 class Teacher(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, related_name='teacher_profile')
@@ -65,3 +65,6 @@ class Student(models.Model):
     @property
     def academic_year(self):
         return self.grade.academic_year
+    
+    def __str__(self):
+        return f"{self.user.full_name} ({self.user.organization})"
