@@ -1,33 +1,54 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Loader2, BookMarked, FolderPlus } from "lucide-react";
+import { Loader2, BookMarked, FolderPlus, LayersPlus } from "lucide-react";
 
 import { CardButton } from "../../components/Buttons/cardButton"; 
 import { CustomDropdown } from '../../components/Custom/customDropdown';
 import { ResourceFolderCard } from "../../components/Cards/resourceFolderCard";
 import { CreateFolderPopup } from "./create/createFolderPopup";
+import { CreateFlashcardDeckPopup } from "./create/createFlashcardDeckPopup";
 import { UpdateFolderPopup } from "./update/updateFolderPopup";
+import { UpdateFlashcardDeckPopup } from "./update/updateFlashcardDeckPopup";
 import { ManageResources } from "./manageResources";
+import { ManageFlashcards } from "./manageFlashcards";
+import { FlashcardDisplayPopup } from "../../components/flashcardDisplayPopup";
 
 import { type AppDispatch, type RootState } from "../../store";
 import { fetchGrades } from "../../features/organization/gradeSlice";
 import { fetchResourceFolders, type ResourceFolder } from "../../features/learning/resourceSlice";
+import { fetchFlashcardDecks, type FlashcardDeck } from "../../features/learning/flashcardSlice";
+import { FlashcardDeckCard } from "../../components/Cards/flashcardDeckCard";
 
 export const ManageLearningResources = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { grades } = useSelector((state: RootState) => state.grade);
-    const { folders, isLoading } = useSelector((state: RootState) => state.resource);
+    const { folders, isLoading: isResLoading } = useSelector((state: RootState) => state.resource);
+    const { flashcard_decks, isLoading: isDeckLoading } = useSelector((state: RootState) => state.flashcard);
 
     const [selectedGrade, setSelectedGrade] = useState<string | number>("All");
     const [sectionMode, setSectionMode] = useState<'resources' | 'flashcards'>('resources');
     
     const [isCreateFolderPopupOpen, setIsCreateFolderOpen] = useState(false);
+    const [isCreateDeckPopupOpen, setIsCreateDeckOpen] = useState(false);
     const [isUpdateFolderPopupOpen, setIsUpdateFolderOpen] = useState(false);
+    const [isUpdateDeckPopupOpen, setIsUpdateDeckOpen] = useState(false);
     const [isManageResourcesOpen, setIsManageResourcesOpen] = useState(false);
+    const [isManageFlashcardsOpen, setIsManageFlashcardsOpen] = useState(false);
+    const [isDisplayPopupOpen, setIsDisplayPopupOpen] = useState(false);
+
     const [selectedFolder, setSelectedFolder] = useState<ResourceFolder | null>(null);
+    const [selectedDeck, setSelectedDeck] = useState<FlashcardDeck | null>(null);
 
     useEffect(() => { dispatch(fetchGrades()); }, [dispatch]);
-    useEffect(() => { if (selectedGrade !== "All") dispatch(fetchResourceFolders(selectedGrade)); }, [dispatch, selectedGrade]);
+    useEffect(() => { 
+        if (selectedGrade !== "All") {
+            if (sectionMode === 'resources') {
+                dispatch(fetchResourceFolders(selectedGrade));
+            } else {
+                dispatch(fetchFlashcardDecks(selectedGrade));
+            }
+        }
+    }, [dispatch, selectedGrade, sectionMode]);
 
     const handleEditFolder = (folder: ResourceFolder) => {
         setSelectedFolder(folder);
@@ -39,15 +60,34 @@ export const ManageLearningResources = () => {
         setIsManageResourcesOpen(true);
     };
 
+    const handleEditDeck = (deck: FlashcardDeck) => {
+        setSelectedDeck(deck);
+        setIsUpdateDeckOpen(true);
+    };
+
+    const handleManageDeck = (deck: FlashcardDeck) => {
+        setSelectedDeck(deck);
+        setIsManageFlashcardsOpen(true);
+    };
+
+    const handlePreviewDeck = (deck: FlashcardDeck) => {
+        setSelectedDeck(deck);
+        setIsDisplayPopupOpen(true);
+    };
+
     const gradeOptions = grades.map(grade => ({
         label: `${grade.name} ${grade.section}`,
         value: grade.id!
     }));
     
+    const isLoading = sectionMode === 'resources' ? isResLoading : isDeckLoading;
+
     return (
         <div className='flex flex-col items-center justify-center align-middle h-full w-screen relative'>
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-0 mx-auto mb-5 items-center justify-between w-[90%] sm:w-[80%] md:w-[73%]">
-                <h1 className="w-full sm:w-[60%] text-primary text-3xl font-bold text-center sm:text-left">Manage Resources</h1>
+                <h1 className="w-full sm:w-[60%] text-primary text-3xl font-bold text-center sm:text-left">
+                    Manage {sectionMode === 'resources' ? 'Resources' : 'Flashcards'}
+                </h1>
             </div>
 
             <section className="w-[90%] sm:w-[80%] md:w-[75%] mx-auto">
@@ -84,7 +124,7 @@ export const ManageLearningResources = () => {
                     </div>
                 </div>
 
-                <div className="sm:p-5 p-2 border-2 border-light/3 bg-surface h-[60vh] lg:h-[70vh] overflow-auto rounded-2xl mx-auto">
+                <div className="sm:p-5 p-2 border-2 border-light/3 bg-surface h-[61.5vh] lg:h-[70vh] overflow-auto rounded-2xl mx-auto">
                     {isLoading ? (
                         <div className="flex flex-col items-center h-full gap-3 text-text-muted justify-center">
                             <Loader2 className="animate-spin text-primary" size={40} />
@@ -97,45 +137,60 @@ export const ManageLearningResources = () => {
                     ) : (
                         <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
                             <CardButton
-                                onClick={() => setIsCreateFolderOpen(true)}
-                                Icon={FolderPlus}
+                                onClick={() => sectionMode === 'resources' ? setIsCreateFolderOpen(true) : setIsCreateDeckOpen(true)}
+                                Icon={sectionMode === 'resources' ? FolderPlus : LayersPlus}
                             />
-                            {folders.map((folder) => (
-                                <ResourceFolderCard 
-                                    key={folder.id} 
-                                    folder={folder} 
-                                    onEdit={handleEditFolder} 
-                                    onModify={handleManageFolder} 
-                                />
-                            ))}
+                            {sectionMode === 'resources' ? (
+                                folders.map((folder) => (
+                                    <ResourceFolderCard 
+                                        key={folder.id} 
+                                        folder={folder} 
+                                        onEdit={handleEditFolder} 
+                                        onModify={handleManageFolder} 
+                                    />
+                                ))
+                            ) : (
+                                flashcard_decks.map((deck) => (
+                                    <FlashcardDeckCard 
+                                        key={deck.id} 
+                                        deck={deck}
+                                        onEdit={handleEditDeck}
+                                        onModify={handleManageDeck}
+                                        onPreview={handlePreviewDeck}
+                                    />
+                                ))
+                            )}
                         </div>
                     )}
                 </div>
             </section>
 
-            <CreateFolderPopup 
-                isOpen={isCreateFolderPopupOpen} 
-                onClose={() => setIsCreateFolderOpen(false)} 
-                gradeId={selectedGrade}
-            />
-
-            <UpdateFolderPopup 
-                isOpen={isUpdateFolderPopupOpen}
-                onClose={() => {
-                    setIsUpdateFolderOpen(false);
-                    setSelectedFolder(null);
-                }}
-                folder={selectedFolder}
-            />
+            <CreateFolderPopup isOpen={isCreateFolderPopupOpen} onClose={() => setIsCreateFolderOpen(false)} gradeId={selectedGrade}/>
+            <CreateFlashcardDeckPopup isOpen={isCreateDeckPopupOpen} onClose={() => setIsCreateDeckOpen(false)} gradeId={selectedGrade}/>
+            <UpdateFolderPopup isOpen={isUpdateFolderPopupOpen} onClose={() => {setIsUpdateFolderOpen(false); setSelectedFolder(null);}} folder={selectedFolder}/>
+            <UpdateFlashcardDeckPopup isOpen={isUpdateDeckPopupOpen} onClose={() => {setIsUpdateDeckOpen(false); setSelectedDeck(null);}} deck={selectedDeck}/>
 
             {selectedFolder && (
                 <ManageResources 
                     isOpen={isManageResourcesOpen}
-                    onClose={() => {
-                        setIsManageResourcesOpen(false);
-                        setSelectedFolder(null);
-                    }} 
+                    onClose={() => {setIsManageResourcesOpen(false); setSelectedFolder(null);}} 
                     folder={selectedFolder} 
+                />
+            )}
+
+            {selectedDeck && (
+                <ManageFlashcards 
+                    isOpen={isManageFlashcardsOpen}
+                    onClose={() => {setIsManageFlashcardsOpen(false); setSelectedDeck(null);}} 
+                    deck={selectedDeck} 
+                />
+            )}
+
+            {selectedDeck && (
+                <FlashcardDisplayPopup 
+                    isOpen={isDisplayPopupOpen}
+                    onClose={() => {setIsDisplayPopupOpen(false); setSelectedDeck(null);}}
+                    deck={selectedDeck}
                 />
             )}
         </div>

@@ -133,7 +133,7 @@ export const ManageResources = ({ isOpen, onClose, folder }: ManageResourcesProp
                                 onClick={() => setViewingResource(null)}
                                 className="p-2 text-text-muted hover:text-failure hover:bg-failure/10 rounded-full transition-all duration-300 cursor-pointer hover:rotate-270"
                             >
-                                <X size={25} strokeWidth={3} />
+                                <X size={23} strokeWidth={2} />
                             </button>
                         </div>
                         
@@ -188,11 +188,11 @@ export const ManageResources = ({ isOpen, onClose, folder }: ManageResourcesProp
                                                         className="p-2 text-text-muted hover:text-primary hover:bg-primary/10 rounded-full transition-all duration-300 cursor-pointer"
                                                     >
                                                         {res.type === 'LINK' ? (
-                                                            <ExternalLink size={20} />
+                                                            <ExternalLink size={23} strokeWidth={2.5} />
                                                         ) : res.type === 'FILE' && res.file && isViewable(res.file) ? (
-                                                            <Eye size={20} />
+                                                            <Eye size={23} strokeWidth={2.5} />
                                                         ) : (
-                                                            <Download size={20} />
+                                                            <Download size={23} strokeWidth={2.5} />
                                                         )}
                                                     </button>
                                                     <button 
