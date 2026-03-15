@@ -95,7 +95,7 @@ export const CreateGradePopup = ({ isOpen, onClose }: { isOpen: boolean; onClose
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface/90 backdrop-blur-sm">
-            <form onSubmit={handleSubmit} className="w-full max-w-lg overflow-hidden">
+            <form onSubmit={handleSubmit} className="w-full max-w-lg">
                 <div className="flex justify-between items-center p-3 border-2 border-light/10 bg-surface rounded-3xl m-2">
                     <div className="flex items-center gap-3">
                         <div className="p-2 rounded-2xl bg-primary/10 text-primary">

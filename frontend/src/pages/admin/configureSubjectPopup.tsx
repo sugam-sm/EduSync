@@ -114,7 +114,7 @@ export const ConfigureSubjectPopup = ({ isOpen, onClose, subject }: ConfigureSub
     return (
         <Portal>
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface/90 backdrop-blur-sm">
-                <div className="w-full max-w-3xl overflow-hidden flex flex-col gap-4">
+                <div className="w-full max-w-3xl flex flex-col gap-4">
                     
                     <div className="flex justify-between items-center p-3 border-2 border-light/10 rounded-3xl bg-surface">
                         <div className="flex items-center gap-3">
@@ -128,7 +128,7 @@ export const ConfigureSubjectPopup = ({ isOpen, onClose, subject }: ConfigureSub
                         </button>
                     </div>
 
-                    <div className="flex flex-col overflow-hidden">
+                    <div className="flex flex-col items-between">
                         <div className="px-2">
                             <div className="p-3 rounded-2xl uppercase border border-light/10 text-center font-bold text-lg bg-primary/10 text-primary">
                                 {subject.name}
