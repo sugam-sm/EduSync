@@ -8,6 +8,7 @@ import gradesReducer from "./features/organization/gradeSlice"
 import subjectsReducer from "./features/organization/subjectSlice"
 import assignSubReducer from "./features/organization/assignSubjectSlice"
 import resourceReducer from "./features/learning/resourceSlice"
+import flashcardReducer from "./features/learning/flashcardSlice"
 
 
 export const store = configureStore({
@@ -20,6 +21,7 @@ export const store = configureStore({
         subject: subjectsReducer,
         assignsub: assignSubReducer,
         resource: resourceReducer,
+        flashcard: flashcardReducer,
     }
 });
 
