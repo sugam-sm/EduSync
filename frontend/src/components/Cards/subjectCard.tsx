@@ -12,8 +12,8 @@ interface SubjectCardProps {
 export const SubjectCard = ({ subjectData, onEdit, onDelete, onConfigure }: SubjectCardProps) => {
   return (
     <div className="w-full flex flex-col gap-2 bg-surface border-3 border-light/10 rounded-2xl p-2 hover:-translate-y-1 transition-all duration-300 group shadow-md hover:shadow-primary/50 hover:border-primary">
-      <div className="flex flex-col justify-between">
-        <div className="grow bg-light/5 border-2 border-light/5 rounded-xl p-2 flex items-center gap-4">
+      <div className="flex-1 flex-col justify-between">
+        <div className="h-full bg-light/5 border-2 border-light/5 rounded-xl p-2 flex items-center gap-4">
           <div className="p-2 bg-primary/10 rounded-lg">
             <BookOpen size={20} strokeWidth={3} className="text-primary" />
           </div>
