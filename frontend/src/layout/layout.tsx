@@ -50,16 +50,16 @@ export const Layout = () => {
         </>
       ), icon: <FileText size={20} />, roles: ['Teacher', 'Student'] },
     { to: "/sessions", label: "Sessions", icon: <CalendarRange size={20} />, roles: [ 'Teacher', 'Student'] },
-    { to: "/manageOrganization",
+    { to: "/organization",
       label: (
         <>
           <span className="lg:hidden">Org.</span>
           <span className="hidden lg:inline">Organization</span>
         </>
       ), icon: <Building size={20} />, roles: ['Administrator'] },
-    { to: "/manageUsers", label: "Users", icon: <UserCog2 size={20} />, roles: ['Administrator'] },
-    { to: "/manageClasses", label: "Grades", icon: <School size={20} />, roles: ['Administrator'] },
-    { to: "/manageSubjects", label: "Subjects", icon: <BookCopy size={20} />, roles: ['Administrator'] },
+    { to: "/users", label: "Users", icon: <UserCog2 size={20} />, roles: ['Administrator'] },
+    { to: "/grades", label: "Grades", icon: <School size={20} />, roles: ['Administrator'] },
+    { to: "/subjects", label: "Subjects", icon: <BookCopy size={20} />, roles: ['Administrator'] },
     { to: "/analytics", label: "Analytics", icon: <BarChart3 size={20} />, roles: ['Teacher', 'Student'] },
     { to: "/settings", label: "Settings", icon: <Settings size={20}/>, roles: ['Administrator', 'Teacher', 'Student'] },
   ];
@@ -80,8 +80,8 @@ export const Layout = () => {
         </div>
       </div>
 
-      <div className="fixed bottom-0 lg:bottom-0 pt-0.5 left-0 w-full z-20 bg-surface/80 backdrop-blur-sm">
-        <div className="w-full flex justify-center pb-1 items-center px-4">
+      <div className="fixed bottom-0 lg:bottom-0 pt-0.5 left-0 w-full z-1 ">
+        <div className="w-full flex justify-around items-center mb-2">
           <div className="absolute left-4 flex items-center">
             <img 
                 className="hidden sm:block w-30" 
