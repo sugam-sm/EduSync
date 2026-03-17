@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  X, UserRoundPlus, GraduationCap, Users, Mail, Phone, 
+  X, GraduationCap, Users, Mail, Phone, 
   UserRound, VenusAndMars, BookOpen, School, HeartHandshake, Link 
 } from "lucide-react";
 
@@ -114,22 +114,17 @@ export const CreateUserPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose:
     if (role === 'Student') {
       const selectedGrade = grades.find(grade => String(grade.id) === String(selectedGradeId))
 
-      console.log(selectedGrade)
-      console.log(typeof(selectedGrade))
-
       finalPayload.role = 3;
       finalPayload.student_profile = {
-         ...student_profile, 
-         grade: Number(selectedGradeId),
-         name: selectedGrade?.name,
-         section: selectedGrade?.section,
+          ...student_profile, 
+          grade: Number(selectedGradeId),
+          name: selectedGrade?.name,
+          section: selectedGrade?.section,
       };
     } else {
       finalPayload.role = 2;
       finalPayload.teacher_profile = teacher_profile;
     }
-
-    console.log(finalPayload)
 
     openDecidePopup({
       question: `Create ${role} ${finalPayload.first_name} ${finalPayload.last_name} ?`,
@@ -183,73 +178,63 @@ export const CreateUserPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose:
   const roleColor = role === 'Teacher' ? 'info' : 'primary';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface/90 backdrop-blur-sm">
-      <form onSubmit={handleCreation} className="w-full max-w-3xl overflow-hidden">
-        
-        <div className="flex justify-between items-center p-3 border-2 border-light/10 bg-surface rounded-3xl">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-2xl ${role === 'Teacher' ? 'bg-info/10 text-info' : 'bg-primary/10 text-primary'}`}>
-                <UserRoundPlus size={24} strokeWidth={2.5} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface/60 backdrop-blur-sm">
+      <form onSubmit={handleCreation} className="w-full max-w-2xl bg-surface/50 border-2 border-light/10 rounded-4xl shadow-2xl shadow-primary/5 flex flex-col max-h-[90vh]">
+        <div className="px-8 pt-8 pb-4">
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className={`text-3xl font-extrabold ${role === 'Teacher' ? 'text-info' : 'text-primary'}`}>New {role}</h2>
+              <p className="text-text-muted mt-1 font-medium">Please enter the details to register</p>
             </div>
-            <h2 className={`text-xl font-bold ${role === 'Teacher' ? 'text-info' : 'text-primary'}`}>Create New {role}</h2>
+            <button type="button" onClick={handleClose} className="p-2 hover:bg-failure/20 hover:text-failure rounded-full text-text-muted transition-all hover:rotate-90 duration-300 hover:cursor-pointer"><X size={24} strokeWidth={3}/></button>
           </div>
-          <button type="button" onClick={handleClose} className="p-2 hover:bg-failure/10 hover:text-failure text-text-muted rounded-full transition-all hover:rotate-90 cursor-pointer">
-            <X size={20} strokeWidth={3} />
-          </button>
         </div>
 
-        <div className="px-2 pt-4">
+        <div className="px-8 mb-4">
           <div className="flex gap-2 p-1 rounded-2xl border-2 border-light/10">
             <button type="button" onClick={() => setRole('Student')} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold transition-all cursor-pointer ${role === 'Student' ? 'bg-primary/35 text-primary' : 'text-text-muted hover:bg-primary/10'}`}><Users size={20} strokeWidth={3}/> Student</button>
             <button type="button" onClick={() => setRole('Teacher')} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold transition-all cursor-pointer ${role === 'Teacher' ? 'bg-info/35 text-info' : 'text-text-muted hover:bg-info/10'}`}><GraduationCap size={20} strokeWidth={3}/> Teacher</button>
           </div>
         </div>
 
-        <div className="p-5 space-y-5 max-h-[60vh] md:overflow-y-visible overflow-y-auto">
+        <div className="px-8 pb-8 space-y-3 overflow-y-auto md:overflow-y-visible flex-1">
+          <div className="space-y-3">
+            <h3 className="text-sm uppercase tracking-widest font-bold text-text-muted/70 pl-1">Personal Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <CustomInput label="First Name" name="first_name" value={formData.first_name} onChange={handleInputChange} icon={UserRound} placeholder="First Name" roleColor={roleColor} />
-                <CustomInput label="Middle Name" name="middle_name" value={formData.middle_name} onChange={handleInputChange} placeholder="Middle" roleColor={roleColor} />
-                <CustomInput label="Last Name" name="last_name" value={formData.last_name} onChange={handleInputChange} placeholder="Last" roleColor={roleColor} />
+              <CustomInput label="First Name" name="first_name" value={formData.first_name} onChange={handleInputChange} icon={UserRound} placeholder="Enter first name" roleColor={roleColor} />
+              <CustomInput label="Middle Name" name="middle_name" value={formData.middle_name} onChange={handleInputChange} placeholder="Enter middle name" roleColor={roleColor} />
+              <CustomInput label="Last Name" name="last_name" value={formData.last_name} onChange={handleInputChange} placeholder="Enter last name" roleColor={roleColor} />
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <CustomInput label="Email Address" name="email" value={formData.email} onChange={handleInputChange} icon={Mail} placeholder="email@domain.com" type="email" roleColor={roleColor} />
-                <CustomDropdown label="Gender" icon={VenusAndMars} value={gender} onChange={setGender} className="w-full" options={['Male', 'Female', 'Other']} />
+              <CustomInput label="Email Address" name="email" value={formData.email} onChange={handleInputChange} icon={Mail} placeholder="Enter email" type="email" roleColor={roleColor} />
+              <CustomDropdown label="Gender" icon={VenusAndMars} value={gender} onChange={setGender} className="w-full" options={['Male', 'Female', 'Other']} />
             </div>
+          </div>
 
-            <div className="pt-3 border-t border-light/10">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {role === 'Teacher' ? (
-                        <>
-                            {/* Teacher contact number */}
-                            <CustomInput label="Contact No." name="teacher_profile.contact_number" value={formData.teacher_profile?.contact_number} onChange={handleInputChange} icon={Phone} placeholder="Contact" roleColor="info" />
-                            {/* specialization */}
-                            <CustomInput label="Specialization" name="teacher_profile.specialization" value={formData.teacher_profile?.specialization} onChange={handleInputChange} icon={BookOpen} placeholder="Subject" roleColor="info" />
-                            {/* qualification */}
-                            <CustomInput label="Qualification" name="teacher_profile.qualification" value={formData.teacher_profile?.qualification} onChange={handleInputChange} icon={GraduationCap} placeholder="Degree" className="md:col-span-2" roleColor="info" />
-                        </>
-                    ) : (
-                        <>
-                            <CustomDropdown 
-                              label="Assign Grade" 
-                              icon={School} 
-                              value={selectedGradeId} 
-                              onChange={setSelectedGradeId} 
-                              className="w-full"
-                              options={gradeOptions}
-                            />
-                            <CustomInput label="Guardian Name" name="student_profile.guardian_name" value={formData.student_profile?.guardian_name} onChange={handleInputChange} icon={HeartHandshake} placeholder="Name" roleColor="primary" />
-                            <CustomInput label="Guardian Relation" name="student_profile.guardian_relation" value={formData.student_profile?.guardian_relation} onChange={handleInputChange} icon={Link} placeholder="Relation" roleColor="primary" />
-                            <CustomInput label="Guardian Contact" name="student_profile.guardian_contact" value={formData.student_profile?.guardian_contact} onChange={handleInputChange} icon={Phone} placeholder="Phone" roleColor="primary" />
-                        </>
-                    )}
-                </div>
+          <div className="space-y-3">
+            <h3 className="text-sm uppercase tracking-widest font-bold text-text-muted/70 pl-1">{role === 'Teacher' ? 'Professional Information' : 'Academic & Guardian Info'}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {role === 'Teacher' ? (
+                <>
+                  <CustomInput label="Contact No." name="teacher_profile.contact_number" value={formData.teacher_profile?.contact_number} onChange={handleInputChange} icon={Phone} placeholder="Enter contact number" roleColor="info" />
+                  <CustomInput label="Specialization" name="teacher_profile.specialization" value={formData.teacher_profile?.specialization} onChange={handleInputChange} icon={BookOpen} placeholder="Enter subject specialization" roleColor="info" />
+                  <CustomInput label="Qualification" name="teacher_profile.qualification" value={formData.teacher_profile?.qualification} onChange={handleInputChange} icon={GraduationCap} placeholder="Enter highest level of Degree" className="md:col-span-2" roleColor="info" />
+                </>
+              ) : (
+                <>
+                  <CustomDropdown label="Assign Grade" icon={School} value={selectedGradeId} onChange={setSelectedGradeId} className="w-full" options={gradeOptions} />
+                  <CustomInput label="Guardian Name" name="student_profile.guardian_name" value={formData.student_profile?.guardian_name} onChange={handleInputChange} icon={HeartHandshake} placeholder="Enter guardian name" roleColor="primary" />
+                  <CustomInput label="Guardian Relation" name="student_profile.guardian_relation" value={formData.student_profile?.guardian_relation} onChange={handleInputChange} icon={Link} placeholder="Enter guardian relation" roleColor="primary" />
+                  <CustomInput label="Guardian Contact" name="student_profile.guardian_contact" value={formData.student_profile?.guardian_contact} onChange={handleInputChange} icon={Phone} placeholder="Enter guardian's contact" roleColor="primary" />
+                </>
+              )}
             </div>
+          </div>
         </div>
 
-        <div className="p-2 border-2 rounded-3xl border-light/5 flex gap-3 bg-light/5">
-          <Button label="Cancel" onClick={handleClose} variant='failure' className='flex-1' />
-          <FormButton type="submit" isLoading={isLoading} variant={role === 'Teacher' ? 'info' : 'primary'} className='flex-2'>Create {role}</FormButton>
+        <div className="p-6 border-light/10 flex gap-4 pt-1 bg-transparent">
+          <Button label="Cancel" onClick={handleClose} variant='failure' className='flex-1 py-3' />
+          <FormButton type="submit" isLoading={isLoading} variant={role === 'Teacher' ? 'info' : 'primary'} className='flex-2 py-3'>Create {role}</FormButton>
         </div>
       </form>
       <DecidePopup />

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { X, Settings2, Plus, School, UserRound } from "lucide-react";
+import { X, School, UserRound } from "lucide-react";
 
 import { CustomDropdown } from '../../components/Custom/customDropdown';
 import { FormButton } from '../../components/Buttons/formButton';
@@ -113,101 +113,96 @@ export const ConfigureSubjectPopup = ({ isOpen, onClose, subject }: ConfigureSub
 
     return (
         <Portal>
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface/90 backdrop-blur-sm">
-                <div className="w-full max-w-3xl flex flex-col gap-4">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface/60 backdrop-blur-sm">
+                <div className="w-full max-w-2xl bg-surface/50 border-2 border-light/10 rounded-4xl shadow-2xl shadow-primary/5 flex flex-col max-h-[90vh]">
                     
-                    <div className="flex justify-between items-center p-3 border-2 border-light/10 rounded-3xl bg-surface">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-2xl bg-primary/10 text-primary transition-colors duration-300">
-                                <Settings2 size={24} strokeWidth={2.5} />
-                            </div>
-                            <h2 className="text-xl font-bold text-primary">Configure Subject</h2>
+                    <div className="px-8 pt-6 pb-2">
+                        <div className="flex justify-between items-center">
+                            <h2 className="text-2xl font-extrabold text-primary h-full">Configure Subject</h2>
+                            <button type="button" onClick={onClose} className="p-2 hover:bg-failure/20 hover:text-failure rounded-full text-text-muted transition-all hover:rotate-90 duration-300 hover:cursor-pointer">
+                                <X size={24} strokeWidth={3} />
+                            </button>
                         </div>
-                        <button type="button" onClick={onClose} className="p-2 hover:bg-failure/10 hover:text-failure text-text-muted rounded-full transition-all duration-300 cursor-pointer hover:rotate-180 ">
-                            <X size={20} strokeWidth={3} />
-                        </button>
                     </div>
 
-                    <div className="flex flex-col items-between">
-                        <div className="px-2">
-                            <div className="p-3 rounded-2xl uppercase border border-light/10 text-center font-bold text-lg bg-primary/10 text-primary">
+                    <div className="px-8 pb-4 space-y-5 flex-1">
+                        <div className="">
+                            <div className="p-1 rounded-2xl uppercase border border-light/10 text-center font-bold text-lg bg-primary/10 text-primary">
                                 {subject.name}
                             </div>
                         </div>
 
-                        <div className="p-5 space-y-2">
-                            <div>
-                                <h3 className="text-sm font-bold text-text-muted uppercase tracking-widest mb-2">Current Configurations</h3>
-                                <div className="space-y-3 h-[33vh] sm:h-[46vh] overflow-y-auto border-2 border-dashed border-light/10 rounded-3xl p-2">
-                                    {assignSubs.length > 0 ? (
-                                        assignSubs.map(a => {
-                                            const gradeData = grades.find(g => g.id === a.grade);
-                                            const gradeLabel = gradeData ? `${gradeData.name} "${gradeData.section}"` : "Unknown Class";
-                                            
-                                            return (
-                                                <div key={a.id} className="flex justify-between items-center p-4 bg-light/5 border border-light/10 rounded-2xl group hover:border-primary/50 transition-all">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center text-primary border border-light/10">
-                                                            <School size={20} />
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-bold text-text-heading">{gradeLabel}</p>
-                                                            <p className="text-sm text-text-muted flex items-center gap-1">
-                                                                <UserRound size={14} /> {a.teacher_name || "No Teacher"}
-                                                            </p>
-                                                        </div>
+                        <div>
+                            <h3 className="text-sm font-bold text-text-muted uppercase tracking-widest mb-2">Current Configurations</h3>
+                            <div className="space-y-3 h-[33vh] sm:h-[46vh] overflow-y-auto border-2 border-dashed border-light/10 rounded-3xl p-2">
+                                {assignSubs.length > 0 ? (
+                                    assignSubs.map(a => {
+                                        const gradeData = grades.find(g => g.id === a.grade);
+                                        const gradeLabel = gradeData ? `${gradeData.name} "${gradeData.section}"` : "Unknown Class";
+                                        
+                                        return (
+                                            <div key={a.id} className="flex justify-between items-center p-4 bg-light/5 border border-light/10 rounded-2xl group hover:border-primary/50 transition-all">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center text-primary border border-light/10">
+                                                        <School size={20} />
                                                     </div>
-                                                    <button 
-                                                        onClick={() => handleDelete(a.id!)}
-                                                        className="p-2 text-text-muted hover:text-failure hover:bg-failure/10 rounded-full transition-all duration:300 cursor-pointer hover:rotate-270"
-                                                    >
-                                                        <X size={25} strokeWidth={3} />
-                                                    </button>
+                                                    <div>
+                                                        <p className="font-bold text-text-heading">{gradeLabel}</p>
+                                                        <p className="text-sm text-text-muted flex items-center gap-1">
+                                                            <UserRound size={14} /> {a.teacher_name || "No Teacher"}
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                            );
-                                        })
-                                    ) : (
-                                        <div className="flex items-center justify-center text-center py-10 h-full">
-                                            <p className="text-text-muted font-medium italic">No active assignments for this subject.</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="pt-1">
-                                <h3 className="text-sm font-bold text-text-muted uppercase tracking-widest mb-4">Add New Configuration</h3>
-                                <form onSubmit={handleAddAssignment} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <CustomDropdown 
-                                        label="Select Class" 
-                                        icon={School} 
-                                        value={selectedGrade} 
-                                        onChange={setSelectedGrade} 
-                                        className='w-full'
-                                        options={gradeOptions} 
-                                    />
-                                    <CustomDropdown 
-                                        label="Assign Teacher" 
-                                        icon={UserRound} 
-                                        value={selectedTeacher} 
-                                        onChange={setSelectedTeacher} 
-                                        className='w-full'
-                                        options={teacherOptions} 
-                                    />
-                                </form>
+                                                <button 
+                                                    onClick={() => handleDelete(a.id!)}
+                                                    className="p-2 text-text-muted hover:text-failure hover:bg-failure/20 rounded-full transition-all duration-300 cursor-pointer hover:rotate-90"
+                                                >
+                                                    <X size={23} strokeWidth={3} />
+                                                </button>
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    <div className="flex items-center justify-center text-center py-10 h-full">
+                                        <p className="text-text-muted font-medium italic">No active assignments for this subject.</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
-                        <div className="p-2 border-2 border-light/10 flex gap-3 bg-light/5 rounded-3xl">
-                            <Button label="Close" onClick={onClose} variant='failure' className='flex-1' />
-                            <FormButton 
-                                onClick={handleAddAssignment}
-                                isLoading={isLoading} 
-                                variant='primary' 
-                                className='flex-2'
-                            >
-                                <Plus size={20} className="mr-2" /> Assign to Class
-                            </FormButton>
+                        <div className="space-y-3">
+                            <h3 className="text-sm font-bold text-text-muted uppercase tracking-widest">Add New Configuration</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <CustomDropdown 
+                                    label="Select Class" 
+                                    icon={School} 
+                                    value={selectedGrade} 
+                                    onChange={setSelectedGrade} 
+                                    className='w-full'
+                                    options={gradeOptions} 
+                                />
+                                <CustomDropdown 
+                                    label="Assign Teacher" 
+                                    icon={UserRound} 
+                                    value={selectedTeacher} 
+                                    onChange={setSelectedTeacher} 
+                                    className='w-full'
+                                    options={teacherOptions} 
+                                />
+                            </div>
                         </div>
+                    </div>
+
+                    <div className="p-6 flex gap-4 pt-1 bg-transparent">
+                        <Button label="Close" onClick={onClose} variant='failure' className='flex-1 py-3' />
+                        <FormButton 
+                            onClick={handleAddAssignment}
+                            isLoading={isLoading} 
+                            variant='primary' 
+                            className='flex-2 py-3'
+                        >
+                            Assign to Class
+                        </FormButton>
                     </div>
                 </div>
                 <DecidePopup />

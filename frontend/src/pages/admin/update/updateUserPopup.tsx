@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  X, UserRoundPen, GraduationCap, Mail, Phone, 
+  X, GraduationCap, Mail, Phone, 
   UserRound, VenusAndMars, BookOpen, School, HeartHandshake, Link, KeyRound 
 } from "lucide-react";
 
@@ -174,28 +174,25 @@ export const UpdateUserPopup = ({ isOpen, onClose, user }: UpdateUserPopupProps)
 
   return (
     <Portal>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface/90 backdrop-blur-sm">
-        <form onSubmit={handleUpdate} noValidate className="w-full max-w-3xl overflow-hidden">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface/60 backdrop-blur-sm">
+        <form onSubmit={handleUpdate} noValidate className="w-full max-w-2xl bg-surface/50 border-2 border-light/10 rounded-4xl shadow-2xl shadow-primary/5 flex flex-col max-h-[90vh]">
           
-          <div className="flex justify-between items-center p-3 border-2 border-light/10 rounded-3xl bg-surface">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-2xl transition-colors duration-300 ${role === 'Teacher' ? 'bg-info/10 text-info' : 'bg-primary/10 text-primary'}`}>
-                  <UserRoundPen size={24} strokeWidth={2.5} />
+          <div className="px-8 pt-8 pb-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <h2 className={`text-3xl font-extrabold ${role === 'Teacher' ? 'text-info' : 'text-primary'}`}>Update {role}</h2>
               </div>
-              <h2 className={`text-xl font-bold transition-colors duration-300 ${role === 'Teacher' ? 'text-info' : 'text-primary'}`}>Update {role} Details</h2>
+              <button type="button" onClick={handleClose} className="p-2 hover:bg-failure/20 hover:text-failure rounded-full text-text-muted transition-all hover:rotate-90 duration-300 hover:cursor-pointer"><X size={24} strokeWidth={3}/></button>
             </div>
-            <button type="button" onClick={handleClose} className="p-2 hover:bg-failure/10 hover:text-failure text-text-muted rounded-full transition-all duration-300 cursor-pointer hover:rotate-180 ">
-              <X size={20} strokeWidth={3} />
-            </button>
           </div>
 
-          <div className="px-1/2 pt-3">
+          <div className="px-8 mb-4">
             <div className={`p-3 rounded-2xl uppercase border border-light/10 text-center font-bold text-lg ${role === 'Teacher' ? 'bg-info/10 text-info' : 'bg-primary/10 text-primary'}`}>
                 {user?.username}
             </div>
           </div>
 
-          <div className="p-5 space-y-5 max-h-[65vh] overflow-y-auto custom-scrollbar">
+          <div className="px-8 pb-8 space-y-8 overflow-y-auto md:overflow-y-visible flex-1">
               <div className="flex items-center gap-4 py-2 border-b border-light/10 pb-4">
                 <label className="text-sm font-semibold text-text-muted">Account Status:</label>
                 <button
@@ -208,28 +205,32 @@ export const UpdateUserPopup = ({ isOpen, onClose, user }: UpdateUserPopupProps)
                 <span className={`font-bold text-sm ${formData.is_active ? 'text-success' : 'text-failure'}`}>{formData.is_active ? "ACTIVE" : "INACTIVE"}</span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <CustomInput label="First Name" name="first_name" value={formData.first_name} onChange={handleInputChange} icon={UserRound} placeholder="Enter first name" roleColor={roleColor} />
-                  <CustomInput label="Middle Name" name="middle_name" value={formData.middle_name} onChange={handleInputChange} placeholder="Enter middle name" roleColor={roleColor} />
-                  <CustomInput label="Last Name" name="last_name" value={formData.last_name} onChange={handleInputChange} placeholder="Enter Last name" roleColor={roleColor} />
+              <div className="space-y-3">
+                <h3 className="text-sm uppercase tracking-widest font-bold text-text-muted/70 pl-1">Personal Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <CustomInput label="First Name" name="first_name" value={formData.first_name} onChange={handleInputChange} icon={UserRound} placeholder="Enter first name" roleColor={roleColor} />
+                    <CustomInput label="Middle Name" name="middle_name" value={formData.middle_name} onChange={handleInputChange} placeholder="Enter middle name" roleColor={roleColor} />
+                    <CustomInput label="Last Name" name="last_name" value={formData.last_name} onChange={handleInputChange} placeholder="Enter Last name" roleColor={roleColor} />
+                </div>
+
+                <div>
+                    <CustomInput label="Email Address" name="email" value={formData.email} onChange={handleInputChange} icon={Mail} placeholder="Enter email address" type="email" roleColor={roleColor} />
+                </div>
+
+                <div className = "grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <CustomDropdown label="Gender" icon={VenusAndMars} value={gender} onChange={setGender} className='w-full' options={['Male', 'Female', 'Other']} />
+                  <CustomInput label="New Password" name="password" value={password} onChange={(e: any) => setPassword(e.target.value)} icon={KeyRound} placeholder="Type a new password" type="password" roleColor={roleColor} />
+                </div>
               </div>
 
-              <div>
-                  <CustomInput label="Email Address" name="email" value={formData.email} onChange={handleInputChange} icon={Mail} placeholder="enter email address" type="email" roleColor={roleColor} />
-              </div>
-
-              <div className = "grid grid-cols-1 md:grid-cols-2 gap-4">
-                <CustomDropdown label="Gender" icon={VenusAndMars} value={gender} onChange={setGender} className='w-full' options={['Male', 'Female', 'Other']} />
-                <CustomInput label="New Password" name="password" value={password} onChange={(e: any) => setPassword(e.target.value)} icon={KeyRound} placeholder="Type a new password" type="password" roleColor={roleColor} />
-              </div>
-
-              <div className="pt-4 border-t border-light/10">
+              <div className="space-y-3">
+                  <h3 className="text-sm uppercase tracking-widest font-bold text-text-muted/70 pl-1">{role === 'Teacher' ? 'Professional Information' : 'Academic & Guardian Info'}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {role === 'Teacher' ? (
                           <>
-                              <CustomInput label="Contact No." name="teacher_profile.contact_number" value={formData.teacher_profile?.contact_number} onChange={handleInputChange} icon={Phone} placeholder="+977" roleColor="info" />
-                              <CustomInput label="Specialization" name="teacher_profile.specialization" value={formData.teacher_profile?.specialization} onChange={handleInputChange} icon={BookOpen} placeholder="Subject" roleColor="info" />
-                              <CustomInput label="Qualification" name="teacher_profile.qualification" value={formData.teacher_profile?.qualification} onChange={handleInputChange} icon={GraduationCap} placeholder="Degree" className="md:col-span-2" roleColor="info" />
+                              <CustomInput label="Contact No." name="teacher_profile.contact_number" value={formData.teacher_profile?.contact_number} onChange={handleInputChange} icon={Phone} placeholder="Enter contact number" roleColor="info" />
+                              <CustomInput label="Specialization" name="teacher_profile.specialization" value={formData.teacher_profile?.specialization} onChange={handleInputChange} icon={BookOpen} placeholder="Enter subject specialization" roleColor="info" />
+                              <CustomInput label="Qualification" name="teacher_profile.qualification" value={formData.teacher_profile?.qualification} onChange={handleInputChange} icon={GraduationCap} placeholder="Enter highest level of degree" className="md:col-span-2" roleColor="info" />
                           </>
                       ) : (
                           <>
@@ -241,18 +242,18 @@ export const UpdateUserPopup = ({ isOpen, onClose, user }: UpdateUserPopupProps)
                                   className='w-full'
                                   options={classOptions}
                               />
-                              <CustomInput label="Guardian Name" name="student_profile.guardian_name" value={formData.student_profile?.guardian_name} onChange={handleInputChange} icon={HeartHandshake} placeholder="Name" roleColor="primary" />
-                              <CustomInput label="Guardian Relation" name="student_profile.guardian_relation" value={formData.student_profile?.guardian_relation} onChange={handleInputChange} icon={Link} placeholder="Relation" roleColor="primary" />
-                              <CustomInput label="Guardian Contact" name="student_profile.guardian_contact" value={formData.student_profile?.guardian_contact} onChange={handleInputChange} icon={Phone} placeholder="Phone" roleColor="primary" />
+                              <CustomInput label="Guardian Name" name="student_profile.guardian_name" value={formData.student_profile?.guardian_name} onChange={handleInputChange} icon={HeartHandshake} placeholder="Enter guardian's name" roleColor="primary" />
+                              <CustomInput label="Guardian Relation" name="student_profile.guardian_relation" value={formData.student_profile?.guardian_relation} onChange={handleInputChange} icon={Link} placeholder="Enter guardian's relation" roleColor="primary" />
+                              <CustomInput label="Guardian Contact" name="student_profile.guardian_contact" value={formData.student_profile?.guardian_contact} onChange={handleInputChange} icon={Phone} placeholder="Enter guardian's contact" roleColor="primary" />
                           </>
                       )}
                   </div>
               </div>
           </div>
 
-          <div className="p-2 border-2 border-light/5 rounded-3xl flex gap-3 bg-light/5">
-            <Button label="Cancel" onClick={handleClose} variant='failure' className='flex-1' />
-            <FormButton type="submit" isLoading={isLoading} variant={role === 'Teacher' ? 'info' : 'primary'} className='flex-2'>
+          <div className="p-6 border-light/10 flex gap-4 pt-1 bg-transparent">
+            <Button label="Cancel" onClick={handleClose} variant='failure' className='flex-1 py-3' />
+            <FormButton type="submit" isLoading={isLoading} variant={role === 'Teacher' ? 'info' : 'primary'} className='flex-2 py-3'>
                 Update {role}
             </FormButton>
           </div>
