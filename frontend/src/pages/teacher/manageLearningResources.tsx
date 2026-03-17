@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Loader2, BookMarked, FolderPlus, LayersPlus } from "lucide-react";
+import { Loader2, Folders, Layers, FolderPlus, LayersPlus } from "lucide-react";
 
 import { CardButton } from "../../components/Buttons/cardButton"; 
 import { CustomDropdown } from '../../components/Custom/customDropdown';
@@ -9,9 +9,10 @@ import { CreateFolderPopup } from "./create/createFolderPopup";
 import { CreateFlashcardDeckPopup } from "./create/createFlashcardDeckPopup";
 import { UpdateFolderPopup } from "./update/updateFolderPopup";
 import { UpdateFlashcardDeckPopup } from "./update/updateFlashcardDeckPopup";
-import { ManageResources } from "./manageResources";
-import { ManageFlashcards } from "./manageFlashcards";
+import { ManageResources } from "./manage/manageResources";
+import { ManageFlashcards } from "./manage/manageFlashcards";
 import { FlashcardDisplayPopup } from "../../components/flashcardDisplayPopup";
+import { BackToTop } from "../../components/Custom/backToTop";
 
 import { type AppDispatch, type RootState } from "../../store";
 import { fetchGrades } from "../../features/organization/gradeSlice";
@@ -21,6 +22,7 @@ import { FlashcardDeckCard } from "../../components/Cards/flashcardDeckCard";
 
 export const ManageLearningResources = () => {
     const dispatch = useDispatch<AppDispatch>();
+    const scrollRef = useRef<HTMLDivElement>(null);
     const { grades } = useSelector((state: RootState) => state.grade);
     const { folders, isLoading: isResLoading } = useSelector((state: RootState) => state.resource);
     const { flashcard_decks, isLoading: isDeckLoading } = useSelector((state: RootState) => state.flashcard);
@@ -94,7 +96,7 @@ export const ManageLearningResources = () => {
                 <div className="bg-surface border-2 border-light/3 rounded-2xl mb-2 flex flex-col lg:flex-row justify-between items-center p-3 gap-3">
                     <div className="flex justify-between w-full xl:w-[53%]">
                         <div className="flex w-[20%] items-center gap-2 px-2 text-primary">
-                            <BookMarked size={25} />
+                            {sectionMode === 'resources' ? < Folders/>: <Layers />}
                         </div>
                         <div className="flex gap-2 w-[80%] 2xl:w-[35%]">
                             <span className="text-text-muted font-semibold flex items-center">Grade:</span>
@@ -124,7 +126,10 @@ export const ManageLearningResources = () => {
                     </div>
                 </div>
 
-                <div className="sm:p-5 p-2 border-2 border-light/3 bg-surface h-[61.5vh] lg:h-[70vh] overflow-auto rounded-2xl mx-auto">
+                <div 
+                    className="sm:p-5 p-2 border-2 border-light/3 bg-surface h-[62.7vh] lg:h-[70vh] overflow-auto rounded-2xl mx-auto relative"
+                    ref={scrollRef}
+                >
                     {isLoading ? (
                         <div className="flex flex-col items-center h-full gap-3 text-text-muted justify-center">
                             <Loader2 className="animate-spin text-primary" size={40} />
@@ -135,7 +140,7 @@ export const ManageLearningResources = () => {
                             <p className="text-md font-bold">Select a class to manage content.</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 pb-15">
                             <CardButton
                                 onClick={() => sectionMode === 'resources' ? setIsCreateFolderOpen(true) : setIsCreateDeckOpen(true)}
                                 Icon={sectionMode === 'resources' ? FolderPlus : LayersPlus}
@@ -162,6 +167,11 @@ export const ManageLearningResources = () => {
                             )}
                         </div>
                     )}
+                    
+                    {/* The sticky container pins the button to the bottom of the scrollable area */}
+                    <div className="sticky bottom-0 left-0 w-full flex justify-end p-2 z-50">
+                        <BackToTop scrollRef={scrollRef} />
+                    </div>
                 </div>
             </section>
 
