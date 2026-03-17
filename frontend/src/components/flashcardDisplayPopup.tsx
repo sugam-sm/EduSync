@@ -16,14 +16,14 @@ const FlashcardFace = ({ card, isFlipped }: any) => {
                     transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)"
                 }}
             >
-                <div className="absolute inset-0 flex items-center justify-center p-8 text-center text-xl font-medium text-primary bg-surface border-2 border-primary rounded-2xl backface-hidden">
+                <div className="absolute inset-0 flex items-center justify-center text-center text-xl font-medium text-primary bg-surface border-2 border-primary rounded-2xl backface-hidden overflow-hidden">
                     {card.front_image ? (
-                        <img src={card.front_image} className="max-h-full object-cover" />
+                        <img src={card.front_image} className="w-full h-full object-cover" />
                     ) : (
                         <p>{card.front}</p>
                     )}
                 </div>
-                <div className="absolute inset-0 flex items-center justify-center p-8 text-center text-lg font-medium text-primary bg-surface border-2 border-primary rounded-2xl backface-hidden transform-[rotateY(180deg)]">
+                <div className="absolute inset-0 flex items-center justify-center text-center text-lg font-medium text-primary bg-surface border-2 border-primary rounded-2xl backface-hidden transform-[rotateY(180deg)]">
                     {card.back_image ? (
                         <img src={card.back_image} className="max-h-full object-cover" />
                     ) : (
@@ -84,13 +84,13 @@ export const FlashcardDisplayPopup = ({ isOpen, onClose, deck }: FlashcardDispla
     return (
         <Portal>
             <div className="fixed inset-0 z-50 w-full flex items-center justify-center p-4 bg-surface/90 backdrop-blur-sm">
-                <div className="w-full sm:w-[70%] md:w-[60%] lg:w-[50%] xl:w-[40%] 2xl:w-[30%] rounded-3xl p-6">
+                <div className="flex flex-col justify-center w-full sm:w-[70%] md:w-[60%] lg:w-[50%] xl:w-[40%] 2xl:w-[40%]rounded-3xl p-6 h-full">
                     <div className='flex items-center justify-between p-3 border-3 border-light/10 rounded-2xl mb-6'>
                         <h2 className="text-lg font-bold text-primary text-center">{deck.title}</h2>
-                        <button onClick={onClose} className="p-2 text-text-muted hover:text-failure transition-all hover:rotate-270 duration-300 hover:bg-failure/30 rounded-full cursor-pointer"><X size={24} strokeWidth={2.5}/></button>
+                        <button onClick={onClose} className="p-2 text-text-muted hover:text-failure transition-all hover:rotate-90 duration-300 hover:bg-failure/20 rounded-full cursor-pointer"><X size={24} strokeWidth={2.5}/></button>
                     </div>
 
-                    <div className="relative w-full h-80">dock
+                    <div className="relative w-full h-[40%] xl:h-[60%]">
                         
                         {outgoingIndex !== null && (
                             <div className="absolute inset-0 transition-all duration-200 ease-in-out opacity-0 scale-50 z-10">
