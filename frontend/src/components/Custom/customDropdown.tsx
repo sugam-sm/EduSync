@@ -30,17 +30,17 @@ export const CustomDropdown = ({
   };
 
   return (
-    <div className={`relative flex flex-col justify-end ${className}`} ref={dropdownRef}>
+    <div className={`relative flex flex-col justify-end gap-0.5 ${className}`} ref={dropdownRef}>
       {label && (
-        <label className="text-[10px] uppercase font-bold text-text-muted tracking-wider ml-1 mb-1 block">
+        <label className="text-[11px] uppercase font-bold text-text-muted tracking-wider ml-1">
           {label}
         </label>
       )}
 
       {isOpen && (
         <div
-          className={`absolute top-full mt-1 z-999 bg-surface/80 border-2 border-light/10 rounded-xl backdrop-blur-sm overflow-hidden duration-200 ${className}`} >
-          <div className="max-h-33 overflow-y-auto custom-scrollbar">
+          className={`absolute top-full mt-1 z-999 bg-surface/80 border-2 border-light/10 rounded-xl backdrop-blur-sm overflow-hidden duration-300 ${className}`} >
+          <div className="max-h-33 overflow-y-auto">
             {options.length > 0 ? (
               options.map((opt: any, index: number) => {
                 const label = opt.label ?? opt;
@@ -49,7 +49,7 @@ export const CustomDropdown = ({
                   <div
                     key={index}
                     onClick={() => { onChange(val); setIsOpen(false); }}
-                    className="px-4 py-3 text-sm font-bold text-primary hover:bg-primary hover:text-white transition-colors cursor-pointer"
+                    className="px-4 py-3 text-sm font-bold text-primary hover:bg-primary hover:text-white transition-colors duration-300 cursor-pointer"
                   >
                     {label}
                   </div>
@@ -66,7 +66,7 @@ export const CustomDropdown = ({
 
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center justify-between bg-light/5 border-2 rounded-xl px-3 py-3 cursor-pointer transition-all ${isOpen ? 'border-primary' : 'border-light/10 hover:border-light/20'} ${className}`} >
+        className={`flex items-center justify-between bg-light/5 border-2 rounded-xl px-3 py-2.5 cursor-pointer transition-all ${isOpen ? 'border-primary' : 'border-light/10 hover:border-light/20'} ${className}`} >
         <div className="flex items-center h-5 gap-2">
           {Icon && <Icon size={16} className="text-light/40" />}
           <span className="text-sm font-semibold text-text-muted">{getDisplayLabel()}</span>
