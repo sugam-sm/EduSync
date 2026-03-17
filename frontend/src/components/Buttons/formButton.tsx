@@ -16,13 +16,12 @@ export const FormButton = ({
   ...props 
 }: ButtonProps) => {
   
-  const baseStyles = "font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all duration-100 active:translate-y-1 text-lg hover:cursor-pointer disabled:opacity-70 disabled:cursor-pointer hover:shadow-sm";
+  const baseStyles = "font-bold py-3 rounded-2xl flex items-center justify-center gap-2 transition-all duration-100 active:translate-y-0.5 text-base hover:cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed hover:shadow-sm";
   
-  // Variant styles
   const variants = {
-    primary: "bg-primary/50 text-text-heading shadow-primary hover:bg-primary/80",
-    failure: "bg-failure/50 text-text-heading shadow-failure hover:bg-failure/80",
-    info: "bg-info/50 text-text-heading shadow-info hover:bg-info/80"
+    primary: "bg-primary/15 text-primary hover:bg-primary/50 hover:text-white border-2 border-primary/20",
+    failure: "bg-failure/15 text-failure hover:bg-failure/50 hover:text-white border-2 border-failure/20",
+    info: "bg-info/15 text-info hover:bg-info/50 hover:text-white border-2 border-info/20"
   };
 
   return (
@@ -33,7 +32,7 @@ export const FormButton = ({
       {...props}
     >
       {isLoading ? (
-        <Loader className="animate-spin" size={28} strokeWidth={3} />
+        <Loader className="animate-spin" size={20} strokeWidth={2.5} />
       ) : (
         children
       )}

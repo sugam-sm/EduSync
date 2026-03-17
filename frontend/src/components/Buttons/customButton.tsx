@@ -19,11 +19,11 @@ export const Button = ({
   children
 }: CustomButtonProps) => {
   
-  const baseStyles = `flex gap-1 rounded-2xl justify-center items-center font-semibold px-3 py-2 cursor-pointer active:translate-y-0.5 transition-all duration-100 hover:shadow-backdrop-blur-2xl hover:shadow-sm`;
+  const baseStyles = `flex gap-2 rounded-2xl justify-center items-center font-bold px-3 py-3 cursor-pointer transition-all duration-100 outline-none active:translate-y-0.5 border-2 hover:cursor-pointer disabled:opacity-70 hover:shadow-sm`;
   
   const variants = {
-    'primary': "bg-primary/80 text-white  hover:shadow-primary hover:bg-primary/100",
-    'failure': "bg-failure/60 text-white  hover:shadow-failure hover:bg-failure/100"
+    'primary': "bg-primary/15 text-primary hover:bg-primary/50 hover:text-white border-primary/20",
+    'failure': "bg-failure/15 text-failure hover:bg-failure/50 hover:text-white border-failure/20"
   } 
 
   return (
@@ -32,8 +32,8 @@ export const Button = ({
       onClick={onClick}
       className={`${baseStyles} ${variants[variant]} ${className}`}
     >
-      {Icon && <Icon size={20} strokeWidth={3} />}
-      {label && <span>{label}</span>}
+      {Icon && <Icon size={20} strokeWidth={2.5} />}
+      {label && <span className="text-base">{label}</span>}
       {children}
     </button>
   );
