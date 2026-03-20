@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Loader2, Folders, Layers, FolderPlus, LayersPlus } from "lucide-react";
 
-import { CardButton } from "../../components/Buttons/cardButton"; 
+import { CardButton } from "../../components/Buttons/cardButton";
 import { CustomDropdown } from '../../components/Custom/customDropdown';
-import { ResourceFolderCard } from "../../components/Cards/resourceFolderCard";
+import { ResourceFolderCard } from "../../components/Cards/teacher/resourceFolderCard";
 import { CreateFolderPopup } from "./create/createFolderPopup";
 import { CreateFlashcardDeckPopup } from "./create/createFlashcardDeckPopup";
 import { UpdateFolderPopup } from "./update/updateFolderPopup";
@@ -18,7 +18,7 @@ import { type AppDispatch, type RootState } from "../../store";
 import { fetchGrades } from "../../features/organization/gradeSlice";
 import { fetchResourceFolders, type ResourceFolder } from "../../features/learning/resourceSlice";
 import { fetchFlashcardDecks, type FlashcardDeck } from "../../features/learning/flashcardSlice";
-import { FlashcardDeckCard } from "../../components/Cards/flashcardDeckCard";
+import { FlashcardDeckCard } from "../../components/Cards/teacher/flashcardDeckCard";
 
 export const ManageLearningResources = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -29,7 +29,7 @@ export const ManageLearningResources = () => {
 
     const [selectedGrade, setSelectedGrade] = useState<string | number>("All");
     const [sectionMode, setSectionMode] = useState<'resources' | 'flashcards'>('resources');
-    
+
     const [isCreateFolderPopupOpen, setIsCreateFolderOpen] = useState(false);
     const [isCreateDeckPopupOpen, setIsCreateDeckOpen] = useState(false);
     const [isUpdateFolderPopupOpen, setIsUpdateFolderOpen] = useState(false);
@@ -42,12 +42,12 @@ export const ManageLearningResources = () => {
     const [selectedDeck, setSelectedDeck] = useState<FlashcardDeck | null>(null);
 
     useEffect(() => { dispatch(fetchGrades()); }, [dispatch]);
-    useEffect(() => { 
+    useEffect(() => {
         if (selectedGrade !== "All") {
             if (sectionMode === 'resources') {
-                dispatch(fetchResourceFolders(selectedGrade));
+                dispatch(fetchResourceFolders({ grade_id: selectedGrade }));
             } else {
-                dispatch(fetchFlashcardDecks(selectedGrade));
+                dispatch(fetchFlashcardDecks({ grade_id: selectedGrade }));
             }
         }
     }, [dispatch, selectedGrade, sectionMode]);
@@ -81,7 +81,7 @@ export const ManageLearningResources = () => {
         label: `${grade.name} ${grade.section}`,
         value: grade.id!
     }));
-    
+
     const isLoading = sectionMode === 'resources' ? isResLoading : isDeckLoading;
 
     return (
@@ -96,29 +96,29 @@ export const ManageLearningResources = () => {
                 <div className="bg-surface border-2 border-light/3 rounded-2xl mb-2 flex flex-col lg:flex-row justify-between items-center p-3 gap-3">
                     <div className="flex justify-between w-full xl:w-[53%]">
                         <div className="flex w-[20%] items-center gap-2 px-2 text-primary">
-                            {sectionMode === 'resources' ? < Folders/>: <Layers />}
+                            {sectionMode === 'resources' ? < Folders size={30} strokeWidth={3} /> : <Layers size={30} strokeWidth={3} />}
                         </div>
                         <div className="flex gap-2 w-[80%] 2xl:w-[35%]">
                             <span className="text-text-muted font-semibold flex items-center">Grade:</span>
-                            <CustomDropdown 
-                                className="w-full" 
-                                value={selectedGrade} 
-                                onChange={setSelectedGrade} 
-                                options={gradeOptions} 
+                            <CustomDropdown
+                                className="w-full"
+                                value={selectedGrade}
+                                onChange={setSelectedGrade}
+                                options={gradeOptions}
                             />
                         </div>
                     </div>
                     <div className="flex w-full 2xl:w-[30%] gap-1 p-1 bg-light/5 rounded-xl border-2 border-light/15">
-                        <button 
-                            type="button" 
-                            onClick={() => setSectionMode('resources')} 
+                        <button
+                            type="button"
+                            onClick={() => setSectionMode('resources')}
                             className={`w-[50%] py-1.5 rounded-lg font-bold transition-all cursor-pointer ${sectionMode === 'resources' ? 'bg-primary/35 text-primary' : 'text-text-muted hover:bg-primary/10'}`}
                         >
                             Resources
                         </button>
-                        <button 
-                            type="button" 
-                            onClick={() => setSectionMode('flashcards')} 
+                        <button
+                            type="button"
+                            onClick={() => setSectionMode('flashcards')}
                             className={`w-[50%] py-1.5 rounded-lg font-bold transition-all cursor-pointer ${sectionMode === 'flashcards' ? 'bg-primary/35 text-primary' : 'text-text-muted hover:bg-primary/10'}`}
                         >
                             Flashcards
@@ -126,7 +126,7 @@ export const ManageLearningResources = () => {
                     </div>
                 </div>
 
-                <div 
+                <div
                     className="sm:p-5 p-2 border-2 border-light/3 bg-surface h-[62.7vh] lg:h-[70vh] overflow-auto rounded-2xl mx-auto relative"
                     ref={scrollRef}
                 >
@@ -147,17 +147,17 @@ export const ManageLearningResources = () => {
                             />
                             {sectionMode === 'resources' ? (
                                 folders.map((folder) => (
-                                    <ResourceFolderCard 
-                                        key={folder.id} 
-                                        folder={folder} 
-                                        onEdit={handleEditFolder} 
-                                        onModify={handleManageFolder} 
+                                    <ResourceFolderCard
+                                        key={folder.id}
+                                        folder={folder}
+                                        onEdit={handleEditFolder}
+                                        onModify={handleManageFolder}
                                     />
                                 ))
                             ) : (
                                 flashcard_decks.map((deck) => (
-                                    <FlashcardDeckCard 
-                                        key={deck.id} 
+                                    <FlashcardDeckCard
+                                        key={deck.id}
                                         deck={deck}
                                         onEdit={handleEditDeck}
                                         onModify={handleManageDeck}
@@ -167,39 +167,38 @@ export const ManageLearningResources = () => {
                             )}
                         </div>
                     )}
-                    
-                    {/* The sticky container pins the button to the bottom of the scrollable area */}
+
                     <div className="sticky bottom-0 left-0 w-full flex justify-end p-2 z-50">
                         <BackToTop scrollRef={scrollRef} />
                     </div>
                 </div>
             </section>
 
-            <CreateFolderPopup isOpen={isCreateFolderPopupOpen} onClose={() => setIsCreateFolderOpen(false)} gradeId={selectedGrade}/>
-            <CreateFlashcardDeckPopup isOpen={isCreateDeckPopupOpen} onClose={() => setIsCreateDeckOpen(false)} gradeId={selectedGrade}/>
-            <UpdateFolderPopup isOpen={isUpdateFolderPopupOpen} onClose={() => {setIsUpdateFolderOpen(false); setSelectedFolder(null);}} folder={selectedFolder}/>
-            <UpdateFlashcardDeckPopup isOpen={isUpdateDeckPopupOpen} onClose={() => {setIsUpdateDeckOpen(false); setSelectedDeck(null);}} deck={selectedDeck}/>
+            <CreateFolderPopup isOpen={isCreateFolderPopupOpen} onClose={() => setIsCreateFolderOpen(false)} gradeId={selectedGrade} />
+            <CreateFlashcardDeckPopup isOpen={isCreateDeckPopupOpen} onClose={() => setIsCreateDeckOpen(false)} gradeId={selectedGrade} />
+            <UpdateFolderPopup isOpen={isUpdateFolderPopupOpen} onClose={() => { setIsUpdateFolderOpen(false); setSelectedFolder(null); }} folder={selectedFolder} />
+            <UpdateFlashcardDeckPopup isOpen={isUpdateDeckPopupOpen} onClose={() => { setIsUpdateDeckOpen(false); setSelectedDeck(null); }} deck={selectedDeck} />
 
             {selectedFolder && (
-                <ManageResources 
+                <ManageResources
                     isOpen={isManageResourcesOpen}
-                    onClose={() => {setIsManageResourcesOpen(false); setSelectedFolder(null);}} 
-                    folder={selectedFolder} 
+                    onClose={() => { setIsManageResourcesOpen(false); setSelectedFolder(null); }}
+                    folder={selectedFolder}
                 />
             )}
 
             {selectedDeck && (
-                <ManageFlashcards 
+                <ManageFlashcards
                     isOpen={isManageFlashcardsOpen}
-                    onClose={() => {setIsManageFlashcardsOpen(false); setSelectedDeck(null);}} 
-                    deck={selectedDeck} 
+                    onClose={() => { setIsManageFlashcardsOpen(false); setSelectedDeck(null); }}
+                    deck={selectedDeck}
                 />
             )}
 
             {selectedDeck && (
-                <FlashcardDisplayPopup 
+                <FlashcardDisplayPopup
                     isOpen={isDisplayPopupOpen}
-                    onClose={() => {setIsDisplayPopupOpen(false); setSelectedDeck(null);}}
+                    onClose={() => { setIsDisplayPopupOpen(false); setSelectedDeck(null); }}
                     deck={selectedDeck}
                 />
             )}
