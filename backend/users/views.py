@@ -1,4 +1,6 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, filters
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from .serializers import UserListSerializer, UserDetailSerializer, UserCreationSerializer, UserUpdateSerializer
 
@@ -12,17 +14,15 @@ class IsOrganizationAdmin(permissions.BasePermission):
         )
 
 class UserViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated, IsOrganizationAdmin]
+    permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
-        # Only show users belonging to the Admin's organization
         user = self.request.user
-        return User.objects.filter(
-            organization=user.organization,
-            role__role_name__in=['Teacher', 'Student']
-        ).select_related(
-            'role', 'teacher_profile', 'student_profile'
-        )
+        if user.role.role_name == "Administrator":
+            return User.objects.filter(organization=user.organization).exclude(role__role_name="Administrator")
+        elif user.role.role_name == "Teacher":
+            return User.objects.filter(organization=user.organization).exclude(role__role_name="Administrator")
+        return User.objects.none()
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -33,3 +33,20 @@ class UserViewSet(viewsets.ModelViewSet):
             return UserUpdateSerializer
         return UserDetailSerializer
 
+from .models import Student
+from .serializers import StudentSerializer
+
+class StudentViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = StudentSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        base_query = Student.objects.filter(user__organization=user.organization).select_related('user', 'grade')
+        
+        if user.role.role_name in ['Administrator', 'Teacher']:
+            grade_id = self.request.query_params.get('grade_id')
+            if grade_id:
+                return base_query.filter(grade_id=grade_id)
+            return base_query
+        return base_query.none()

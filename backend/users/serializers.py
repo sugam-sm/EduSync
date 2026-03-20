@@ -29,15 +29,18 @@ class TeacherSerializer(serializers.ModelSerializer):
         fields = ['contact_number', 'specialization', 'qualification']
 
 class StudentSerializer(serializers.ModelSerializer):
-    name = serializers.ReadOnlyField(source='grade.name')
+    fullname = serializers.ReadOnlyField(source='user.full_name')
+    username = serializers.ReadOnlyField(source='user.username')
+    grade_name = serializers.ReadOnlyField(source='grade.name')
     section = serializers.ReadOnlyField(source='grade.section')
     academic_year = serializers.ReadOnlyField(source='grade.academic_year')
 
     class Meta:
         model = Student
-        fields = ['grade', 'name', 'section', 'academic_year', 'guardian_name', 'guardian_relation', 'guardian_contact']
+        fields = ['user', 'username', 'fullname', 'grade', 'grade_name', 'section', 'academic_year', 'guardian_name', 'guardian_relation', 'guardian_contact']
         extra_kwargs = {
-            'grade': {'required': False}
+            'grade': {'required': False},
+            'user': {'read_only': True}
         }
 
 class UserListSerializer(serializers.ModelSerializer):
@@ -90,7 +93,8 @@ class UserCreationSerializer(serializers.ModelSerializer):
 
         teacher_data = attrs.get('teacher_profile')
         if teacher_data and 'contact_number' in teacher_data:
-            if Teacher.objects.filter(contact_number=teacher_data['contact_number']).exists():
+            contact = teacher_data['contact_number']
+            if contact and Teacher.objects.filter(contact_number=contact).exists():
                 raise serializers.ValidationError({"teacher_profile": {"contact_number": "This contact number is already in use."}})
         
         return attrs
