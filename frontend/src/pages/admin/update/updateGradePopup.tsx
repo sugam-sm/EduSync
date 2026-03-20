@@ -152,14 +152,28 @@ export const UpdateGradePopup = ({ isOpen, onClose, grade }: { isOpen: boolean; 
 
                             <div className="flex items-center gap-3 p-1">
                                 <span className="font-bold text-text-muted">Grade Status</span>
+
                                 <button 
                                     type="button" 
-                                    onClick={() => setForm({...form, is_active: !form.is_active})}
-                                    className={`w-14 h-7 rounded-full transition-colors duration-300 relative hover:cursor-pointer ${form.is_active ? 'bg-success/50' : 'bg-failure'}`}
+                                    onClick={() => setForm({ ...form, is_active: !form.is_active })}
+                                    className={`w-14 h-7 flex items-center rounded-full p-1 transition-colors duration-300 hover:cursor-pointer ${
+                                    form.is_active ? 'bg-success/50' : 'bg-failure'
+                                    }`}
                                 >
-                                    <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform duration-300 ${form.is_active ? 'left-8' : 'left-1'}`} />
+                                    <div
+                                    className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ${
+                                        form.is_active ? 'translate-x-7' : 'translate-x-0'
+                                    }`}
+                                    />
                                 </button>
-                                <span className={`font-bold text-sm ${form.is_active ? 'text-success' : 'text-failure'}`}>{form.is_active ? "ACTIVE" : "INACTIVE"}</span>
+
+                                <span
+                                    className={`font-bold text-sm ${
+                                    form.is_active ? 'text-success' : 'text-failure'
+                                    }`}
+                                >
+                                    {form.is_active ? "ACTIVE" : "INACTIVE"}
+                                </span>
                             </div>
 
                             <CustomDropdown 

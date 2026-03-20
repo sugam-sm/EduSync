@@ -195,14 +195,30 @@ export const UpdateUserPopup = ({ isOpen, onClose, user }: UpdateUserPopupProps)
           <div className="px-8 pb-8 space-y-8 overflow-y-auto md:overflow-y-visible flex-1">
               <div className="flex items-center gap-4 py-2 border-b border-light/10 pb-4">
                 <label className="text-sm font-semibold text-text-muted">Account Status:</label>
-                <button
-                  type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, is_active: !prev.is_active }))}
-                  className={`w-14 h-7 rounded-full transition-colors duration-300 relative hover:cursor-pointer ${formData.is_active ? 'bg-success/50' : 'bg-failure'}`}
+                 <button type="button" onClick={() =>
+                    setFormData(prev => ({
+                      ...prev,
+                      is_active: !prev.is_active,
+                    }))
+                  }
+                  className={`w-14 h-7 flex items-center rounded-full p-1 transition-colors duration-300 hover:cursor-pointer ${
+                    formData.is_active ? "bg-success/50" : "bg-failure"
+                  }`}
                 >
-                  <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform duration-300 ${formData.is_active ? 'left-8' : 'left-1'}`} />
+                  <div
+                    className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ${
+                      formData.is_active ? "translate-x-7" : "translate-x-0"
+                    }`}
+                  />
                 </button>
-                <span className={`font-bold text-sm ${formData.is_active ? 'text-success' : 'text-failure'}`}>{formData.is_active ? "ACTIVE" : "INACTIVE"}</span>
+
+                <span
+                  className={`font-bold text-sm ${
+                    formData.is_active ? "text-success" : "text-failure"
+                  }`}
+                >
+                  {formData.is_active ? "ACTIVE" : "INACTIVE"}
+                </span>
               </div>
 
               <div className="space-y-3">
