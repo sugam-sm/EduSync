@@ -1,9 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { 
-    FileUp, Users, Filter, Search, Loader2, X, School, 
-    UserCircle, Activity, UserRoundPlus 
-} from "lucide-react";
+import { FileUp, Filter, Search, Loader2, X, School, UserCircle, Activity, UserRoundPlus, UsersRound } from "lucide-react";
 
 import { Button } from '../../components/Buttons/customButton';
 import { CardButton } from "../../components/Buttons/cardButton";
@@ -16,6 +13,7 @@ import { UserDetailCard } from "../../components/Cards/detailUserCard";
 import { CreateUserPopup } from "./create/createUserPopup";
 import { UpdateUserPopup } from "./update/updateUserPopup";
 import { BackToTop } from "../../components/Custom/backToTop";
+import { addToast } from "../../features/toasts/toastSlice";
 
 export const ManageUsers = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -83,6 +81,10 @@ export const ManageUsers = () => {
         });
     }, [users, searchQuery, selectedRole, selectedGrade, selectedStatus]);
 
+    const isAnyFilterActive = useMemo(() => {
+        return searchQuery !== "" || selectedRole !== "All" || selectedGrade !== "All" || selectedStatus !== "All";
+    }, [searchQuery, selectedRole, selectedGrade, selectedStatus]);
+
     return (
         <div className='flex flex-col items-center justify-center align-middle h-full w-screen relative'>
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-0 mx-auto mb-5 items-center justify-center sm:justify-between w-[90%] sm:w-[80%] md:w-[73%]">
@@ -90,7 +92,7 @@ export const ManageUsers = () => {
                 <Button 
                     label="Upload CSV" 
                     Icon={FileUp} 
-                    onClick={() => console.log('CSV Upload Triggered')} 
+                    onClick={() => dispatch(addToast({ message: "CSV Upload feature coming soon!", type: 'info' }))} 
                     variant="primary" 
                     className="w-full sm:w-[50%] md:w-[40%] lg:w-[25%]"
                 />
@@ -99,7 +101,7 @@ export const ManageUsers = () => {
             <section className="w-[90%] sm:w-[80%] md:w-[75%] mx-auto relative">
                 <div className="bg-surface border-2 border-light/3 rounded-2xl mb-2 flex items-center justify-between p-3 gap-1 h-auto">
                     <div className="hidden sm:flex w-[15%] items-center gap-2 px-2 text-primary">
-                        <Users size={25} strokeWidth={3}/>
+                        <UsersRound size={30} strokeWidth={3}/>
                     </div>
                     <div className="group flex items-center w-[80%] sm:w-[60%] text-text-heading border-2 border-light/20 rounded-2xl focus-within:border-primary font-semibold text-md transition-all duration-400">
                         <input 
@@ -160,10 +162,12 @@ export const ManageUsers = () => {
                                     />
                                 ))
                             ) : (
-                                <div className="col-span-full w-full mt-20 text-center">
-                                    <p className="text-xl text-failure/60 font-bold">No users found.</p>
-                                    <p className="text-sm text-text-muted">Adjust filters or search query.</p>
-                                </div>
+                                isAnyFilterActive && (
+                                    <div className="col-span-full w-full mt-20 text-center">
+                                        <p className="text-xl text-failure/60 font-bold">No users found.</p>
+                                        <p className="text-sm text-text-muted">Adjust filters or search query.</p>
+                                    </div>
+                                )
                             )}
                         </div>
                     )}
