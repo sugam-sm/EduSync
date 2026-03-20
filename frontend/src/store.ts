@@ -9,6 +9,9 @@ import subjectsReducer from "./features/organization/subjectSlice"
 import assignSubReducer from "./features/organization/assignSubjectSlice"
 import resourceReducer from "./features/learning/resourceSlice"
 import flashcardReducer from "./features/learning/flashcardSlice"
+import quizReducer from "./features/learning/quizSllice"
+import teacherRemarkReducer from "./features/learning/teacherRemarkSlice"
+import attendanceReducer from "./features/analytics/attendanceSlice";
 
 
 export const store = configureStore({
@@ -22,6 +25,9 @@ export const store = configureStore({
         assignsub: assignSubReducer,
         resource: resourceReducer,
         flashcard: flashcardReducer,
+        quiz: quizReducer,
+        teacherRemark: teacherRemarkReducer,
+        attendance: attendanceReducer,
     }
 });
 

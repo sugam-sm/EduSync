@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Outlet, Route, Navigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
+import { UserLock,  SearchX } from 'lucide-react';
 
 // pages for every user
 import { Login } from './pages/login';
@@ -16,11 +17,17 @@ import { ManageGrades } from './pages/admin/manageGrades';
 
 // pages for students
 import { StudentDashboard } from './pages/student/dashbaord';
-import { StudentResources } from './pages/student/resources';
+import { AccessResources } from './pages/student/accessResources';
+import { AccessAssessments } from './pages/student/accessAssessments';
+import { AccessSessions } from './pages/student/accessSessions';
+import { AccessAnalytics } from './pages/student/accessAnalytics';
 
 // pages for teachers
 import { TeacherDashboard } from './pages/teacher/dashboard';
 import { ManageLearningResources } from './pages/teacher/manageLearningResources';
+import { ManageAssessments } from './pages/teacher/manageAssessments';
+import { ManageSessions } from './pages/teacher/manageSessions';
+import { ManageAnalytics } from './pages/teacher/manageAnalytics';
 
 import { removeToast } from './features/toasts/toastSlice';
 import { verifyUserToken, setVerifying } from './features/login/loginSlice';
@@ -37,8 +44,6 @@ const Dashboard = () => {
             return <TeacherDashboard />;
         case 'Student':
             return <StudentDashboard />;
-        default:
-            return <Login />
     }
 }
 
@@ -49,9 +54,40 @@ const Resources = () => {
         case 'Teacher':
             return <ManageLearningResources />;
         case 'Student':
-            return <StudentResources />;
-        default:
-            return <Login />
+            return <AccessResources />;
+    }
+}
+
+const Assessments = () => {
+    const { user } = useSelector((state: RootState) => state.login);
+
+    switch (user?.role) {
+        case 'Teacher':
+            return <ManageAssessments />;
+        case 'Student':
+            return <AccessAssessments />;
+    }
+}
+
+const Sessions = () => {
+    const { user } = useSelector((state: RootState) => state.login);
+
+    switch (user?.role) {
+        case 'Teacher':
+            return <ManageSessions />;
+        case 'Student':
+            return <AccessSessions />;
+    }
+}
+
+const Analytics = () => {
+    const { user } = useSelector((state: RootState) => state.login);
+
+    switch (user?.role) {
+        case 'Teacher':
+            return <ManageAnalytics />;
+        case 'Student':
+            return <AccessAnalytics />;
     }
 }
 
@@ -107,7 +143,7 @@ function App() {
 
     return (
         <>
-            <div className="fixed top-6 right-6 z-1000 flex flex-col items-end gap-3 pointer-events-none">
+            <div className="fixed top-6 right-6 z-500 flex flex-col items-end gap-3 pointer-events-none">
                 {toasts.map((t) => (
                     <div key={t.id} className="pointer-events-auto">
                         <Toast toast={t} onClose={() => dispatch(removeToast(t.id))} />
@@ -128,18 +164,24 @@ function App() {
 
                             <Route element={<ProtectedRoute allowedRoles={['Teacher', 'Student']} />}>
                                 <Route path="resources" element={<Resources />} />
-                                <Route path="assessments" element={<div className="text-headText text-2xl p-10">Assessments Page Coming Soon</div>} />
+                                <Route path="assessments" element={<Assessments />} />
+                                <Route path="sessions" element={<Sessions />} />
+                                <Route path="analytics" element={<Analytics />} />
                             </Route>
 
                             <Route element={<ProtectedRoute allowedRoles={['Administrator']} />}>
-                                <Route path="manageOrganization" element={< ManageOrganization />} />
-                                <Route path="manageUsers" element={< ManageUsers />} />
-                                <Route path="manageClasses" element={< ManageGrades />} />
-                                <Route path="manageSubjects" element={< ManageSubjects />} />
+                                <Route path="organization" element={< ManageOrganization />} />
+                                <Route path="users" element={< ManageUsers />} />
+                                <Route path="grades" element={< ManageGrades />} />
+                                <Route path="subjects" element={< ManageSubjects />} />
                             </Route>
 
-                            <Route path="/unauthorized" element={<div className="h-screen flex items-center justify-center text-failure text-2xl">Access Denied or Page not found.</div>} />
-                            <Route path="*" element={<div className="text-failure text-2xl p-10">Page Not Found</div>} />
+                            <Route path="/unauthorized" element={<div className="h-screen flex items-center justify-center font-semibold text-failure text-3xl gap-4">
+                                <UserLock size='35' strokeWidth={2.5} /> Access Denied
+                            </div>} />
+                            <Route path="*" element={<div className="h-screen flex items-center justify-center text-failure font-semibold text-3xl gap-4">
+                                <SearchX size='35' strokeWidth={2.5} /> Page Not Found
+                            </div>} />
                         </Route>
                     </Route>
                 </Routes>
