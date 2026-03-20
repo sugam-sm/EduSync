@@ -1,9 +1,14 @@
-from rest_framework import viewsets, permissions
+from django.utils import timezone
+from django.db import transaction
+from rest_framework import viewsets, permissions, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from .models import Resource, ResourceFolder, FlashcardDeck, Flashcard, Quiz, Question, Choice
 from .serializers import (
     ResourceSerializer, ResourceFolderSerialzer, FlashcardDeckSerializer, 
-    FlashcardSerializer, QuizSerializer, QuestionSerializer, ChoiceSerializer
+    FlashcardSerializer, QuizSerializer, QuestionSerializer, ChoiceSerializer,
 )
+from users.models import Student
 
 class ResourcePermissions(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -29,7 +34,7 @@ class ResourceFolderViewSet(viewsets.ModelViewSet):
         elif user.role.role_name == 'Student':
             queryset = base_query.filter(sub_assign__grade=user.student_profile.grade)
             selected_subject = self.request.query_params.get('subject_id')
-            if selected_subject:
+            if selected_subject and selected_subject != 'All':
                 queryset = queryset.filter(sub_assign__subject_id=selected_subject)
             return queryset.select_related('sub_assign', 'sub_assign__subject').distinct()
 
@@ -59,7 +64,11 @@ class FlashcardDeckViewSet(viewsets.ModelViewSet):
         if user.role.role_name == 'Teacher':
             return base_query.filter(sub_assign__teacher__user=user, created_by=user.teacher_profile).distinct()
         elif user.role.role_name == 'Student':
-            return base_query.filter(sub_assign__grade=user.student_profile.grade).distinct()
+            queryset = base_query.filter(sub_assign__grade=user.student_profile.grade)
+            selected_subject = self.request.query_params.get('subject_id')
+            if selected_subject and selected_subject != 'All':
+                queryset = queryset.filter(sub_assign__subject_id=selected_subject)
+            return queryset.distinct()
         return base_query.none()
 
 class FlashcardViewSet(viewsets.ModelViewSet):
@@ -81,16 +90,30 @@ class QuizViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        base_query = Quiz.objects.filter(sub_assign__subject__organization=user.organization)
+        base_query = Quiz.objects.filter(
+            sub_assign__subject__organization=user.organization
+        ).prefetch_related('questions__choices')
         
         if user.role.role_name == 'Teacher':
-            return base_query.filter(
-                sub_assign__teacher__user=user,  created_by=user.teacher_profile
-            ).distinct()
+            queryset = base_query.filter(
+                sub_assign__teacher__user=user, created_by=user.teacher_profile
+            )
+            selected_grade = self.request.query_params.get('grade_id')
+            if selected_grade:
+                queryset = queryset.filter(sub_assign__grade_id=selected_grade)
+            return queryset.select_related('sub_assign', 'sub_assign__subject').distinct()
         
         elif user.role.role_name == 'Student':
-            return base_query.filter(sub_assign__grade=user.student_profile.grade, is_active=True).distinct()
-            
+            # Only show published & active quizzes for students
+            queryset = base_query.filter(
+                sub_assign__grade=user.student_profile.grade, 
+                is_active=True,
+                is_published=True
+            )
+            selected_subject = self.request.query_params.get('subject_id')
+            if selected_subject and selected_subject != 'All':
+                queryset = queryset.filter(sub_assign__subject_id=selected_subject)
+            return queryset.distinct()
         return base_query.none()
 
 class QuestionViewSet(viewsets.ModelViewSet):
@@ -100,7 +123,9 @@ class QuestionViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         quiz_id = self.request.query_params.get('quiz_id')
         user = self.request.user
-        queryset = Question.objects.filter(quiz__sub_assign__subject__organization=user.organization)
+        queryset = Question.objects.filter(
+            quiz__sub_assign__subject__organization=user.organization
+        ).prefetch_related('choices')
         
         if quiz_id:
             queryset = queryset.filter(quiz_id=quiz_id)
@@ -111,3 +136,4 @@ class QuestionViewSet(viewsets.ModelViewSet):
             return queryset.filter(quiz__sub_assign__grade=user.student_profile.grade).order_by('order').distinct()
             
         return queryset.none()
+

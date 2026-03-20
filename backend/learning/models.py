@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 from organizations.models import AssignSubject
 from users.models import Teacher
 
@@ -54,27 +55,47 @@ class Flashcard(models.Model):
 
 class Quiz(models.Model):
     title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
     sub_assign = models.ForeignKey(AssignSubject, on_delete=models.CASCADE, related_name='quizzes')
     created_by = models.ForeignKey(Teacher, on_delete=models.CASCADE)
+    topic_tag = models.CharField(max_length=100, blank=True, null=True, help_text="Used for tracking specific weaknesses")
     is_active = models.BooleanField(default=True)
-    time_limit_minutes = models.PositiveIntegerField(null=True, blank=True)
+    is_published = models.BooleanField(default=False)
+    
+    # Availability window
+    start_datetime = models.DateTimeField(null=True, blank=True)
+    end_datetime = models.DateTimeField(null=True, blank=True)
+    
+    default_time_per_question = models.PositiveIntegerField(default=60, help_text="In seconds")
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
         verbose_name_plural = "Quizzes"
 
     def __str__(self):
-        return f"Quiz: {self.title} [{self.sub_assign.subject.name} - {self.sub_assign.grade.name}{self.sub_assign.grade.section}]"
+        return f"Quiz: {self.title} [{self.sub_assign.subject.name}]"
+
+    @property
+    def is_available(self):
+        now = timezone.now()
+        if not self.is_published or not self.is_active:
+            return False
+        if self.start_datetime and now < self.start_datetime:
+            return False
+        if self.end_datetime and now > self.end_datetime:
+            return False
+        return True
 
 class Question(models.Model):
-    QUESTION_TYPES = [
-        ('MCQ', 'Multiple Choice'),
-        ('TF', 'True/False'),
-    ]
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='questions')
     question_text = models.TextField()
-    type = models.CharField(max_length=10, choices=QUESTION_TYPES)
-    points = models.PositiveIntegerField(default=1)
+    question_type = models.CharField(
+        max_length=10,
+        choices=[('MCQ', 'Multiple Choice')],
+        default='MCQ'
+    )
+    points_override = models.PositiveIntegerField(default=1)
+    time_override_seconds = models.PositiveIntegerField(null=True, blank=True, help_text="Overrides quiz default timer")
     image = models.ImageField(upload_to='quiz_questions/', null=True, blank=True)
     order = models.PositiveIntegerField(default=0)
 
@@ -82,8 +103,7 @@ class Question(models.Model):
         ordering = ['order', 'id']
 
     def __str__(self):
-        question_number = Question.objects.filter(quiz=self.quiz, order__lt=self.order).count() + 1
-        return f"Question: {question_number} [{self.quiz.title}]"
+        return f"Question: {self.question_text[:50]} [{self.quiz.title}]"
 
 class Choice(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='choices')
@@ -91,4 +111,5 @@ class Choice(models.Model):
     is_correct = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"Question: {self.question.question_text} | Chioce: {self.choice_text} [isCorrect: {self.is_correct}]"
+        return f"{self.choice_text} ({'Correct' if self.is_correct else 'Incorrect'})"
+

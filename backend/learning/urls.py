@@ -1,6 +1,9 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import ResourceFolderViewSet, ResourceViewSet, FlashcardDeckViewSet, FlashcardViewSet, QuizViewSet, QuestionViewSet
+from .views import (
+    ResourceFolderViewSet, ResourceViewSet, FlashcardDeckViewSet,
+    FlashcardViewSet, QuizViewSet, QuestionViewSet
+)
 
 router = DefaultRouter()
 router.register(r'resourcefolders', ResourceFolderViewSet, basename='resourcefolder')
