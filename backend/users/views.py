@@ -2,7 +2,8 @@ from rest_framework import viewsets, permissions, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
-from .serializers import UserListSerializer, UserDetailSerializer, UserCreationSerializer, UserUpdateSerializer
+from .serializers import UserListSerializer, UserDetailSerializer, UserCreationSerializer, UserUpdateSerializer, StudentSerializer
+from .models import Student
 
 User = get_user_model()
 
@@ -32,9 +33,6 @@ class UserViewSet(viewsets.ModelViewSet):
         if self.action == 'partial_update':
             return UserUpdateSerializer
         return UserDetailSerializer
-
-from .models import Student
-from .serializers import StudentSerializer
 
 class StudentViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
