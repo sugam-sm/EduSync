@@ -51,6 +51,7 @@ interface UsersState {
     users: UserSummary[];
     selectedUser: User | null;
     isLoading: boolean;
+    isDetailsLoading: boolean;
     isSuccess: boolean;
     isError: boolean;
     message: string;
@@ -60,6 +61,7 @@ const initialState: UsersState = {
     users: [],
     selectedUser: null,
     isLoading: false,
+    isDetailsLoading: false,
     isSuccess: false,
     isError: false,
     message: '',
@@ -135,6 +137,7 @@ const userSlice = createSlice({
     reducers: {
         resetUserState: (state) => {
             state.isLoading = false;
+            state.isDetailsLoading = false;
             state.isSuccess = false;
             state.isError = false;
             state.message = '';
@@ -157,55 +160,55 @@ const userSlice = createSlice({
                 state.message = action.payload?.detail || "Could not load users.";
             })
             .addCase(fetchUser.pending, (state) => {
-                state.isLoading = true;
+                state.isDetailsLoading = true;
                 state.selectedUser = null;
             })
             .addCase(fetchUser.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isDetailsLoading = false;
                 state.isSuccess = true;
                 state.selectedUser = action.payload;
             })
             .addCase(fetchUser.rejected, (state, action: any) => {
-                state.isLoading = false;
+                state.isDetailsLoading = false;
                 state.isError = true;
                 state.message = action.payload?.details || "failed to load user details"
             })
             .addCase(createUser.pending, (state) =>{
-                state.isLoading = true;
+                state.isDetailsLoading = true;
             })
             .addCase(createUser.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isDetailsLoading = false;
                 state.isSuccess = true;
                 state.users.unshift(action.payload);
             })
             .addCase(createUser.rejected, (state, action:any) => {
-                state.isLoading = false;
+                state.isDetailsLoading = false;
                 state.isError = true;
                 state.message = action.payload?.detail || action.payload?.email[0] || "Validation Error";
             })
             .addCase(updateUser.pending, (state) => {
-                state.isLoading = true;
+                state.isDetailsLoading = true;
             })
             .addCase(updateUser.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isDetailsLoading = false;
                 state.isSuccess = true;
                 state.users = state.users.map((user) => user.id === action.payload.id ? action.payload : user)
             })
             .addCase(updateUser.rejected, (state, action: any) => {
-                state.isLoading = false;
+                state.isDetailsLoading = false;
                 state.isError = true;
                 state.message = action.payload?.detail || 'failed to update user';
             })
             .addCase(deleteUser.pending, (state) => {
-                state.isLoading = true;
+                state.isDetailsLoading = true;
             })
             .addCase(deleteUser.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isDetailsLoading = false;
                 state.isSuccess = true;
                 state.users = state.users.filter((user) => user.id !== action.payload)
             })
             .addCase(deleteUser.rejected, (state, action: any) => {
-                state.isLoading = false;
+                state.isDetailsLoading = false;
                 state.isError = true;
                 if (action.error?.message?.includes("404")) {
                     state.message = "User not found or already deleted.";
