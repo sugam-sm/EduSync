@@ -32,7 +32,7 @@ export const FormButton = ({
       {...props}
     >
       {isLoading ? (
-        <Loader className="animate-spin" size={20} strokeWidth={2.5} />
+        <Loader className="animate-spin" size={24} strokeWidth={3} />
       ) : (
         children
       )}
