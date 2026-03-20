@@ -204,10 +204,11 @@ export const ManageResources = ({ isOpen, onClose, folder }: ManageResourcesProp
                                         value={title}
                                         onChange={(e: any) => setTitle(e.target.value)}
                                         roleColor="primary"
+                                        containerClassName="h-11"
                                     />
-                                    <div className="flex gap-2 p-1 bg-light/5 rounded-xl border-2 border-light/10 h-10 items-center w-full mb-2">
+                                    <div className="flex gap-2 p-1 bg-light/5 rounded-xl border-2 border-light/10 h-11 items-center w-full mb-2">
                                         <button type="button" onClick={() => setType('FILE')} className={`flex-1 px-5 py-1 rounded-lg font-bold transition-all hover:cursor-pointer ${type === 'FILE' ? 'bg-primary/35 text-primary' : 'text-text-muted hover:bg-primary/10'}`}>File</button>
-                                        <button type="button" onClick={() => setType('LINK')} className={`flex-1 px-6 py-1 rounded-lg font-bold transition-all hover:cursor-pointer ${type === 'LINK' ? 'bg-primary/35 text-primary' : 'text-text-muted hover:bg-primary/10'}`}>Link</button>
+                                        <button type="button" onClick={() => setType('LINK')} className={`flex-1 px-5 py-1 rounded-lg font-bold transition-all hover:cursor-pointer ${type === 'LINK' ? 'bg-primary/35 text-primary' : 'text-text-muted hover:bg-primary/10'}`}>Link</button>
                                     </div>
                                 </div>
                                 {type === 'FILE' ? (
@@ -229,6 +230,7 @@ export const ManageResources = ({ isOpen, onClose, folder }: ManageResourcesProp
                                     value={url} 
                                     onChange={(e: any) => setUrl(e.target.value)} 
                                     roleColor="primary" 
+                                    containerClassName="h-11"
                                 />
                             )}
                             <input 
