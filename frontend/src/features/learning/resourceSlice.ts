@@ -41,9 +41,9 @@ const initialState: ResourceState = {
 // Resource Folders thunks
 export const fetchResourceFolders = createAsyncThunk(
     'resource/fetchFolders',
-    async (gradeId: string | number, { rejectWithValue }) => {
+    async (params: { grade_id?: string | number, subject_id?: string | number } | undefined, { rejectWithValue }) => {
         try {
-            const response = await api.get(`/api/learning/resourcefolders/?grade_id=${gradeId}`);
+            const response = await api.get('/api/learning/resourcefolders/', { params });
             return response.data;
         } catch (error: any) {
             return rejectWithValue(error.response?.data || 'failed to fetch resource folders.');
