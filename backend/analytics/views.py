@@ -17,9 +17,7 @@ class SessionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_superuser:
-            queryset = Session.objects.all().prefetch_related('attendances__student__user')
-        elif hasattr(user, 'role') and user.role.role_name == 'teacher':
+        if hasattr(user, 'role') and user.role.role_name == 'teacher':
             queryset = Session.objects.filter(teacher__user=user).prefetch_related('attendances__student__user')
         elif hasattr(user, 'role') and user.role.role_name == 'student':
             queryset = Session.objects.filter(grade=user.student_profile.grade).prefetch_related('attendances__student__user')
@@ -79,9 +77,7 @@ class AttendanceViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_superuser:
-            return Attendance.objects.all()
-        elif hasattr(user, 'role') and user.role.role_name == 'teacher':
+        if hasattr(user, 'role') and user.role.role_name == 'teacher':
             return Attendance.objects.filter(session__teacher__user=user)
         elif hasattr(user, 'role') and user.role.role_name == 'student':
             return Attendance.objects.filter(student=user.student_profile)
@@ -94,10 +90,10 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         requested_status = request.data.get('status')
         
         try:
-            if hasattr(request.user, 'teacher_profile') or request.user.is_superuser:
+            if hasattr(request.user, 'teacher_profile'):
                 session = Session.objects.get(id=session_id)
                 # If teacher, must own the session
-                if not request.user.is_superuser and session.teacher != request.user.teacher_profile:
+                if session.teacher != request.user.teacher_profile:
                     return Response({"error": "You are not the teacher for this session."}, status=status.HTTP_403_FORBIDDEN)
             else:
                 return Response({"error": "Students cannot mark attendance."}, status=status.HTTP_403_FORBIDDEN)
@@ -140,20 +136,15 @@ class TeacherQuizRemarkViewSet(viewsets.ModelViewSet):
         user = self.request.user
         quiz_id = self.request.query_params.get('quiz_id')
         subject_id = self.request.query_params.get('subject_id')
-        if user.is_superuser:
-            base_query = TeacherQuizRemark.objects.all().select_related('teacher__user', 'student__user', 'quiz')
-        else:
-            base_query = TeacherQuizRemark.objects.filter(
-                quiz__sub_assign__subject__organization=user.organization
-            ).select_related('teacher__user', 'student__user', 'quiz')
+        base_query = TeacherQuizRemark.objects.filter(
+            quiz__sub_assign__subject__organization=user.organization
+        ).select_related('teacher__user', 'student__user', 'quiz')
 
         if quiz_id:
             base_query = base_query.filter(quiz_id=quiz_id)
         if subject_id:
             base_query = base_query.filter(quiz__sub_assign__subject_id=subject_id)
 
-        if user.is_superuser:
-            return base_query
         if user.role.role_name == 'teacher':
             return base_query.filter(teacher=user.teacher_profile).distinct()
         elif user.role.role_name == 'student':
@@ -210,8 +201,6 @@ class QuizAttemptViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_superuser:
-            return QuizAttempt.objects.all().select_related('quiz', 'student__user')
         base_query = QuizAttempt.objects.filter(quiz__sub_assign__subject__organization=user.organization)
 
         if user.role.role_name == 'teacher':
