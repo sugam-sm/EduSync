@@ -50,6 +50,7 @@ class QuizAttempt(models.Model):
         ('in-progress', 'In Progress'),
         ('completed', 'Completed'),
         ('auto-submitted', 'Auto Submitted'),
+        ('missed', 'Missed'),
     ]
     
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='attempts')

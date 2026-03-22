@@ -17,7 +17,14 @@ class SessionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = Session.objects.filter(teacher__user=user).prefetch_related('attendances__student__user')
+        if user.is_superuser:
+            queryset = Session.objects.all().prefetch_related('attendances__student__user')
+        elif hasattr(user, 'role') and user.role.role_name == 'teacher':
+            queryset = Session.objects.filter(teacher__user=user).prefetch_related('attendances__student__user')
+        elif hasattr(user, 'role') and user.role.role_name == 'student':
+            queryset = Session.objects.filter(grade=user.student_profile.grade).prefetch_related('attendances__student__user')
+        else:
+            return Session.objects.none()
         
         grade_id = self.request.query_params.get('grade_id')
         if grade_id:
@@ -63,13 +70,22 @@ class SessionViewSet(viewsets.ModelViewSet):
         Attendance.objects.bulk_create(absent_attendances)
         
         return Response(SessionSerializer(session).data)
+    
+        return Response(SessionSerializer(session).data)
 
 class AttendanceViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = AttendanceSerializer
 
     def get_queryset(self):
-        return Attendance.objects.filter(session__teacher__user=self.request.user)
+        user = self.request.user
+        if user.is_superuser:
+            return Attendance.objects.all()
+        elif hasattr(user, 'role') and user.role.role_name == 'teacher':
+            return Attendance.objects.filter(session__teacher__user=user)
+        elif hasattr(user, 'role') and user.role.role_name == 'student':
+            return Attendance.objects.filter(student=user.student_profile)
+        return Attendance.objects.none()
 
     def create(self, request, *args, **kwargs):
         session_id = request.data.get('session')
@@ -78,7 +94,13 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         requested_status = request.data.get('status')
         
         try:
-            session = Session.objects.get(id=session_id, teacher__user=self.request.user)
+            if hasattr(request.user, 'teacher_profile') or request.user.is_superuser:
+                session = Session.objects.get(id=session_id)
+                # If teacher, must own the session
+                if not request.user.is_superuser and session.teacher != request.user.teacher_profile:
+                    return Response({"error": "You are not the teacher for this session."}, status=status.HTTP_403_FORBIDDEN)
+            else:
+                return Response({"error": "Students cannot mark attendance."}, status=status.HTTP_403_FORBIDDEN)
         except Session.DoesNotExist:
             return Response({"error": "Session not found."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -118,18 +140,23 @@ class TeacherQuizRemarkViewSet(viewsets.ModelViewSet):
         user = self.request.user
         quiz_id = self.request.query_params.get('quiz_id')
         subject_id = self.request.query_params.get('subject_id')
-        base_query = TeacherQuizRemark.objects.filter(
-            quiz__sub_assign__subject__organization=user.organization
-        ).select_related('teacher__user', 'student__user', 'quiz')
+        if user.is_superuser:
+            base_query = TeacherQuizRemark.objects.all().select_related('teacher__user', 'student__user', 'quiz')
+        else:
+            base_query = TeacherQuizRemark.objects.filter(
+                quiz__sub_assign__subject__organization=user.organization
+            ).select_related('teacher__user', 'student__user', 'quiz')
 
         if quiz_id:
             base_query = base_query.filter(quiz_id=quiz_id)
         if subject_id:
             base_query = base_query.filter(quiz__sub_assign__subject_id=subject_id)
 
-        if user.role.role_name == 'Teacher':
+        if user.is_superuser:
+            return base_query
+        if user.role.role_name == 'teacher':
             return base_query.filter(teacher=user.teacher_profile).distinct()
-        elif user.role.role_name == 'Student':
+        elif user.role.role_name == 'student':
             return base_query.filter(student=user.student_profile).distinct()
 
         return base_query.none()
@@ -183,14 +210,41 @@ class QuizAttemptViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        if user.is_superuser:
+            return QuizAttempt.objects.all().select_related('quiz', 'student__user')
         base_query = QuizAttempt.objects.filter(quiz__sub_assign__subject__organization=user.organization)
 
-        if user.role.role_name == 'Teacher':
+        if user.role.role_name == 'teacher':
             return base_query.filter(quiz__created_by=user.teacher_profile).distinct()
-        elif user.role.role_name == 'Student':
+        elif user.role.role_name == 'student':
             return base_query.filter(student=user.student_profile).distinct()
             
         return base_query.none()
+
+    def list(self, request, *args, **kwargs):
+        user = request.user
+        if user.role.role_name == 'student':
+            student = user.student_profile
+            # Logic to proactively mark missed quizzes as zero
+            expired_quizzes = Quiz.objects.filter(
+                sub_assign__grade=student.grade,
+                end_datetime__lt=timezone.now(),
+                is_published=True
+            ).exclude(attempts__student=student)
+            
+            if expired_quizzes.exists():
+                new_attempts = [
+                    QuizAttempt(
+                        quiz=quiz, 
+                        student=student, 
+                        status='missed', 
+                        total_score=0, 
+                        completed_at=quiz.end_datetime
+                    ) for quiz in expired_quizzes
+                ]
+                QuizAttempt.objects.bulk_create(new_attempts, ignore_conflicts=True)
+                
+        return super().list(request, *args, **kwargs)
 
     @action(detail=False, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def start_quiz(self, request):
@@ -278,5 +332,28 @@ class QuizAttemptViewSet(viewsets.ModelViewSet):
         if not quiz_id:
             return Response({"error": "quiz_id query parameter is required."}, status=status.HTTP_400_BAD_REQUEST)
             
+        try:
+            quiz = Quiz.objects.get(pk=quiz_id)
+        except Quiz.DoesNotExist:
+            return Response({"error": "Quiz not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Proactively mark missing students as 'missed' if quiz is expired
+        if quiz.end_datetime and quiz.end_datetime < timezone.now():
+            all_students = Student.objects.filter(grade=quiz.sub_assign.grade)
+            attempted_student_ids = QuizAttempt.objects.filter(quiz=quiz).values_list('student_id', flat=True)
+            missing_students = all_students.exclude(user_id__in=attempted_student_ids)
+            
+            if missing_students.exists():
+                new_attempts = [
+                    QuizAttempt(
+                        quiz=quiz, 
+                        student=student, 
+                        status='missed', 
+                        total_score=0, 
+                        completed_at=quiz.end_datetime
+                    ) for student in missing_students
+                ]
+                QuizAttempt.objects.bulk_create(new_attempts, ignore_conflicts=True)
+
         attempts = QuizAttempt.objects.filter(quiz_id=quiz_id).select_related('student__user')
         return Response(QuizAttemptSerializer(attempts, many=True, context={'request': request}).data)
