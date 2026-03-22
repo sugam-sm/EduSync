@@ -12,7 +12,7 @@ export const GradeCard = ({ gradeData, onEdit, onDelete }: GradeCardProps) => {
   const isActive = gradeData.is_active === true;
 
   return (
-    <div className="w-full bg-surface border-3 border-light/10 rounded-xl p-5 hover:-translate-y-1 transition-all duration-300 group flex flex-col hover:shadow-md hover:border-primary hover:shadow-primary/50">
+    <div className="w-full bg-surface border-2 border-light/10 rounded-xl p-5 hover:-translate-y-1 transition-all duration-300 group flex flex-col hover:shadow-md hover:border-primary hover:shadow-primary/50">
 
       {/* Top Section: Name and Actions */}
       <div className="flex justify-between items-start mb-1">

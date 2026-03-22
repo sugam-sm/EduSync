@@ -53,7 +53,7 @@ export const FlashcardDeckCard = ({ deck, onEdit, onModify, onPreview }: Flashca
   };
 
   return (
-    <div ref={cardRef} className={`relative w-full bg-surface border-3 border-light/10 rounded-xl p-2 hover:-translate-y-1 transition-all duration-300 group flex flex-col hover:shadow-md hover:border-primary hover:shadow-primary/50 ${isActionsOpen ? 'z-20' : 'z-0'}`}>
+    <div ref={cardRef} className={`relative w-full bg-surface border-2 border-light/10 rounded-xl p-2 hover:-translate-y-1 transition-all duration-300 group flex flex-col hover:shadow-md hover:border-primary hover:shadow-primary/50 ${isActionsOpen ? 'z-20' : 'z-0'}`}>
 
       {isActionsOpen && (
         <div className={`md:hidden absolute right-2 z-20 bg-surface border border-light/20 p-2 rounded-xl shadow-xl flex flex-col gap-2 animate-in fade-in zoom-in-95 duration-200 ${menuPosition === 'bottom' ? 'top-[80%]' : 'bottom-[80%]'}`}>

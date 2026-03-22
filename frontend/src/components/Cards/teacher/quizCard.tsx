@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Edit2, Settings, Clock, HelpCircle, MoreVertical, X, Trash2, ClipboardCheck } from "lucide-react";
+import { Edit2, Settings2, Clock, HelpCircle, MoreVertical, X, Trash2, ClipboardCheck } from "lucide-react";
 import { useDispatch } from "react-redux";
 import { type Quiz, deleteQuiz } from "../../../features/learning/quizSllice";
 import { type AppDispatch } from "../../../store";
@@ -21,6 +21,23 @@ export const QuizCard = ({ quiz, onEdit, onModify, onEvaluate }: QuizCardProps) 
     const [isActionsOpen, setIsActionsOpen] = useState(false);
     const [menuPosition, setMenuPosition] = useState<'top' | 'bottom'>('bottom');
     const cardRef = useRef<HTMLDivElement>(null);
+
+    const getStatusInfo = () => {
+        if (!quiz.is_published) return { label: 'Draft', color: 'bg-text-muted/10 text-text-muted border-text-muted/40', dot: 'bg-text-muted' };
+        
+        const now = new Date();
+        const start = quiz.start_datetime ? new Date(quiz.start_datetime) : null;
+        const end = quiz.end_datetime ? new Date(quiz.end_datetime) : null;
+
+        if (start && now < start) return { label: 'Scheduled', color: 'bg-info/10 text-info border-info/40', dot: 'bg-info' };
+        if (start && end && now >= start && now <= end) return { label: 'Live', color: 'bg-success/10 text-success border-success/40', dot: 'bg-success', ping: true };
+        if (end && now > end) return { label: 'Closed', color: 'bg-failure/10 text-failure border-failure/40', dot: 'bg-failure' };
+        
+        return { label: 'Published', color: 'bg-primary/10 text-primary border-primary/40', dot: 'bg-primary' };
+    };
+
+    const status = getStatusInfo();
+    const isEditable = !quiz.is_published;
 
     const toggleActions = () => {
         if (!isActionsOpen && cardRef.current) {
@@ -52,15 +69,16 @@ export const QuizCard = ({ quiz, onEdit, onModify, onEvaluate }: QuizCardProps) 
         });
     };
 
+    const isClosed = quiz.is_published && (!quiz.end_datetime || new Date() > new Date(quiz.end_datetime));
+
     return (
-        <div ref={cardRef} className={`relative w-full bg-surface border-3 border-light/10 rounded-xl p-2 hover:-translate-y-1 transition-all duration-300 group flex flex-col hover:shadow-md hover:border-primary hover:shadow-primary/50 ${isActionsOpen ? 'z-20' : 'z-0'}`}>
+        <div ref={cardRef} className={`relative w-full bg-surface border-2 border-light/10 rounded-xl p-2 hover:-translate-y-1 transition-all duration-300 group flex flex-col hover:shadow-md hover:border-primary hover:shadow-primary/50 ${isActionsOpen ? 'z-20' : 'z-0'}`}>
 
             {isActionsOpen && (
                 <div className={`md:hidden absolute right-2 z-20 bg-surface border border-light/20 p-2 rounded-xl shadow-xl flex flex-col gap-2 animate-in fade-in zoom-in-95 duration-200 ${menuPosition === 'bottom' ? 'top-[80%]' : 'bottom-[80%]'}`}>
-                    {onEdit && <ActionButton Icon={Edit2} variant='custom' onClick={() => { onEdit(quiz); setIsActionsOpen(false); }} className="p-2!" />}
-                    {onModify && <ActionButton Icon={Settings} variant='custom' onClick={() => { onModify(quiz); setIsActionsOpen(false); }} className="p-2!" />}
-                    {onEvaluate && quiz.is_active && <ActionButton Icon={ClipboardCheck} variant='custom' onClick={() => { onEvaluate(quiz); setIsActionsOpen(false); }} className="p-2!" />}
-                    {onEdit && <ActionButton Icon={Trash2} variant='failure' onClick={() => { handleDelete(); setIsActionsOpen(false); }} className="p-2!" />}
+                    {onEdit && <ActionButton Icon={Edit2} variant='custom' onClick={() => { onEdit(quiz); setIsActionsOpen(false); }} title="Quiz Settings" className="p-2!" />}
+                    {onModify && <ActionButton Icon={Settings2} variant='custom' onClick={() => { onModify(quiz); setIsActionsOpen(false); }} title={isEditable ? "Manage Questions" : "View Questions"} className="p-2!" />}
+                    {onEdit && <ActionButton Icon={Trash2} variant='failure' onClick={() => { handleDelete(); setIsActionsOpen(false); }} title="Delete Quiz" className="p-2!" />}
                 </div>
             )}
 
@@ -74,8 +92,12 @@ export const QuizCard = ({ quiz, onEdit, onModify, onEvaluate }: QuizCardProps) 
                             <h3 className="font-bold text-lg text-primary truncate" title={quiz.title}>
                                 {quiz.title}
                             </h3>
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-tighter shrink-0 ${quiz.is_active ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-                                {quiz.is_active ? 'Active' : 'Inactive'}
+                            <span className={`relative flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider border-2 ${status.color}`}>
+                                <span className="relative flex h-2 w-2">
+                                    {status.ping && <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${status.dot}`}></span>}
+                                    <span className={`relative inline-flex rounded-full h-2 w-2 ${status.dot}`}></span>
+                                </span>
+                                {status.label}
                             </span>
                         </div>
                         <div className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-widest text-primary/70">
@@ -86,10 +108,11 @@ export const QuizCard = ({ quiz, onEdit, onModify, onEvaluate }: QuizCardProps) 
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">
+                    {onEvaluate && isClosed && <div className="md:hidden"><ActionButton Icon={ClipboardCheck} variant='custom' onClick={() => onEvaluate(quiz)} title="Evaluation & Remarks" className="p-2!" /></div>}
                     <div className="hidden md:flex gap-1">
-                        {onEdit && <ActionButton Icon={Edit2} variant='custom' onClick={() => onEdit(quiz)} title="Edit Settings" className="p-2!" />}
-                        {onModify && <ActionButton Icon={Settings} variant='custom' onClick={() => onModify(quiz)} title="Manage Questions" className="p-2!" />}
-                        {onEvaluate && quiz.is_active && <ActionButton Icon={ClipboardCheck} variant='custom' onClick={() => onEvaluate(quiz)} title="Evaluate Remarks" className="p-2!" />}
+                        {onEdit && <ActionButton Icon={Edit2} variant='custom' onClick={() => onEdit(quiz)} title="Quiz Settings" className="p-2!" />}
+                        {onModify && <ActionButton Icon={Settings2} variant='custom' onClick={() => onModify(quiz)} title={isEditable ? "Manage Questions" : "View Questions"} className="p-2!" />}
+                        {onEvaluate && isClosed && <ActionButton Icon={ClipboardCheck} variant='custom' onClick={() => onEvaluate(quiz)} title="Evaluation & Remarks" className="p-2!" />}
                         {onEdit && <ActionButton Icon={Trash2} variant='failure' onClick={handleDelete} title="Delete Quiz" className="p-2!" />}
                     </div>
 

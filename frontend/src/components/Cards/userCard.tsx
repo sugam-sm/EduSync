@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AtSign, UserRoundPen, UserRoundX, Eye, Mail, Phone, VenusAndMars, MoreVertical, X } from "lucide-react";
+import { AtSign, UserRoundPen, UserRoundX, Eye, Mail, Phone, VenusAndMars, MoreVertical, X, School } from "lucide-react";
 import { type UserSummary } from '../../features/organization/userSlice';
 import { ActionButton } from '../Buttons/actionButton';
 import { DecisionPopup } from '../decision popup';
@@ -20,6 +20,7 @@ export const UserCard = ({ user, onEdit, onView }: UserCardProps) => {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
 
   const isTeacher = user.role_name?.toLowerCase() === 'teacher';
+  const isAdmin = user.role_name?.toLowerCase() === 'admin';
   const isActive = user.is_active === true;
   const teacherData = user.teacher_profile;
   const studentData = user.student_profile;
@@ -43,7 +44,7 @@ export const UserCard = ({ user, onEdit, onView }: UserCardProps) => {
   };
 
   return (
-    <div className={`relative w-full bg-surface border-3 border-light/10 rounded-xl p-5 hover:-translate-y-1 transition-all duration-300 group flex flex-col hover:shadow-md ${
+    <div className={`relative w-full bg-surface border-2 border-light/10 rounded-xl p-5 hover:-translate-y-1 transition-all duration-300 group flex flex-col hover:shadow-md ${
         isTeacher 
           ? 'hover:border-info hover:shadow-info/50'
           : 'hover:border-primary hover:shadow-primary/50'
@@ -109,13 +110,22 @@ export const UserCard = ({ user, onEdit, onView }: UserCardProps) => {
           <span className="font-medium truncate tracking-wide">{user.email}</span>
         </div>
 
-        <div className="flex items-center gap-3 text-[14px] text-text-muted">
-          <Phone size={15} className="opacity-70" />
-          <span className="font-medium tracking-wide">
-            {isTeacher ? teacherData?.contact_number : studentData?.guardian_contact}
-            {!isTeacher && <span className="ml-1 text-sm opacity-70">({studentData?.guardian_relation})</span>}
-          </span>
-        </div>
+        {!isAdmin && (
+          <div className="flex items-center gap-3 text-[14px] text-text-muted">
+            <Phone size={15} className="opacity-70" />
+            <span className="font-medium tracking-wide">
+              {isTeacher ? teacherData?.contact_number : studentData?.guardian_contact}
+              {!isTeacher && <span className="ml-1 text-sm opacity-70">({studentData?.guardian_relation})</span>}
+            </span>
+          </div>
+        )}
+
+        {isAdmin && user.org_name && (
+          <div className="flex items-center gap-3 text-[14px] text-text-muted">
+            <School size={15} className="opacity-70" />
+            <span className="font-medium tracking-wide">{user.org_name}</span>
+          </div>
+        )}
 
         <div className="flex items-center gap-3 text-[14px] text-text-muted">
           <VenusAndMars size={15} className="opacity-70" />

@@ -13,7 +13,7 @@ export const SessionCard = ({ session, onManage, onEnd }: SessionCardProps) => {
     const dayName = startDate?.toLocaleDateString([], { weekday: 'long' });
     
     return (
-        <div className={`relative w-[70%] sm:w-[60%] lg:h-[450px] bg-surface border-3 rounded-xl p-6  hover:-translate-y-1 transition-all duration-300 group flex flex-col justify-between hover:shadow-md border-light/40 hover:border-primary hover:shadow-primary/20`}>
+        <div className={`relative w-full sm:w-[60%] lg:h-[450px] bg-surface border-2 rounded-xl p-6  hover:-translate-y-1 transition-all duration-300 group flex flex-col justify-between hover:shadow-md border-light/40 hover:border-primary hover:shadow-primary/20`}>
             {session.is_active && (
                 <div className="absolute top-1 right-1 p-1 bg-primary/50 text-white text-[11.5px] font-semibold px-3 rounded-lg uppercase tracking-widest animate-pulse z-10">
                     Session in progress
@@ -58,18 +58,18 @@ export const SessionCard = ({ session, onManage, onEnd }: SessionCardProps) => {
                 </div>
             </div>
 
-            <div className="flex self-end w-full sm:w-[60%] gap-4 pt-3 mt-4">
+            <div className="flex self-end w-full sm:w-[60%] gap-2 mt-4">
                 <Button
-                    label="End Session"
+                    label="End"
                     onClick={() => onEnd(session)}
                     variant="failure"
-                    className="flex-1 py-3 font-bold"
+                    className="flex-1 py-1"
                 />
                 <Button
                     label="Manage"
                     onClick={() => onManage(session)}
                     variant="primary"
-                    className="flex-2 py-3 font-bold"
+                    className="flex-2 py-1"
                 />
             </div>
         </div>

@@ -31,7 +31,7 @@ export const UserDetailCard = ({ user, onClose }: UserDetailCardProps) => {
   return (
     <Portal>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-light/10 backdrop-blur-[6px]">
-        <div className="w-full max-w-lg bg-surface/1 border-3 border-light/10 rounded-3xl p-3 overflow-hidden">
+        <div className="w-full max-w-lg bg-surface/1 border-2 border-light/10 rounded-3xl p-3 overflow-hidden">
           {/* Header */}
           <div className="flex justify-between items-start p-2">
             <div className="flex flex-col gap-1.5">
@@ -92,7 +92,7 @@ export const UserDetailCard = ({ user, onClose }: UserDetailCardProps) => {
             ) : (
               <>
                 <div className="col-span-2">
-                  <DetailRow icon={School} label="Grade" value={studentData?.grade ? `${studentData.name} - ${studentData.section}` : "N/A"} />
+                  <DetailRow icon={School} label="Grade" value={studentData?.grade ? `${studentData.grade_name} - ${studentData.section}` : "N/A"} />
                 </div>
                 <div className="col-span-2">
                   <DetailRow icon={HeartHandshake} label="Guardian Name" value={studentData?.guardian_name} />

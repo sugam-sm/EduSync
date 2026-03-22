@@ -7,7 +7,7 @@ interface StudentRemarkCardProps {
 
 export const StudentRemarkCard = ({ remark }: StudentRemarkCardProps) => {
     return (
-        <div className="relative w-full bg-surface border-3 border-light/10 rounded-xl p-2 hover:-translate-y-1 transition-all duration-300 group flex flex-col hover:shadow-md hover:border-primary hover:shadow-primary/50">
+        <div className="relative w-full bg-surface border-2 border-light/10 rounded-xl p-2 hover:-translate-y-1 transition-all duration-300 group flex flex-col hover:shadow-md hover:border-primary hover:shadow-primary/50">
             <div className="flex items-start gap-4 w-full min-w-0">
                 <div className="hidden md:block p-3 rounded-xl bg-primary/10 text-primary shrink-0">
                     <MessageSquare size={24} />
