@@ -19,11 +19,12 @@ class OrganizationSerializer(serializers.ModelSerializer):
 
 class GradeSerializer(serializers.ModelSerializer):
     teacher_name = serializers.CharField(source='class_teacher.full_name', read_only=True)
+    org_name = serializers.CharField(source='organization.name', read_only=True)
 
     class Meta:
         model = Grade
-        fields = ['id', 'name', 'section', 'academic_year', 'is_active', 'organization', 'class_teacher', 'teacher_name']
-        read_only_fields = ['id', 'academic_year', 'organization']
+        fields = ['id', 'name', 'section', 'academic_year', 'is_active', 'organization', 'class_teacher', 'teacher_name', 'org_name']
+        read_only_fields = ['id', 'academic_year', 'organization', 'org_name']
         extra_kwargs = {
             'academic_year': {'required': False},
             'organization': {'required': False},
@@ -51,10 +52,11 @@ class GradeSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 class SubjectSerializer(serializers.ModelSerializer):
+    org_name = serializers.CharField(source='organization.name', read_only=True)
     class Meta:
         model = Subject
-        fields = ['id', 'name']
-        read_only_fields = ['id']
+        fields = ['id', 'name', 'org_name']
+        read_only_fields = ['id', 'org_name']
 
     def create(self, validated_data): 
         validated_data['organization'] = self.context['request'].user.organization
@@ -63,10 +65,13 @@ class SubjectSerializer(serializers.ModelSerializer):
 class AssignSubjectSerializer(serializers.ModelSerializer):
     subject_name = serializers.CharField(source='subject.name', read_only=True)
     teacher_name = serializers.CharField(source='teacher.user.full_name', read_only=True)
+    grade_name = serializers.CharField(source='grade.name', read_only=True)
+    grade_section = serializers.CharField(source='grade.section', read_only=True)
+    org_name = serializers.CharField(source='grade.organization.name', read_only=True)
 
     class Meta:
         model = AssignSubject
-        fields = ['id', 'subject', 'grade', 'teacher', 'subject_name', 'teacher_name']
+        fields = ['id', 'subject', 'grade', 'teacher', 'subject_name', 'teacher_name', 'grade_name', 'grade_section', 'org_name']
 
     def validate(self, data):
         org = self.context['request'].user.organization
