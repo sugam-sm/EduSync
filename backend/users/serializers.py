@@ -11,16 +11,23 @@ class RoleSerializer(serializers.ModelSerializer):
 class CurrentUserSerializer(serializers.ModelSerializer):
     role = serializers.SerializerMethodField()
     org_name = serializers.SerializerMethodField()
+    is_superuser = serializers.BooleanField(read_only=True)
 
     def get_role(self, obj):
-        return obj.role.role_name
+        if obj.role:
+            return obj.role.role_name
+        if obj.is_superuser:
+            return "superadmin"
+        return None
 
     def get_org_name(self, obj):
-        return obj.organization.name
+        if obj.organization:
+            return obj.organization.name
+        return None
     
     class Meta:
         model = User
-        fields = ['id', 'username', 'role', 'org_name', 'full_name']
+        fields = ['id', 'username', 'role', 'org_name', 'full_name', 'is_superuser']
         read_only_fields = ['id', 'username']
     
 class TeacherSerializer(serializers.ModelSerializer):
@@ -46,6 +53,7 @@ class StudentSerializer(serializers.ModelSerializer):
 class UserListSerializer(serializers.ModelSerializer):
     fullname = serializers.ReadOnlyField(source='full_name')
     role_name = serializers.ReadOnlyField(source='role.role_name')
+    org_name = serializers.ReadOnlyField(source='organization.name')
     student_profile = StudentSerializer(read_only=True)
     teacher_profile = TeacherSerializer(read_only=True)
 
@@ -53,7 +61,7 @@ class UserListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'fullname', 'email', 'is_active', 'role_name', 'gender', 'teacher_profile', 'student_profile', 'grade_id' ]
+        fields = ['id', 'username', 'fullname', 'email', 'is_active', 'role_name', 'org_name', 'is_superuser', 'gender', 'teacher_profile', 'student_profile', 'grade_id' ]
     
     def get_grade_id(self, obj):
         if hasattr(obj, 'student_profile') and obj.student_profile:
@@ -74,13 +82,17 @@ class UserCreationSerializer(serializers.ModelSerializer):
     teacher_profile = TeacherSerializer(required=False)
     student_profile = StudentSerializer(required=False)
     generated_password = serializers.CharField(read_only=True)
+    role_name = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model = User
         fields = [
-            'id', 'username', 'first_name', 'middle_name', 'last_name', 'email', 'role', 'gender', 'teacher_profile', 'student_profile', 'generated_password'
+            'id', 'username', 'first_name', 'middle_name', 'last_name', 'email', 'role', 'role_name', 'gender', 'teacher_profile', 'student_profile', 'generated_password'
         ]
         read_only_fields = ['id', 'username', 'generated_password']
+        extra_kwargs = {
+            'role': {'required': False, 'allow_null': True}
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -89,19 +101,36 @@ class UserCreationSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         email = attrs.get('email')
         if email and User.objects.filter(email=email).exists():
-            raise serializers.ValidationError({"email": "This email is already in use."})
+            raise serializers.ValidationError({"email": "This email is already registered."})
 
         teacher_data = attrs.get('teacher_profile')
         if teacher_data and 'contact_number' in teacher_data:
             contact = teacher_data['contact_number']
-            if contact and Teacher.objects.filter(contact_number=contact).exists():
-                raise serializers.ValidationError({"teacher_profile": {"contact_number": "This contact number is already in use."}})
+            if contact:
+                if len(contact) != 10:
+                    raise serializers.ValidationError({"teacher_profile": {"contact_number": "Contact number must be exactly 10 digits."}})
+                if Teacher.objects.filter(contact_number=contact).exists():
+                    raise serializers.ValidationError({"teacher_profile": {"contact_number": "This contact number is already registered."}})
+
+        student_data = attrs.get('student_profile')
+        if student_data and 'guardian_contact' in student_data:
+            contact = student_data['guardian_contact']
+            if contact and len(contact) != 10:
+                raise serializers.ValidationError({"student_profile": {"guardian_contact": "Guardian contact number must be exactly 10 digits."}})
         
         return attrs
 
     def create(self, validated_data):
         teacher_data = validated_data.pop('teacher_profile', None)
         student_data = validated_data.pop('student_profile', None)
+        role_name_input = validated_data.pop('role_name', None)
+
+        if role_name_input:
+            try:
+                role_obj = Role.objects.get(role_name=role_name_input)
+                validated_data['role'] = role_obj
+            except Role.DoesNotExist:
+                raise serializers.ValidationError({"role_name": f"Role '{role_name_input}' does not exist in the system."})
 
         alphabet = string.ascii_letters + string.digits
         self.temp_password = ''.join(secrets.choice(alphabet) for i in range(8))
@@ -152,23 +181,36 @@ class UserCreationSerializer(serializers.ModelSerializer):
 class UserUpdateSerializer(serializers.ModelSerializer):
     teacher_profile = TeacherSerializer(required=False)
     student_profile = StudentSerializer(required=False)
+    role_name = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'password', 'first_name', 'middle_name', 'last_name', 'email', 'gender', 'is_active', 'teacher_profile', 'student_profile']
+        fields = ['id', 'username', 'password', 'first_name', 'middle_name', 'last_name', 'email', 'gender', 'is_active', 'role', 'role_name', 'teacher_profile', 'student_profile']
         read_only_fields = ['id', 'username']
-        extra_kwargs = {'password': {'write_only': True, 'required': False}}
+        extra_kwargs = {
+            'password': {'write_only': True, 'required': False},
+            'role': {'required': False, 'allow_null': True}
+        }
 
     def validate(self, attrs):
         email = attrs.get('email')
         if email and User.objects.exclude(pk=self.instance.pk).filter(email=email).exists():
-            raise serializers.ValidationError({"email": "This email is already in use."})
+            raise serializers.ValidationError({"email": "This email is already registered."})
 
         teacher_data = attrs.get('teacher_profile')
         if teacher_data and 'contact_number' in teacher_data:
             contact = teacher_data['contact_number']
-            if Teacher.objects.exclude(user=self.instance).filter(contact_number=contact).exists():
-                raise serializers.ValidationError({"teacher_profile": {"contact_number": "This contact number is already in use."}})
+            if contact:
+                if len(contact) != 10:
+                    raise serializers.ValidationError({"teacher_profile": {"contact_number": "Contact number must be exactly 10 digits."}})
+                if Teacher.objects.exclude(user=self.instance).filter(contact_number=contact).exists():
+                    raise serializers.ValidationError({"teacher_profile": {"contact_number": "This contact number is already registered."}})
+
+        student_data = attrs.get('student_profile')
+        if student_data and 'guardian_contact' in student_data:
+            contact = student_data['guardian_contact']
+            if contact and len(contact) != 10:
+                raise serializers.ValidationError({"student_profile": {"guardian_contact": "Guardian contact number must be exactly 10 digits."}})
         
         return attrs
     
@@ -176,6 +218,14 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         teacher_data = validated_data.pop('teacher_profile', None)
         student_data = validated_data.pop('student_profile', None)
         password = validated_data.pop('password', None)
+        role_name_input = validated_data.pop('role_name', None)
+
+        if role_name_input:
+            try:
+                role_obj = Role.objects.get(role_name=role_name_input)
+                validated_data['role'] = role_obj
+            except Role.DoesNotExist:
+                pass
 
         if password:
             instance.set_password(password)
