@@ -14,7 +14,7 @@ class ResourcePermissions(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.method in permissions.SAFE_METHODS:
             return request.user and request.user.is_authenticated
-        return bool(request.user.role.role_name == 'Teacher')
+        return bool(request.user.role and request.user.role.role_name in ['teacher', 'admin'])
 
 class ResourceFolderViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, ResourcePermissions]
@@ -24,14 +24,17 @@ class ResourceFolderViewSet(viewsets.ModelViewSet):
         user = self.request.user
         base_query = ResourceFolder.objects.filter(sub_assign__subject__organization=user.organization)
 
-        if user.role.role_name == 'Teacher':
+        if user.role and user.role.role_name == 'admin':
+            return base_query.select_related('sub_assign', 'sub_assign__subject').distinct()
+
+        if user.role and user.role.role_name == 'teacher':
             queryset = base_query.filter(sub_assign__teacher__user=user, uploaded_by=user.teacher_profile)
             selected_grade = self.request.query_params.get('grade_id')
             if selected_grade:
                 queryset = queryset.filter(sub_assign__grade_id=selected_grade)
             return queryset.select_related('sub_assign', 'sub_assign__subject').distinct()
         
-        elif user.role.role_name == 'Student':
+        elif user.role and user.role.role_name == 'student':
             queryset = base_query.filter(sub_assign__grade=user.student_profile.grade)
             selected_subject = self.request.query_params.get('subject_id')
             if selected_subject and selected_subject != 'All':
@@ -48,9 +51,19 @@ class ResourceViewSet(viewsets.ModelViewSet):
         user = self.request.user
         base_query = Resource.objects.filter(folder__sub_assign__subject__organization=user.organization)
 
-        if user.role.role_name == 'Teacher':
-            return base_query.filter(folder__sub_assign__teacher__user=user, folder__uploaded_by=user.teacher_profile).distinct()
-        elif user.role.role_name == 'Student':
+        folder_id = self.request.query_params.get('folder_id')
+        if folder_id:
+            base_query = base_query.filter(folder_id=folder_id)
+
+        if user.role and user.role.role_name == 'admin':
+            return base_query.distinct()
+        if user.role and user.role.role_name == 'teacher':
+            queryset = base_query.filter(folder__sub_assign__teacher__user=user, folder__uploaded_by=user.teacher_profile)
+            selected_grade = self.request.query_params.get('grade_id')
+            if selected_grade:
+                queryset = queryset.filter(folder__sub_assign__grade_id=selected_grade)
+            return queryset.distinct()
+        elif user.role and user.role.role_name == 'student':
             return base_query.filter(folder__sub_assign__grade=user.student_profile.grade).distinct()
         return base_query.none()
 
@@ -61,9 +74,15 @@ class FlashcardDeckViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         base_query = FlashcardDeck.objects.filter(sub_assign__subject__organization=user.organization)
-        if user.role.role_name == 'Teacher':
-            return base_query.filter(sub_assign__teacher__user=user, created_by=user.teacher_profile).distinct()
-        elif user.role.role_name == 'Student':
+        if user.role and user.role.role_name == 'admin':
+            return base_query.distinct()
+        if user.role and user.role.role_name == 'teacher':
+            queryset = base_query.filter(sub_assign__teacher__user=user, created_by=user.teacher_profile)
+            selected_grade = self.request.query_params.get('grade_id')
+            if selected_grade:
+                queryset = queryset.filter(sub_assign__grade_id=selected_grade)
+            return queryset.distinct()
+        elif user.role and user.role.role_name == 'student':
             queryset = base_query.filter(sub_assign__grade=user.student_profile.grade)
             selected_subject = self.request.query_params.get('subject_id')
             if selected_subject and selected_subject != 'All':
@@ -78,9 +97,16 @@ class FlashcardViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         base_query = Flashcard.objects.filter(deck__sub_assign__subject__organization=user.organization)
-        if user.role.role_name == 'Teacher':
+        
+        deck_id = self.request.query_params.get('deck_id')
+        if deck_id:
+            base_query = base_query.filter(deck_id=deck_id)
+
+        if user.role and user.role.role_name == 'admin':
+            return base_query.distinct()
+        if user.role and user.role.role_name == 'teacher':
             return base_query.filter(deck__created_by=user.teacher_profile).distinct()
-        elif user.role.role_name == 'Student':
+        elif user.role and user.role.role_name == 'student':
             return base_query.filter(deck__sub_assign__grade=user.student_profile.grade).distinct()
         return base_query.none()
 
@@ -94,7 +120,9 @@ class QuizViewSet(viewsets.ModelViewSet):
             sub_assign__subject__organization=user.organization
         ).prefetch_related('questions__choices')
         
-        if user.role.role_name == 'Teacher':
+        if user.role and user.role.role_name == 'admin':
+            return base_query.select_related('sub_assign', 'sub_assign__subject').distinct()
+        if user.role and user.role.role_name == 'teacher':
             queryset = base_query.filter(
                 sub_assign__teacher__user=user, created_by=user.teacher_profile
             )
@@ -103,7 +131,7 @@ class QuizViewSet(viewsets.ModelViewSet):
                 queryset = queryset.filter(sub_assign__grade_id=selected_grade)
             return queryset.select_related('sub_assign', 'sub_assign__subject').distinct()
         
-        elif user.role.role_name == 'Student':
+        elif user.role and user.role.role_name == 'student':
             # Only show published & active quizzes for students
             queryset = base_query.filter(
                 sub_assign__grade=user.student_profile.grade, 
@@ -130,9 +158,11 @@ class QuestionViewSet(viewsets.ModelViewSet):
         if quiz_id:
             queryset = queryset.filter(quiz_id=quiz_id)
         
-        if user.role.role_name == 'Teacher':
+        if user.role and user.role.role_name == 'admin':
+            return queryset.distinct()
+        if user.role and user.role.role_name == 'teacher':
             return queryset.filter(quiz__created_by=user.teacher_profile).order_by('order').distinct()
-        elif user.role.role_name == 'Student':
+        elif user.role and user.role.role_name == 'student':
             return queryset.filter(quiz__sub_assign__grade=user.student_profile.grade).order_by('order').distinct()
             
         return queryset.none()

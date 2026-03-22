@@ -23,10 +23,13 @@ class ResourceSerializer(serializers.ModelSerializer):
 class ResourceFolderSerialzer(serializers.ModelSerializer):
     resources = ResourceSerializer(many=True, read_only=True)
     grade_id = serializers.IntegerField(write_only=True, required=False)
+    subject_name = serializers.CharField(source='sub_assign.subject.name', read_only=True)
+    grade_info = serializers.CharField(source='sub_assign.grade.name', read_only=True)
+    uploaded_by_name = serializers.CharField(source='uploaded_by.user.full_name', read_only=True)
 
     class Meta:
         model = ResourceFolder
-        fields = ['id', 'name', 'sub_assign', 'uploaded_by', 'uploaded_at', 'resources', 'grade_id']
+        fields = ['id', 'name', 'sub_assign', 'uploaded_by', 'uploaded_at', 'resources', 'grade_id', 'subject_name', 'grade_info', 'uploaded_by_name']
         read_only_fields = ['id', 'sub_assign', 'uploaded_by', 'uploaded_at']
 
     def validate(self, data):
@@ -71,10 +74,14 @@ class FlashcardSerializer(serializers.ModelSerializer):
 class FlashcardDeckSerializer(serializers.ModelSerializer):
     cards = FlashcardSerializer(many=True, read_only=True)
     grade_id = serializers.IntegerField(write_only=True, required=False)
+    subject_name = serializers.CharField(source='sub_assign.subject.name', read_only=True)
+    grade_info = serializers.CharField(source='sub_assign.grade.name', read_only=True)
+    created_by_name = serializers.CharField(source='created_by.user.full_name', read_only=True)
+    card_count = serializers.IntegerField(source='cards.count', read_only=True)
 
     class Meta:
         model = FlashcardDeck
-        fields = ['id', 'title', 'sub_assign', 'created_by', 'created_at', 'cards', 'grade_id']
+        fields = ['id', 'title', 'sub_assign', 'created_by', 'created_at', 'cards', 'grade_id', 'subject_name', 'grade_info', 'created_by_name', 'card_count']
         read_only_fields = ['id', 'sub_assign', 'created_by', 'created_at']
 
     def validate(self, data):
@@ -141,13 +148,17 @@ class QuizSerializer(serializers.ModelSerializer):
     questions = QuestionSerializer(many=True, read_only=True)
     grade_id = serializers.IntegerField(write_only=True, required=False)
     questions_count = serializers.IntegerField(source='questions.count', read_only=True)
+    subject_name = serializers.CharField(source='sub_assign.subject.name', read_only=True)
+    grade_info = serializers.CharField(source='sub_assign.grade.name', read_only=True)
+    created_by_name = serializers.CharField(source='created_by.user.full_name', read_only=True)
 
     class Meta:
         model = Quiz
         fields = [
             'id', 'title', 'description', 'sub_assign', 'created_by', 'topic_tag', 
             'is_active', 'is_published', 'start_datetime', 'end_datetime', 
-            'default_time_per_question', 'created_at', 'grade_id', 'questions', 'questions_count'
+            'default_time_per_question', 'created_at', 'grade_id', 'questions', 'questions_count',
+            'subject_name', 'grade_info', 'created_by_name'
         ]
         read_only_fields = ['id', 'sub_assign', 'created_by', 'created_at']
 
