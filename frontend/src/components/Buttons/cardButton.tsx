@@ -14,7 +14,7 @@ export const CardButton = ({ onClick, Icon, className = "" }: CustomCardButtonPr
         <button 
             type="button"
             onClick={onClick}
-            className={`flex items-center py-2.5 justify-center border-3 border-dashed ${!hasRounding && 'rounded-xl'} transition-all duration-300 group cursor-pointer ${!hasWidth && 'w-full'} bg-surface border-light/10 hover:-translate-y-1 hover:shadow-md hover:shadow-primary/50 hover:border-primary ${className}`}
+            className={`flex items-center py-2.5 justify-center border-2 border-dashed ${!hasRounding && 'rounded-xl'} transition-all duration-300 group cursor-pointer ${!hasWidth && 'w-full'} bg-surface border-light/10 hover:-translate-y-1 hover:shadow-md hover:shadow-primary/50 hover:border-primary ${className}`}
         >
             <div className="p-3 lg:p-0 rounded-xl transition-colors">
                 <Icon size={40} strokeWidth={2.5} className="text-text-muted group-hover:text-primary transition-colors" />
