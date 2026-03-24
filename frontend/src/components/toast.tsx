@@ -10,7 +10,7 @@ interface ToastProps {
   onClose: () => void;
 }
 
-const DURATION = 3000;
+const DURATION = 4000;
 
 export const Toast = memo(({ toast, onClose }: ToastProps) => {
   const [isVisible, setIsVisible] = useState(false);
