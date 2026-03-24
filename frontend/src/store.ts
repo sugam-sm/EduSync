@@ -12,7 +12,7 @@ import flashcardReducer from "./features/learning/flashcardSlice"
 import quizReducer from "./features/learning/quizSllice"
 import teacherRemarkReducer from "./features/learning/teacherRemarkSlice"
 import attendanceReducer from "./features/analytics/attendanceSlice";
-
+import roleReducer from "./features/organization/roleSlice";
 
 export const store = configureStore({
     reducer: {
@@ -22,12 +22,13 @@ export const store = configureStore({
         user: usersReducer,
         grade: gradesReducer, 
         subject: subjectsReducer,
-        assignsub: assignSubReducer,
+        assignSub: assignSubReducer,
         resource: resourceReducer,
         flashcard: flashcardReducer,
         quiz: quizReducer,
         teacherRemark: teacherRemarkReducer,
         attendance: attendanceReducer,
+        role: roleReducer,
     }
 });
 
