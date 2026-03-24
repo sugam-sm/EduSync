@@ -40,14 +40,14 @@ export const UpdateUserPopup = ({ isOpen, onClose, user }: UpdateUserPopupProps)
     id: 0, username: '',
     first_name: '', middle_name: '', last_name: '',
     email: '', role: 3, gender: 'Male', is_active: true, role_name: '',
-    student_profile: { grade: 0, name: '', section: '', academic_year: '', guardian_name: '', guardian_relation: '', guardian_contact: '' },
+    student_profile: { grade: 0, grade_name: '', section: '', academic_year: '', guardian_name: '', guardian_relation: '', guardian_contact: '' },
     teacher_profile: { contact_number: '', specialization: '', qualification: '' },
   });
 
   useEffect (() => {
     if (user) {
       setFormData(user);
-      setRole(user.role_name === 'Teacher' ? 'Teacher' : 'Student');
+      setRole(user.role_name === 'teacher' ? 'Teacher' : 'Student');
       setGender(user.gender || 'Male');
       setSelectedClassId(user.student_profile?.grade || '');
       setPassword('');
@@ -118,14 +118,19 @@ export const UpdateUserPopup = ({ isOpen, onClose, user }: UpdateUserPopupProps)
         requiredFields["contact_number"] = contact;
         requiredFields["specialization"] = formData.teacher_profile?.specialization;
         requiredFields["qualification"] = formData.teacher_profile?.qualification;
-        if (contact.length !== 10 && contact.length !==0){
-          dispatch(addToast({ message:"Number should be of 10 digits", type: 'failure' }));
+        if (contact.length !== 10 && contact.length !== 0) {
+          dispatch(addToast({ message: "Contact number should be of 10 digits", type: 'failure' }));
           return;
         }
-      } else{
+      } else {
         requiredFields["guardian_name"] = formData.student_profile?.guardian_name;
         requiredFields["relation"] = formData.student_profile?.guardian_relation;
-        requiredFields["guardian_contact"] = formData.student_profile?.guardian_contact;
+        const guardiancontact = formData.student_profile?.guardian_contact || "";
+        requiredFields["guardian_contact"] = guardiancontact;
+        if (guardiancontact.length !== 10 && guardiancontact.length !== 0) {
+          dispatch(addToast({ message: "Guardian contact should be of 10 digits", type: 'failure' }));
+          return;
+        }
       }
 
     for (const [fieldName, val] of Object.entries(requiredFields)) {
@@ -139,7 +144,7 @@ export const UpdateUserPopup = ({ isOpen, onClose, user }: UpdateUserPopupProps)
       ...formData,
       gender,
       password: password.trim() !== '' ? password : undefined,
-      role: role === 'Student' ? 3 : 2,
+      role_name: role === 'Student' ? 'student' : 'teacher',
       student_profile: role === 'Student' ? { ...formData.student_profile, grade: selectedClassId } : undefined,
       teacher_profile: role === 'Teacher' ? formData.teacher_profile : undefined
     };

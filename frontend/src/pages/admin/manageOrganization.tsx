@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Camera, Building2, Mail, Pen,  Trash2} from 'lucide-react';
 import { FormButton } from '../../components/Buttons/formButton';
+import { Button } from '../../components/Buttons/customButton';
 
 import { type AppDispatch, type RootState } from '../../store';
 import { fetchOrganization, updateOrganization, resetOrgState } from '../../features/organization/organizationSlice'
@@ -34,7 +35,7 @@ export const ManageOrganization = () => {
                 email: organization.email,
                 logo: null
             });
-            setPreview(organization.logo);
+            setPreview(organization?.logo || null);
         }
     }, [organization]);
 
@@ -137,94 +138,106 @@ export const ManageOrganization = () => {
     };
 
     return (
-        <main className="flex flex-col justify-center w-[85vw] lg:w-full min-h-[85vh] h-full mx-auto">
-            <h1 className="text-2xl font-bold text-primary mb-4 text-center border-2 p-4 border-light/30 rounded-2xl">Organization Details</h1>
+        <main className="flex flex-col justify-center w-full sm:w-[70%] xl:w-[50%] h-full mx-auto py-8">
+            <h1 className="text-2xl font-bold text-primary mb-6 text-center border-2 p-4 border-light/30 rounded-2xl shadow-sm bg-surface/50">
+                Organization Details
+            </h1>
             
-            <form onSubmit={handleSubmit} className="space-y-6 p-2">
+            <form onSubmit={handleSubmit} className="space-y-6 px-1 lg:px-2">
 
                 <div className="flex flex-col gap-2">
-                    <label className="font-semibold text-text-heading">Organization Name</label>
+                    <label className="font-semibold text-text-heading text-sm ml-1">Organization Name</label>
                     <div className="relative group">
                         <Building2 
                             className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-primary transition-colors duration-500" 
-                            size={20} 
+                            size={18} 
                         />
                         <input 
                             type="text"
                             value={formData.name}
                             onChange={(e) => setFormData({...formData, name: e.target.value})}
                             placeholder="Enter organization name"
-                            className="w-full lg:min-w-sm p-3 pl-12 rounded-xl border-2 border-light/20 outline-none transition-all placeholder:text-text-muted bg-transparent text-text-heading focus:text-primary focus:border-primary duration-500"
+                            className="w-full p-3.5 pl-12 rounded-xl border-2 border-light/20 outline-none transition-all placeholder:text-text-muted bg-surface/30 text-text-heading focus:text-primary focus:border-primary duration-500 shadow-sm"
                         />
                     </div>
                 </div>
 
                 <div className="flex flex-col gap-2">
-                    <label className="font-semibold text-text-heading">Organization Email</label>
+                    <label className="font-semibold text-text-heading text-sm ml-1">Organization Email</label>
                     <div className="relative group">
                         <Mail 
                             className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-primary transition-colors duration-500" 
-                            size={20} 
+                            size={18} 
                         />
                         <input 
                             type="email"
                             value={formData.email}
                             onChange={(e) => setFormData({...formData, email: e.target.value})}
                             placeholder="org@example.com"
-                            className="w-full p-3 pl-12 rounded-xl border-2 border-light/20 outline-none transition-all duration-500 placeholder:text-text-muted bg-transparent text-text-heading focus:text-primary focus:border-primary"
+                            className="w-full p-3.5 pl-12 rounded-xl border-2 border-light/20 outline-none transition-all duration-500 placeholder:text-text-muted bg-surface/30 text-text-heading focus:text-primary focus:border-primary shadow-sm"
                         />
                     </div>
                 </div>
 
                 <div className="flex flex-col gap-2">
-                    <label className="font-semibold text-text-heading">Organization Logo</label>
-                    <div className="flex items-center gap-4">
-                        <div className="md:w-50 md:h-50 w-30 h-30 rounded-full border-2 border-dashed border-light/30 flex items-center justify-center overflow-hidden bg-bg relative group">
+                    <label className="font-semibold text-text-heading text-sm ml-1">Organization Logo</label>
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+                        <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full border-3 border-dashed border-light/30 flex items-center justify-center overflow-hidden bg-bg relative group shadow-inner">
                             {preview ? (
-                                <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+                                <img src={preview} alt="Preview" className="w-full h-full object-cover animate-in zoom-in-95 duration-500" />
                             ) : (
                                 <Camera className="text-text-muted group-hover:text-primary transition-colors duration-500" size={32} />
                             )}
                         </div>
                         
-                        <div className="flex flex-col gap-2">
+                        <div className="flex flex-col gap-3 w-full sm:w-auto">
+                            <p className="text-[10px] text-text-muted text-center sm:text-left uppercase font-bold tracking-wider opacity-60">PNG, JPG, JPEG up to 2MB</p>
+                            
                             <div className="flex flex-col gap-2">
-                                <p className="text-xs text-text-muted">PNG, JPG, JPEG up to 2MB</p>
-                                
-                                <label className="cursor-pointer bg-primary/30 text-primary px-4 py-2 rounded-full text-sm font-bold hover:bg-primary hover:text-white transition-all flex justify-center items-center gap-2">
-                                    <Pen size={15} strokeWidth={3}/>
-                                    {preview ? 'Change Logo' : 'Select Logo'}
-                                    <input 
-                                        type="file" 
-                                        accept="image/*"
-                                        onChange={handleFileChange}
-                                        className="hidden"
-                                    />
-                                </label>
+                                <input 
+                                    type="file" 
+                                    id="logo-upload"
+                                    accept="image/*"
+                                    onChange={handleFileChange}
+                                    className="hidden"
+                                />
+                                <Button
+                                    onClick={() => document.getElementById('logo-upload')?.click()}
+                                    label={preview ? 'Change' : 'Select'}
+                                    Icon={Pen}
+                                    variant="primary"
+                                    className=""
+                                />
                                 
                                 {preview && (
-                                    <button 
-                                        type="button"
-                                        onClick={handleRemoveLogo}
-                                        className="bg-failure/30 text-failure px-10 py-2 rounded-full text-sm font-bold hover:bg-failure hover:text-white transition-all cursor-pointer flex items-center gap-2"
-                                    >
-                                        <Trash2 size={15} strokeWidth={3}/>
-                                        Remove
-                                    </button>
+                                    <Button
+                                        onClick={() => openDecidePopup({
+                                            question: "Are you sure you want to remove the logo?",
+                                            confirmText: "Remove Logo",
+                                            cancelText: "Cancel",
+                                            variant: "primary",
+                                            onConfirm: handleRemoveLogo
+                                        })}
+                                        label="Remove"
+                                        Icon={Trash2}
+                                        variant="failure"
+                                        className=""
+                                    />
                                 )}
                             </div>
-                            
                         </div>
                     </div>
                 </div>
                 
-                <FormButton 
-                    type="submit" 
-                    isLoading={isLoading} 
-                    className="w-full"
-                >
-                    Update
-                </FormButton>
+                <div className="pt-2">
+                    <FormButton 
+                        type="submit" 
+                        isLoading={isLoading} 
+                        className="w-full py-4 text-base shadow-lg shadow-primary/10"
+                    >
+                        Update Details
+                    </FormButton>
+                </div>
                 
             </form>
             <DecidePopup />

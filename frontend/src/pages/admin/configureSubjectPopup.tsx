@@ -23,7 +23,7 @@ interface ConfigureSubjectPopupProps {
 
 export const ConfigureSubjectPopup = ({ isOpen, onClose, subject }: ConfigureSubjectPopupProps) => {
     const dispatch = useDispatch<AppDispatch>();
-    const { assignSub, isLoading } = useSelector((state: RootState) => state.assignsub);
+    const { assignSub, isLoading } = useSelector((state: RootState) => state.assignSub);
     const { grades } = useSelector((state: RootState) => state.grade);
     const { users } = useSelector((state: RootState) => state.user);
     
@@ -53,7 +53,7 @@ export const ConfigureSubjectPopup = ({ isOpen, onClose, subject }: ConfigureSub
             .map(a => Number(a.teacher));
 
         const filteredTeachers = (users || [])
-            .filter(u => u.role_name === 'Teacher')
+            .filter(u => u.role_name === 'teacher')
             .filter(u => !teachersAssignedToOtherSubjects.includes(Number(u.id)));
 
         return filteredTeachers.map(u => ({

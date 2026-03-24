@@ -83,7 +83,7 @@ export const ManageGrades = () => {
     }, [searchQuery, selectedYear]);
 
     return (
-        <div className='flex flex-col items-center justify-center align-middle h-full w-screen relative'>
+        <div className='flex flex-col items-center justify-center align-middle h-full w-full relative'>
             <CreateGradePopup isOpen={isCreatePopupOpen} onClose={() => setIsCreatePopupOpen(false)} />
             <UpdateGradePopup isOpen={isUpdatePopupOpen} onClose={() => setIsUpdatePopupOpen(false)} grade={selectedGrade} />
             <DecidePopup />

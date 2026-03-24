@@ -46,7 +46,7 @@ export const UpdateGradePopup = ({ isOpen, onClose, grade }: { isOpen: boolean; 
         .map(g => Number(g.class_teacher));
 
     const availableTeachers = users.filter(u => 
-        u.role_name === 'Teacher' && !activeTeacherIds.includes(Number(u.id))
+        u.role_name === 'teacher' && !activeTeacherIds.includes(Number(u.id))
     );
 
     const teacherOptions = [

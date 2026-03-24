@@ -71,7 +71,7 @@ export const ManageSubjects = () => {
     }, [searchQuery]);
 
     return (
-        <div className='flex flex-col items-center justify-center align-middle h-full w-screen relative'>
+        <div className='flex flex-col items-center justify-center align-middle h-full w-full relative'>
             <CreateSubjectPopup isOpen={isCreatePopupOpen} onClose={() => setIsCreatePopupOpen(false)} />
 
             {selectedSubject && (

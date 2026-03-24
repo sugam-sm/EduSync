@@ -35,7 +35,7 @@ export const CreateGradePopup = ({ isOpen, onClose }: { isOpen: boolean; onClose
     }, [sectionMode]);
 
     const activeTeacherIds = grades.filter(g => g.is_active).map(g => g.class_teacher);
-    const availableTeachers = users.filter(u => u.role_name === 'Teacher' && !activeTeacherIds.includes(Number(u.id)));
+    const availableTeachers = users.filter(u => u.role_name === 'teacher' && !activeTeacherIds.includes(Number(u.id)));
     
     const teacherOptions = [
     { label: "No Teacher Assigned", value: '' },

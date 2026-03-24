@@ -31,7 +31,7 @@ export const CreateUserPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose:
   const initialFormState: User = {
     first_name: '', middle_name: '', last_name: '',
     email: '', role: 3, gender: 'Male', role_name: '', is_active: true, 
-    student_profile: { grade: 0, name: '', section: '', academic_year: '', guardian_name: '', guardian_relation: '', guardian_contact: '' },
+    student_profile: { grade: 0, grade_name: '', section: '', academic_year: '', guardian_name: '', guardian_relation: '', guardian_contact: '' },
     teacher_profile: { contact_number: '', specialization: '', qualification: '' },
   };
 
@@ -72,11 +72,8 @@ export const CreateUserPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose:
         requiredFields["contact_number"] = contact;
         requiredFields["specialization"] = formData.teacher_profile?.specialization;
         requiredFields["qualification"] = formData.teacher_profile?.qualification;
-        if (contact.length !== 10 && contact.length !==0){
-          dispatch(addToast({
-            message:"Number should be of 10 digits",
-            type: 'failure'
-          }));
+        if (contact.length !== 10 && contact.length !== 0) {
+          dispatch(addToast({ message: "Contact number should be of 10 digits", type: 'failure' }));
           return;
         }
       } else{
@@ -84,11 +81,8 @@ export const CreateUserPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose:
         requiredFields["relation"] = formData.student_profile?.guardian_relation;
         const guardiancontact = formData.student_profile?.guardian_contact || "";
         requiredFields["guardian_contact"] = guardiancontact;
-        if (guardiancontact.length !== 10 && guardiancontact.length !==0){
-          dispatch(addToast({
-            message:"Number should be of 10 digits",
-            type: 'failure'
-          }));
+        if (guardiancontact.length !== 10 && guardiancontact.length !== 0) {
+          dispatch(addToast({ message: "Guardian contact should be of 10 digits", type: 'failure' }));
           return;
         }
       }
@@ -114,15 +108,15 @@ export const CreateUserPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose:
     if (role === 'Student') {
       const selectedGrade = grades.find(grade => String(grade.id) === String(selectedGradeId))
 
-      finalPayload.role = 3;
+      finalPayload.role_name = 'student';
       finalPayload.student_profile = {
           ...student_profile, 
           grade: Number(selectedGradeId),
-          name: selectedGrade?.name,
+          grade_name: selectedGrade?.name,
           section: selectedGrade?.section,
       };
     } else {
-      finalPayload.role = 2;
+      finalPayload.role_name = 'teacher';
       finalPayload.teacher_profile = teacher_profile;
     }
 

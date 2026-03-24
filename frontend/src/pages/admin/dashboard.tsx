@@ -24,7 +24,7 @@ export const AdminDashboard = () => {
     const { users, isLoading: userLoading } = useSelector((state: RootState) => state.user);
     const { grades, isLoading: gradeLoading } = useSelector((state: RootState) => state.grade);
     const { subjects, isLoading: subjectLoading } = useSelector((state: RootState) => state.subject);
-    const { assignSub, isLoading: assignLoading } = useSelector((state: RootState) => state.assignsub);
+    const { assignSub, isLoading: assignLoading } = useSelector((state: RootState) => state.assignSub);
 
     const isLoading = userLoading || gradeLoading || subjectLoading || assignLoading;
 
@@ -37,8 +37,8 @@ export const AdminDashboard = () => {
 
     // Data Insights Logic
     const insights = useMemo(() => {
-        const teachers = users.filter(u => u.role_name === 'Teacher');
-        const totalAdmins = users.filter(u => u.role_name === 'Admin').length;
+        const teachers = users.filter(u => u.role_name === 'teacher');
+        const totalAdmins = users.filter(u => u.role_name === 'admin').length;
         
         // Find unassigned teachers (based on the "one subject" rule)
         const assignedTeacherIds = new Set(assignSub.filter(a => a.teacher).map(a => a.teacher));
@@ -67,7 +67,7 @@ export const AdminDashboard = () => {
     ];
 
     return (
-        <div className='flex flex-col items-center justify-start align-middle min-h-full w-screen py-10'>
+        <div className='flex flex-col items-center justify-start align-middle min-h-full w-full py-10 overflow-y-auto'>
             
             {/* Header Section */}
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-0 mx-auto mb-8 items-center justify-center sm:justify-between w-[90%] sm:w-[80%] md:w-[73%]">

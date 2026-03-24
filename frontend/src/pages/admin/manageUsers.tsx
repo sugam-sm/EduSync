@@ -49,8 +49,8 @@ export const ManageUsers = () => {
 
     const roleOptions = [
         { label: "All Roles", value: "All" },
-        { label: "Teacher", value: "Teacher" },
-        { label: "Student", value: "Student" },
+        { label: "Teacher", value: "teacher" },
+        { label: "Student", value: "student" },
     ];
 
     const gradeOptions = [
@@ -75,7 +75,7 @@ export const ManageUsers = () => {
                                  String(user.grade_id || "") === String(selectedGrade);
             
             const matchesStatus = selectedStatus === "All" || 
-                                 String(user.is_active) === String(selectedStatus);
+                                  (selectedStatus === "Active" ? user.is_active : !user.is_active);
             
             return matchesSearch && matchesRole && matchesGrade && matchesStatus;
         });
@@ -86,7 +86,7 @@ export const ManageUsers = () => {
     }, [searchQuery, selectedRole, selectedGrade, selectedStatus]);
 
     return (
-        <div className='flex flex-col items-center justify-center align-middle h-full w-screen relative'>
+        <div className='flex flex-col items-center justify-center align-middle h-full w-full relative'>
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-0 mx-auto mb-5 items-center justify-center sm:justify-between w-[90%] sm:w-[80%] md:w-[73%]">
                 <h1 className="w-full md:w-[60%] text-primary text-3xl font-bold text-center sm:text-left">Manage Users</h1>
                 <Button 
