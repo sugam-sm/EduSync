@@ -9,6 +9,8 @@ export interface UserBase{
     role_name: string;
     gender: string;
     is_active: boolean;
+    org_name?: string;
+    fullname?: string;
 }
 
 export interface User extends UserBase{
@@ -24,7 +26,7 @@ export interface User extends UserBase{
     }
     student_profile?: {
         grade: number;
-        name: string;
+        grade_name: string;
         section: string;
         academic_year: string;
         guardian_name: string;
@@ -40,7 +42,7 @@ export interface UserSummary extends UserBase{
         contact_number: string;
     } | null;
     student_profile?: {
-        name: string;
+        grade_name: string;
         section: string;
         guardian_relation: string;
         guardian_contact: string;
@@ -181,10 +183,18 @@ const userSlice = createSlice({
                 state.isSuccess = true;
                 state.users.unshift(action.payload);
             })
-            .addCase(createUser.rejected, (state, action:any) => {
+            .addCase(createUser.rejected, (state, action: any) => {
                 state.isDetailsLoading = false;
                 state.isError = true;
-                state.message = action.payload?.detail || action.payload?.email[0] || "Validation Error";
+                const payload = action.payload;
+                const contactError = payload?.teacher_profile?.contact_number;
+                const guardianError = payload?.student_profile?.guardian_contact;
+                
+                state.message = payload?.detail || 
+                                payload?.email?.[0] || 
+                                (Array.isArray(contactError) ? contactError[0] : contactError) ||
+                                (Array.isArray(guardianError) ? guardianError[0] : guardianError) ||
+                                "Validation Error";
             })
             .addCase(updateUser.pending, (state) => {
                 state.isDetailsLoading = true;
@@ -197,7 +207,15 @@ const userSlice = createSlice({
             .addCase(updateUser.rejected, (state, action: any) => {
                 state.isDetailsLoading = false;
                 state.isError = true;
-                state.message = action.payload?.detail || 'failed to update user';
+                const payload = action.payload;
+                const contactError = payload?.teacher_profile?.contact_number;
+                const guardianError = payload?.student_profile?.guardian_contact;
+
+                state.message = payload?.detail || 
+                                payload?.email?.[0] || 
+                                (Array.isArray(contactError) ? contactError[0] : contactError) ||
+                                (Array.isArray(guardianError) ? guardianError[0] : guardianError) ||
+                                "failed to update user";
             })
             .addCase(deleteUser.pending, (state) => {
                 state.isDetailsLoading = true;

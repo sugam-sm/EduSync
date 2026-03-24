@@ -5,6 +5,7 @@ export interface SubjectDetails {
     id?: number;
     name: string;
     organization?: string;
+    org_name?: string;
 }
 
 interface SubjectState {

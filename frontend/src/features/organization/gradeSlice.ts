@@ -10,6 +10,7 @@ export interface GradeDetails {
     organization?: string;
     class_teacher?: number | null;
     teacher_name?: string;
+    org_name?: string;
 }
 
 interface GradeState {
