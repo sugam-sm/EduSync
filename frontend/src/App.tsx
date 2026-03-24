@@ -15,6 +15,25 @@ import { ManageOrganization } from './pages/admin/manageOrganization';
 import { ManageSubjects } from './pages/admin/manageSubjects';
 import { ManageGrades } from './pages/admin/manageGrades';
 
+// pages for superadmin
+import { SuperAdminLayout } from './pages/superadmin/layout';
+import { SuperAdminDashboard } from './pages/superadmin/dashboard';
+import { ManageOrganizations as SAManageOrganizations } from './pages/superadmin/manage/manageOrganizations';
+import { CreateOrganizationsPage as SACreateOrganizationsPage } from './pages/superadmin/create/createOrganizationsPage';
+import { UpdateOrganizationsPage as SAUpdateOrganizationsPage } from './pages/superadmin/update/updateOrganizationsPage';
+
+import { ManageUsers as SAManageUsers } from './pages/superadmin/manage/manageUsers';
+import { CreateUsersPage as SACreateUsersPage } from './pages/superadmin/create/createUsersPage';
+import { UpdateUsersPage as SAUpdateUsersPage } from './pages/superadmin/update/updateUsersPage';
+
+import { ManageRoles as SAManageRoles } from './pages/superadmin/manage/manageRoles';
+import { CreateRolesPage as SACreateRolesPage } from './pages/superadmin/create/createRolesPage';
+import { UpdateRolesPage as SAUpdateRolesPage } from './pages/superadmin/update/updateRolesPage';
+import { ManageGroups as SAManageGroups } from './pages/superadmin/manage/manageGroups';
+import { CreateGroupsPage as SACreateGroupsPage } from './pages/superadmin/create/createGroupsPage';
+import { UpdateGroupsPage as SAUpdateGroupsPage } from './pages/superadmin/update/updateGroupsPage';
+
+
 // pages for students
 import { StudentDashboard } from './pages/student/dashbaord';
 import { AccessResources } from './pages/student/accessResources';
@@ -37,12 +56,18 @@ import { type AppDispatch, type RootState } from './store';
 const Dashboard = () => {
     const { user } = useSelector((state: RootState) => state.login);
 
-    switch (user?.role) {
-        case 'Administrator':
+    const role = user?.role;
+
+    if (user?.is_superuser || role === 'superadmin') {
+        return <Navigate to="/superadmin" replace />;
+    }
+
+    switch (role) {
+        case 'admin':
             return <AdminDashboard />;
-        case 'Teacher':
+        case 'teacher':
             return <TeacherDashboard />;
-        case 'Student':
+        case 'student':
             return <StudentDashboard />;
     }
 }
@@ -51,9 +76,9 @@ const Resources = () => {
     const { user } = useSelector((state: RootState) => state.login);
 
     switch (user?.role) {
-        case 'Teacher':
+        case 'teacher':
             return <ManageLearningResources />;
-        case 'Student':
+        case 'student':
             return <AccessResources />;
     }
 }
@@ -62,9 +87,9 @@ const Assessments = () => {
     const { user } = useSelector((state: RootState) => state.login);
 
     switch (user?.role) {
-        case 'Teacher':
+        case 'teacher':
             return <ManageAssessments />;
-        case 'Student':
+        case 'student':
             return <AccessAssessments />;
     }
 }
@@ -73,9 +98,9 @@ const Sessions = () => {
     const { user } = useSelector((state: RootState) => state.login);
 
     switch (user?.role) {
-        case 'Teacher':
+        case 'teacher':
             return <ManageSessions />;
-        case 'Student':
+        case 'student':
             return <AccessSessions />;
     }
 }
@@ -83,20 +108,24 @@ const Sessions = () => {
 const Analytics = () => {
     const { user } = useSelector((state: RootState) => state.login);
 
-    switch (user?.role) {
-        case 'Teacher':
+    const role = user?.role;
+
+    switch (role) {
+        case 'admin':
+        case 'teacher':
             return <ManageAnalytics />;
-        case 'Student':
+        case 'student':
             return <AccessAnalytics />;
     }
 }
 
 interface ProtectedRouteProps {
-    allowedRoles: string[];
+    allowedRoles?: string[];
     isPublic?: boolean;
+    requireSuperadmin?: boolean;
 }
 
-export const ProtectedRoute = ({ allowedRoles, isPublic }: ProtectedRouteProps) => {
+export const ProtectedRoute = ({ allowedRoles, isPublic, requireSuperadmin }: ProtectedRouteProps) => {
     const { user } = useSelector((state: RootState) => state.login);
     const location = useLocation();
 
@@ -108,8 +137,24 @@ export const ProtectedRoute = ({ allowedRoles, isPublic }: ProtectedRouteProps) 
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-        return <Navigate to="/unauthorized" replace />;
+    if (requireSuperadmin && user) {
+        if (!user.is_superuser) {
+            return <Navigate to="/unauthorized" replace />;
+        }
+        // If the user is a superuser and the route needs superadmin, allow them in.
+        return <Outlet />;
+    }
+
+    if (allowedRoles && user) {
+        const userRole = user.role;
+        const isAllowed = allowedRoles.includes(userRole);
+        
+        if (!isAllowed) {
+            // Superusers bypass role restrictions
+            if (!user.is_superuser && user.role !== 'superadmin') {
+                return <Navigate to="/unauthorized" replace />;
+            }
+        }
     }
 
     return <Outlet />;
@@ -143,7 +188,7 @@ function App() {
 
     return (
         <>
-            <div className="fixed top-6 right-6 z-500 flex flex-col items-end gap-3 pointer-events-none">
+            <div className="fixed top-20 right-6 z-1000 flex flex-col items-end gap-3 pointer-events-none">
                 {toasts.map((t) => (
                     <div key={t.id} className="pointer-events-auto">
                         <Toast toast={t} onClose={() => dispatch(removeToast(t.id))} />
@@ -157,31 +202,59 @@ function App() {
                         <Route path="/login" element={<Login />} />
                     </Route>
 
-                    <Route element={<ProtectedRoute isPublic={false} allowedRoles={['Administrator', 'Teacher', 'Student']} />}>
+                    <Route element={<ProtectedRoute isPublic={false} allowedRoles={['admin', 'teacher', 'student']} />}>
                         <Route path="/" element={<Layout />}>
                             <Route index element={<Dashboard />} />
                             <Route path="settings" element={<Settings />} />
 
-                            <Route element={<ProtectedRoute allowedRoles={['Teacher', 'Student']} />}>
+                            <Route element={<ProtectedRoute allowedRoles={['teacher', 'student']} />}>
                                 <Route path="resources" element={<Resources />} />
                                 <Route path="assessments" element={<Assessments />} />
                                 <Route path="sessions" element={<Sessions />} />
                                 <Route path="analytics" element={<Analytics />} />
                             </Route>
 
-                            <Route element={<ProtectedRoute allowedRoles={['Administrator']} />}>
+                            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
                                 <Route path="organization" element={< ManageOrganization />} />
                                 <Route path="users" element={< ManageUsers />} />
                                 <Route path="grades" element={< ManageGrades />} />
                                 <Route path="subjects" element={< ManageSubjects />} />
                             </Route>
 
-                            <Route path="/unauthorized" element={<div className="h-screen flex items-center justify-center font-semibold text-failure text-3xl gap-4">
-                                <UserLock size='35' strokeWidth={2.5} /> Access Denied
+                            <Route path="/unauthorized" element={<div className="h-screen flex flex-col items-center justify-center font-semibold text-failure text-3xl gap-4 bg-bg text-text">
+                                <UserLock size='45' strokeWidth={2.5} /> Access Denied
                             </div>} />
-                            <Route path="*" element={<div className="h-screen flex items-center justify-center text-failure font-semibold text-3xl gap-4">
-                                <SearchX size='35' strokeWidth={2.5} /> Page Not Found
+                            <Route path="*" element={<div className="h-screen flex flex-col items-center justify-center text-failure font-semibold text-3xl gap-4 bg-bg text-text">
+                                <SearchX size='45' strokeWidth={2.5} /> Page Not Found
                             </div>} />
+                        </Route>
+
+                        <Route path="/superadmin" element={<ProtectedRoute requireSuperadmin={true} />}>
+                            <Route element={<SuperAdminLayout />}>
+                                <Route index element={<SuperAdminDashboard />} />
+
+                            {/* Organizations Module */}
+                            <Route path="manage/organizations" element={<SAManageOrganizations />} />
+                            <Route path="create/organizations" element={<SACreateOrganizationsPage />} />
+                            <Route path="update/organizations/:id" element={<SAUpdateOrganizationsPage />} />
+
+                            {/* Users Module */}
+                            <Route path="manage/admins" element={<SAManageUsers type="admin" />} />
+                            <Route path="manage/users" element={<SAManageUsers excludeAdmins={true} />} />
+                            <Route path="create/users" element={<SACreateUsersPage />} />
+                            <Route path="update/users/:id" element={<SAUpdateUsersPage />} />
+
+                            {/* Redirect old paths if they hit directly */}
+                            <Route path="manage/students" element={<Navigate to="/superadmin/manage/users" replace />} />
+                            <Route path="manage/teachers" element={<Navigate to="/superadmin/manage/users" replace />} />
+                            
+                            <Route path="manage/roles" element={<SAManageRoles />} />
+                            <Route path="create/roles" element={<SACreateRolesPage />} />
+                            <Route path="update/roles/:id" element={<SAUpdateRolesPage />} />
+                            <Route path="manage/groups" element={<SAManageGroups />} />
+                            <Route path="create/groups" element={<SACreateGroupsPage />} />
+                            <Route path="update/groups/:id" element={<SAUpdateGroupsPage />} />
+                            </Route>
                         </Route>
                     </Route>
                 </Routes>
