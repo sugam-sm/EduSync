@@ -5,8 +5,9 @@ interface userDetails {
   id: BigInteger;
   username: string;
   full_name: string;
-  role: 'Administrator' | 'Teacher' | 'Student';
+  role: 'superadmin' | 'admin' | 'teacher' | 'student';
   org_name: string;
+  is_superuser?: boolean;
 }
 // Defining the shape and initial state of our login state
 interface LoginState {
