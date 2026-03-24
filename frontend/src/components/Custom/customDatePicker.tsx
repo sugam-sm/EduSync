@@ -105,7 +105,7 @@ export const CustomDatePicker = ({ value, onChange, roleColor = "primary" }: Dat
           {daySlots.map(d => {
             const isSelected = selectedDate?.getDate() === d && selectedDate?.getMonth() === month && selectedDate?.getFullYear() === year;
             const isToday = new Date().getDate() === d && new Date().getMonth() === month && new Date().getFullYear() === year;
-            
+
             let bgClass = "hover:bg-primary/20 hover:text-primary text-text-body cursor-pointer";
             if (isSelected) bgClass = "bg-primary text-white font-bold shadow-md cursor-pointer";
             else if (isToday) bgClass = "bg-light/10 text-primary font-bold cursor-pointer";
@@ -127,16 +127,16 @@ export const CustomDatePicker = ({ value, onChange, roleColor = "primary" }: Dat
   };
 
   return (
-    <div 
-      className="relative" 
+    <div
+      className="relative"
       ref={dropdownRef}
-      onMouseEnter={() => setIsOpen(true)}
-      onMouseLeave={() => setIsOpen(false)}
+      onMouseEnter={() => window.innerWidth >= 1024 && setIsOpen(true)}
+      onMouseLeave={() => window.innerWidth >= 1024 && setIsOpen(false)}
     >
       <div
-        className={`flex items-center justify-center rounded-2xl border-2 transition-all cursor-pointer hover:border-light/20 w-auto px-4 h-[45px] shrink-0 gap-2 ${
-          isOpen ? activeBorderColors[roleColor] : value ? "bg-primary/20 border-primary/30" : "bg-light/5 border-light/10"
-        }`}
+        onClick={() => window.innerWidth < 1024 && setIsOpen(!isOpen)}
+        className={`flex items-center justify-center rounded-2xl border-2 transition-all cursor-pointer hover:border-light/20 w-auto px-4 h-[45px] shrink-0 gap-2 ${isOpen ? activeBorderColors[roleColor] : value ? "bg-primary/20 border-primary/30" : "bg-light/5 border-light/10"
+          }`}
       >
         <div className="flex items-center justify-center relative gap-2">
           <CalendarIcon size={18} strokeWidth={3} className={value ? "text-primary" : "text-text-muted"} />
@@ -144,32 +144,32 @@ export const CustomDatePicker = ({ value, onChange, roleColor = "primary" }: Dat
             Filter
           </span>
           {value && (
-             <div className="absolute -top-1 -right-2 w-2 h-2 bg-primary rounded-full" />
+            <div className="absolute -top-1 -right-2 w-2 h-2 bg-primary rounded-full" />
           )}
         </div>
       </div>
 
       {isOpen && (
         <div className="absolute top-[90%] pt-2 right-0 z-[9999]">
-            <div className="p-5 bg-surface/95 backdrop-blur-md border-2 border-light/10 rounded-3xl w-72 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-                <div className="flex justify-between items-center mb-4 pb-2 border-b border-light/10">
-                    <span className="text-xs font-black text-text-muted uppercase tracking-widest">Select Date</span>
-                    {value && (
-                        <button 
-                        onClick={() => { onChange(""); setSelectedDate(null); setIsOpen(false); }}
-                        className="text-[11.5px] font-semibold text-failure hover:underline cursor-pointer"
-                        >
-                        Clear search
-                        </button>
-                    )}
-                </div>
-                {renderCalendar()}
-                
-                <div className="mt-4 pt-4 border-t-2 border-light/10 flex gap-2">
-                        <Button label="Cancel" onClick={() => { setSelectedDate(parseValue(value)); setIsOpen(false); }} variant='failure' className='w-full text-xs py-2' />
-                        <Button label="Confirm" onClick={() => { if (selectedDate) onChange(formatValue(selectedDate)); setIsOpen(false); }} variant='primary' className='w-full text-xs py-2' />
-                </div>
+          <div className="p-5 bg-surface/95 backdrop-blur-md border-2 border-light/10 rounded-3xl w-72 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-4 pb-2 border-b border-light/10">
+              <span className="text-xs font-black text-text-muted uppercase tracking-widest">Select Date</span>
+              {value && (
+                <button
+                  onClick={() => { onChange(""); setSelectedDate(null); setIsOpen(false); }}
+                  className="text-[11.5px] font-semibold text-failure hover:underline cursor-pointer"
+                >
+                  Clear search
+                </button>
+              )}
             </div>
+            {renderCalendar()}
+
+            <div className="mt-4 pt-4 border-t-2 border-light/10 flex gap-2">
+              <Button label="Cancel" onClick={() => { setSelectedDate(parseValue(value)); setIsOpen(false); }} variant='failure' className='w-full text-xs py-2' />
+              <Button label="Confirm" onClick={() => { if (selectedDate) onChange(formatValue(selectedDate)); setIsOpen(false); }} variant='primary' className='w-full text-xs py-2' />
+            </div>
+          </div>
         </div>
       )}
     </div>
