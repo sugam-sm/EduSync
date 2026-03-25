@@ -13,8 +13,8 @@ RUN npm install
 # copying project files
 COPY . .
 
-# exposing port 3000 for the application
-EXPOSE 3000
+# exposing port 5173 for vite dev server
+EXPOSE 5173
 
 # command to run the application using npm
 CMD ["npm", "run", "dev", "--", "--host"]
