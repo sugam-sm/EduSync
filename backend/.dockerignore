@@ -1,0 +1,21 @@
+# Virtual environments (HUGE — often 500MB+)
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Media uploads (mounted as volume, not needed in image)
+media/
+
+# Dev/build artifacts
+.git/
+.gitignore
+*.md
+.python-version
+uv.lock
+pyproject.toml
+
+# IDE
+.vscode/
+.idea/
