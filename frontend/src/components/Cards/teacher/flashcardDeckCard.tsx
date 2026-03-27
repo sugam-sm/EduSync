@@ -70,12 +70,19 @@ export const FlashcardDeckCard = ({ deck, onEdit, onModify, onPreview }: Flashca
             <SquareStack size={24} />
           </div>
           <div className="flex-1 min-w-0 space-y-1">
-            <h3 className="font-bold text-lg text-primary truncate" title={deck.title}>
-              {deck.title}
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold text-lg text-primary truncate" title={deck.title}>
+                {deck.title}
+              </h3>
+              {deck.is_ai_generated && (
+                <span className="bg-primary/20 text-primary border-2 border-primary/40 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider">
+                  AI
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-widest text-primary/70">
               <Layers2 size={12} className="shrink-0" />
-              <span className="truncate">{deck.cards.length} Cards</span>
+              <span className="truncate">{(deck.cards?.length || 0)} Cards</span>
             </div>
           </div>
         </div>

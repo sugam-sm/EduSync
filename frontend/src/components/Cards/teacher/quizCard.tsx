@@ -24,7 +24,7 @@ export const QuizCard = ({ quiz, onEdit, onModify, onEvaluate }: QuizCardProps) 
 
     const getStatusInfo = () => {
         if (!quiz.is_published) return { label: 'Draft', color: 'bg-text-muted/10 text-text-muted border-text-muted/40', dot: 'bg-text-muted' };
-        
+
         const now = new Date();
         const start = quiz.start_datetime ? new Date(quiz.start_datetime) : null;
         const end = quiz.end_datetime ? new Date(quiz.end_datetime) : null;
@@ -32,7 +32,7 @@ export const QuizCard = ({ quiz, onEdit, onModify, onEvaluate }: QuizCardProps) 
         if (start && now < start) return { label: 'Scheduled', color: 'bg-info/10 text-info border-info/40', dot: 'bg-info' };
         if (start && end && now >= start && now <= end) return { label: 'Live', color: 'bg-success/10 text-success border-success/40', dot: 'bg-success', ping: true };
         if (end && now > end) return { label: 'Closed', color: 'bg-failure/10 text-failure border-failure/40', dot: 'bg-failure' };
-        
+
         return { label: 'Published', color: 'bg-primary/10 text-primary border-primary/40', dot: 'bg-primary' };
     };
 
@@ -99,6 +99,11 @@ export const QuizCard = ({ quiz, onEdit, onModify, onEvaluate }: QuizCardProps) 
                                 </span>
                                 {status.label}
                             </span>
+                            {quiz.is_ai_generated && (
+                                <span className="bg-primary/20 text-primary border-2 border-primary/40 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider">
+                                    AI
+                                </span>
+                            )}
                         </div>
                         <div className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-widest text-primary/70">
                             <Clock size={12} className="shrink-0" />
