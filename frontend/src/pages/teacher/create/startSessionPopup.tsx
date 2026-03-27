@@ -19,8 +19,7 @@ interface StartSessionPopupProps {
 export const StartSessionPopup = ({ isOpen, onClose, gradeId }: StartSessionPopupProps) => {
     const dispatch = useDispatch<AppDispatch>();
     const { isLoading } = useSelector((state: RootState) => state.attendance);
-    const { assignSub } = useSelector((state: RootState) => state.assignsub);
-    
+    const { assignSub } = useSelector((state: RootState) => state.assignSub);    
     const { openDecidePopup, DecidePopup } = DecisionPopup();
 
     useEffect(() => {
