@@ -76,7 +76,15 @@ export const UpdateQuizPopup = ({ isOpen, onClose, quiz }: UpdateQuizPopupProps)
             return;
         }
 
-        if (startTime && endTime && new Date(startTime) >= new Date(endTime)) {
+        if (!startTime) {
+            dispatch(addToast({ message: "Start time is required.", type: 'info' }));
+            return;
+        }
+        if (!endTime) {
+            dispatch(addToast({ message: "End time is required.", type: 'info' }));
+            return;
+        }
+        if (new Date(startTime) >= new Date(endTime)) {
             dispatch(addToast({ message: "End time must be after start time.", type: 'info' }));
             return;
         }
@@ -144,14 +152,18 @@ export const UpdateQuizPopup = ({ isOpen, onClose, quiz }: UpdateQuizPopupProps)
                             onChange={(e: any) => setTitle(e.target.value)} 
                             placeholder="Enter quiz title"
                             roleColor="primary"
+                            readOnly={true}
+                            className="opacity-70 cursor-not-allowed"
                         />
                         
                         <CustomInput 
-                            label="Time Limit (Minutes)" 
+                            label="Time Limit (Seconds)" 
                             type="number"
                             value={timeLimit} 
                             onChange={(e: any) => setTimeLimit(e.target.value === "" ? "" : Number(e.target.value))} 
                             roleColor="primary"
+                            readOnly={true}
+                            className="opacity-70 cursor-not-allowed"
                         />
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-50">
@@ -169,13 +181,19 @@ export const UpdateQuizPopup = ({ isOpen, onClose, quiz }: UpdateQuizPopupProps)
                             </div>
 
                         <div className="flex items-center gap-4 py-2 border-b border-light/10 pb-4">
-                            <label className="text-sm font-semibold text-text-muted">Account Status:</label>
-                            <button type="button" onClick={() =>
-                                setIsActive(!isActive)
-                            }
-                            className={`w-14 h-7 flex items-center rounded-full p-1 transition-colors duration-300 hover:cursor-pointer ${
-                                isActive ? "bg-success/50" : "bg-failure"
-                            }`}
+                            <label className="text-sm font-semibold text-text-muted">Assessment Status:</label>
+                            <button 
+                                type="button" 
+                                onClick={() => {
+                                    if (endTime && new Date(endTime) < new Date()) {
+                                        dispatch(addToast({ message: "The quiz is closed and cannot be modified.", type: 'info' }));
+                                        return;
+                                    }
+                                    setIsActive(!isActive);
+                                }}
+                                className={`w-14 h-7 flex items-center rounded-full p-1 transition-all duration-300 hover:cursor-pointer ${
+                                    isActive ? "bg-success/50" : "bg-text-muted/20"
+                                }`}
                             >
                             <div
                                 className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ${
@@ -186,10 +204,10 @@ export const UpdateQuizPopup = ({ isOpen, onClose, quiz }: UpdateQuizPopupProps)
 
                             <span
                             className={`font-bold text-sm ${
-                                isActive ? "text-success" : "text-failure"
+                                isActive ? "text-success" : "text-text-muted"
                             }`}
                             >
-                            {isActive ? "ACTIVE" : "INACTIVE"}
+                            {isActive ? "PUBLISHED (Locked)" : "DRAFT (Editing Allowed)"}
                             </span>
                         </div>
                     </div>
