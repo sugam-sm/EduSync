@@ -45,7 +45,7 @@ export const AccessResources = () => {
     const isLoading = sectionMode === 'resources' ? isResLoading : isDeckLoading;
 
     return (
-        <div className='flex flex-col items-center justify-center align-middle h-full w-screen relative'>
+        <div className='flex flex-col items-center justify-center align-middle h-full w-full relative'>
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-0 mx-auto mb-5 items-center justify-between w-[90%] sm:w-[80%] md:w-[73%]">
                 <h1 className="w-full sm:w-[60%] text-primary text-3xl font-bold text-center sm:text-left">
                     Access {sectionMode === 'resources' ? 'Resources' : 'Flashcards'}
@@ -93,8 +93,24 @@ export const AccessResources = () => {
                             <p className="font-bold">Loading content...</p>
                         </div>
                     ) : selectedSubject === "All" ? (
-                        <div className="text-center mt-20 text-text-muted">
-                            <p className="text-md font-bold">Select a subject to view content.</p>
+                        <div className="flex flex-col items-center justify-center h-full text-center p-10 space-y-4">
+                            <div>
+                                {sectionMode === 'resources' ?
+                                    <>
+                                        <h3 className="text-2xl font-bold text-primary">Select a Subject</h3>
+                                        <p className="text-text-muted font-semibold text-sm max-w-sm mx-auto">
+                                            Choose a subject from the dropdown above to access resources for that subject.
+                                        </p>
+                                    </>
+                                    :
+                                    <>
+                                        <h3 className="text-2xl font-bold text-primary">Select a Subject</h3>
+                                        <p className="text-text-muted font-semibold text-sm max-w-sm mx-auto">
+                                            Choose a subject from the dropdown above to access flashcards for that subject.
+                                        </p>
+                                    </>
+                                }
+                            </div>
                         </div>
                     ) : sectionMode === 'resources' ? (
                         folders.length === 0 ? (
