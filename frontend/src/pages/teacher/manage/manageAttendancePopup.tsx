@@ -1,11 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { X, Loader2, CheckCircle2, Users, Square } from "lucide-react";
+import { X, Loader2, CheckCircle2, Users, Clock } from "lucide-react";
 import { type AppDispatch, type RootState } from "../../../store";
 import { Button } from "../../../components/Buttons/customButton";
 import { type Session, markAttendance, fetchGradeStudents, endSession } from "../../../features/analytics/attendanceSlice";
 import { CustomDropdown } from "../../../components/Custom/customDropdown";
 import { DecisionPopup } from "../../../components/decision popup";
+import { addToast } from "../../../features/toasts/toastSlice";
 
 interface ManageAttendancePopupProps {
     isOpen: boolean;
@@ -25,6 +26,29 @@ export const ManageAttendancePopup = ({ isOpen, onClose, session: initialSession
     );
 
     const session = sessionFromStore || initialSession;
+    const [elapsedTime, setElapsedTime] = useState<number>(0);
+
+    const formatDuration = (ms: number) => {
+        const totalSeconds = Math.floor(ms / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        return `${hours > 0 ? `${hours}:` : ''}${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    };
+
+    useEffect(() => {
+        let interval: any;
+        if (isOpen && session.is_active && session.start_time) {
+            const updateTimer = () => {
+                const start = new Date(session.start_time!).getTime();
+                const now = new Date().getTime();
+                setElapsedTime(Math.max(0, now - start));
+            };
+            updateTimer();
+            interval = setInterval(updateTimer, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [isOpen, session.is_active, session.start_time]);
 
     useEffect(() => {
         if (isOpen && session.grade) {
@@ -39,9 +63,17 @@ export const ManageAttendancePopup = ({ isOpen, onClose, session: initialSession
     };
 
     const handleStatusUpdate = (studentId: number, username: string, status: string) => {
+        const currentStatus = getStudentStatus(username);
+        if (session.is_active && (currentStatus === 'PRESENT' || currentStatus === 'LATE')) {
+            dispatch(addToast({
+                message: `The student "${username}" is already marked as ${currentStatus.toLowerCase()}.`,
+                type: 'failure'
+            }));
+            return;
+        }
+
         let finalStatus = status;
 
-        // Auto-calculate Late status ONLY during live sessions when clicking "Present"
         if (session.is_active && status === 'PRESENT' && session.start_time) {
             const now = new Date();
             const start = new Date(session.start_time);
@@ -79,8 +111,14 @@ export const ManageAttendancePopup = ({ isOpen, onClose, session: initialSession
                 <div className="px-8 pb-0 space-y-5 flex-1">
                     {/* Sub-Banner for Session Info */}
                     <div className="px-2">
-                        <div className="p-1.5 rounded-2xl uppercase border border-light/10 text-center font-bold text-md bg-primary/10 text-primary">
-                            {session.subject_name} • Grade {session.grade_name} {session.section} • {session.start_time ? new Date(session.start_time).toLocaleDateString() : 'N/A'}
+                        <div className="p-1.5 rounded-2xl uppercase border border-light/10 text-center font-bold text-md bg-primary/10 text-primary flex items-center justify-center gap-4">
+                            <span>{session.subject_name} • Grade {session.grade_name} {session.section} • {session.start_time ? new Date(session.start_time).toLocaleDateString() : 'N/A'}</span>
+                            {session.is_active && (
+                                <div className="flex items-center gap-1.5 px-3 py-0.5 bg-primary/20 rounded-xl animate-pulse">
+                                    <Clock size={16} strokeWidth={3} />
+                                    <span className="font-black tabular-nums">{formatDuration(elapsedTime)}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -100,25 +138,31 @@ export const ManageAttendancePopup = ({ isOpen, onClose, session: initialSession
                                         {currentStudents.map((student) => {
                                             const currentStatus = getStudentStatus(student.username);
                                             return (
-                                                <div key={student.username} className="bg-surface border-2 border-light/10 rounded-2xl p-4 flex flex-col gap-4 shadow-sm group hover:border-primary/30 transition-all">
+                                                <div key={student.username} className="bg-surface border-2 border-light/10 rounded-2xl p-4 flex flex-col gap-2 shadow-sm group hover:border-primary/30 transition-all">
                                                     <div className="flex flex-col min-w-0">
                                                         <span className="font-black text-lg truncate text-primary uppercase group-hover:text-primary transition-colors">{student.fullname}</span>
-                                                        <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Username: {student.username}</span>
+                                                        <span className="text-sm font-bold text-text-muted uppercase tracking-widest">{student.username}</span>
                                                     </div>
 
                                                     {session.is_active ? (
                                                         <div className="flex gap-2">
-                                                            <button
+                                                            <Button
                                                                 onClick={() => handleStatusUpdate(student.user, student.username, 'PRESENT')}
-                                                                className={`flex-1 py-1.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-1.5 transition-all outline-none ${
-                                                                    currentStatus === 'PRESENT' || currentStatus === 'LATE'
-                                                                        ? 'bg-green-500 border-green-500 text-white shadow-lg shadow-green-500/20' 
-                                                                        : 'bg-green-500/5 border-green-500/10 text-green-500 hover:bg-green-500 hover:text-white'
+                                                                label={currentStatus === 'PRESENT' ? 'Present' : currentStatus === 'LATE' ? 'Late' : currentStatus === 'ABSENT' ? 'Absent' : 'Mark Attendance'}
+                                                                Icon={CheckCircle2}
+                                                                variant={
+                                                                    currentStatus === 'PRESENT' ? 'success' :
+                                                                    currentStatus === 'LATE' ? 'warning' :
+                                                                    currentStatus === 'ABSENT' ? 'failure' :
+                                                                    'secondary'
+                                                                }
+                                                                className={`flex-1 py-1.5 text-xs rounded-xl transition-all ${
+                                                                    currentStatus === 'PRESENT' ? 'bg-success text-success' :
+                                                                    currentStatus === 'LATE' ? 'bg-warning text-warning' :
+                                                                    currentStatus === 'ABSENT' ? 'bg-failure text-failure' :
+                                                                    ''
                                                                 }`}
-                                                            >
-                                                                <CheckCircle2 size={14} /> 
-                                                                {currentStatus === 'PRESENT' ? 'Present' : currentStatus === 'LATE' ? 'Late' : 'Mark Present'}
-                                                            </button>
+                                                            />
                                                         </div>
                                                     ) : (
                                                         <div className="flex flex-col gap-1.5">
@@ -141,11 +185,10 @@ export const ManageAttendancePopup = ({ isOpen, onClose, session: initialSession
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 flex gap-4 pt-0 bg-transparent">
+                <div className="p-6 pt-2 flex gap-2 bg-transparent md:w-[70%] md:ml-auto">
                     {session.is_active && (
                         <Button
                             label="End Session"
-                            Icon={Square}
                             variant="failure"
                             onClick={() => {
                                 openDecidePopup({
@@ -159,14 +202,14 @@ export const ManageAttendancePopup = ({ isOpen, onClose, session: initialSession
                                     }
                                 });
                             }}
-                            className="flex-1 py-3 font-black uppercase tracking-widest"
+                            className="flex-1"
                         />
                     )}
                     <Button
                         label="Done Marking"
                         variant="primary"
                         onClick={onClose}
-                        className="flex-2 py-3 font-black uppercase tracking-widest"
+                        className="flex-1"
                     />
                 </div>
             </div>

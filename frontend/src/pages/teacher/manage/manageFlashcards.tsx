@@ -11,9 +11,11 @@ import { type AppDispatch, type RootState } from '../../../store';
 import { 
     type FlashcardDeck, 
     type Flashcard, 
+    createFlashcardDeck,
     createFlashcard, 
     updateFlashcard, 
-    deleteFlashcard 
+    deleteFlashcard,
+    deleteFlashcardDeck
 } from '../../../features/learning/flashcardSlice';
 import { addToast } from '../../../features/toasts/toastSlice';
 
@@ -27,10 +29,13 @@ interface CardState extends Flashcard {
 interface ManageFlashcardsProps {
     isOpen: boolean;
     onClose: () => void;
-    deck: FlashcardDeck;
+    deck: Partial<FlashcardDeck> & { title: string };
+    onBack?: () => void;
+    onComplete?: () => void;
+    isStepMode?: boolean;
 }
 
-export const ManageFlashcards = ({ isOpen, onClose, deck }: ManageFlashcardsProps) => {
+export const ManageFlashcards = ({ isOpen, onClose, deck, onBack, onComplete, isStepMode }: ManageFlashcardsProps) => {
     const dispatch = useDispatch<AppDispatch>();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [uploadingFor, setUploadingFor] = useState<{ side: 'front' | 'back' } | null>(null);
@@ -40,12 +45,12 @@ export const ManageFlashcards = ({ isOpen, onClose, deck }: ManageFlashcardsProp
 
     const currentDeck = useSelector((state: RootState) =>
         state.flashcard.flashcard_decks.find(d => d.id === deck.id)
-    ) || deck;
+    ) || (deck as FlashcardDeck);
 
     const { isCardLoading } = useSelector((state: RootState) => state.flashcard);
     const { openDecidePopup, DecidePopup } = DecisionPopup();
 
-    const initialCards = currentDeck.cards.map(c => ({ 
+    const initialCards = (currentDeck.cards || []).map((c: Flashcard) => ({ 
         ...c, 
         frontType: (c.front_image ? 'IMAGE' : 'TEXT') as 'TEXT' | 'IMAGE', 
         backType: (c.back_image ? 'IMAGE' : 'TEXT') as 'TEXT' | 'IMAGE', 
@@ -147,8 +152,23 @@ export const ManageFlashcards = ({ isOpen, onClose, deck }: ManageFlashcardsProp
 
     const saveChanges = async () => {
         try {
+            // 1. Create the deck if it doesn't already exist
+            let targetDeckId = deck.id;
+            if (!targetDeckId) {
+                const deckResponse = await dispatch(createFlashcardDeck({
+                    title: deck.title,
+                    grade_id: (deck as any).grade_id as any 
+                } as any));
+                
+                if (createFlashcardDeck.fulfilled.match(deckResponse)) {
+                    targetDeckId = deckResponse.payload.id;
+                } else {
+                    throw new Error("Failed to create deck context.");
+                }
+            }
+
             const currentCardIds = cards.map(c => c.id).filter(Boolean);
-            const cardsToDelete = currentDeck.cards.filter(c => !currentCardIds.includes(c.id));
+            const cardsToDelete = (currentDeck.cards || []).filter(c => !currentCardIds.includes(c.id));
 
             const cardsToUpdate = cards.filter(c => c.id !== undefined);
             const cardsToCreate = cards.filter(c => c.id === undefined);
@@ -167,7 +187,7 @@ export const ManageFlashcards = ({ isOpen, onClose, deck }: ManageFlashcardsProp
 
             const createPromises = cardsToCreate.map(c => {
                 const payload: Partial<Flashcard> = {
-                    deck: deck.id,
+                    deck: targetDeckId,
                     front: c.frontType === 'TEXT' ? c.front : "",
                     back: c.backType === 'TEXT' ? c.back : "",
                     front_image: c.frontType === 'IMAGE' ? c.frontImage : null,
@@ -179,13 +199,59 @@ export const ManageFlashcards = ({ isOpen, onClose, deck }: ManageFlashcardsProp
             await Promise.all([...deletePromises, ...updatePromises, ...createPromises]);
             
             dispatch(addToast({ message: "Flashcards saved successfully!", type: 'success' }));
-            onClose();
+            
+            if (isStepMode) {
+                onComplete?.();
+            } else {
+                onClose();
+            }
         } catch (error) {
             dispatch(addToast({ message: "Failed to save all cards.", type: 'failure' }));
         }
     };
 
+    const handleClose = (force = false) => {
+        if (!force && isDirty) {
+            openDecidePopup({
+                question: "Discard unsaved changes?",
+                confirmText: "Yes, Discard",
+                cancelText: "Keep Editing",
+                variant: "primary",
+                onConfirm: () => handleClose(true)
+            });
+            return;
+        }
+
+        // If the deck is empty (0 cards in DB) and was already created
+        if (currentDeck.id && (!currentDeck.cards || currentDeck.cards.length === 0)) {
+            dispatch(deleteFlashcardDeck(deck.id!));
+            dispatch(addToast({ message: "Empty deck discarded.", type: 'info' }));
+        }
+
+        onClose();
+    };
+
+    const handleBack = () => {
+        if (isDirty) {
+            openDecidePopup({
+                question: "Discard your changes?",
+                confirmText: "Yes, Discard",
+                cancelText: "Keep Editing",
+                variant: "primary",
+                onConfirm: () => onBack?.()
+            });
+            return;
+        }
+        onBack?.();
+    };
+
     const handleSaveClick = () => {
+        // Validation: Must have at least one card in the UI
+        if (cards.length === 0) {
+            dispatch(addToast({ message: "You must add at least one card to save the deck.", type: 'info' }));
+            return;
+        }
+
         if (!isDirty) {
             dispatch(addToast({ message: "No changes detected.", type: "info" }));
             return;
@@ -294,7 +360,7 @@ export const ManageFlashcards = ({ isOpen, onClose, deck }: ManageFlashcardsProp
                                 
                                 {/* Close button */}
                                 <button
-                                    onClick={onClose}
+                                    onClick={() => handleClose()}
                                     className="p-2 hover:bg-failure/20 hover:text-failure rounded-full transition-all duration-300 text-text-muted hover:cursor-pointer hover:rotate-90"
                                 >
                                     <X size={20} strokeWidth={3} />
@@ -371,7 +437,11 @@ export const ManageFlashcards = ({ isOpen, onClose, deck }: ManageFlashcardsProp
                             </div>
                             <div className="w-full flex justify-end">
                                 <div className='w-full sm:w-[50%] flex gap-2'>
-                                    <Button label="Cancel" onClick={onClose} variant='failure' className='flex-1' />
+                                    {isStepMode && onBack ? (
+                                        <Button label="Back" onClick={handleBack} variant='failure' className='flex-1' />
+                                    ) : (
+                                        <Button label="Close" onClick={() => handleClose()} variant='failure' className='flex-1' />
+                                    )}
                                     <FormButton 
                                         onClick={handleSaveClick} 
                                         isLoading={isCardLoading} 

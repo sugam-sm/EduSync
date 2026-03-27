@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { X, File, FileArchive, Link, Download, ExternalLink, Upload, View } from "lucide-react";
 
@@ -20,7 +20,6 @@ interface ManageResourcesProps {
 
 export const ManageResources = ({ isOpen, onClose, folder }: ManageResourcesProps) => {
     const dispatch = useDispatch<AppDispatch>();
-    const fileInputRef = useRef<HTMLInputElement>(null);
     const [viewingResource, setViewingResource] = useState<any | null>(null);
     
     const currentFolder = useSelector((state: RootState) => 
@@ -59,7 +58,6 @@ export const ManageResources = ({ isOpen, onClose, folder }: ManageResourcesProp
         if (createResource.fulfilled.match(result)) {
             dispatch(addToast({ message: "Resource added successfully!", type: 'success' }));
             setTitle(''); setUrl(''); setFile(null);
-            if (fileInputRef.current) fileInputRef.current.value = '';
         }
     };
 
@@ -121,7 +119,7 @@ export const ManageResources = ({ isOpen, onClose, folder }: ManageResourcesProp
 
     return (
         <Portal>
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface/60 backdrop-blur-sm">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-surface/60 backdrop-blur-sm">
                 {viewingResource && (
                     <div className="fixed inset-0 z-50 bg-surface p-2 sm:p-6 flex flex-col gap-4">
                         <div className="flex justify-between items-center bg-surface border-2 border-light/10 p-1 rounded-2xl">
@@ -197,48 +195,45 @@ export const ManageResources = ({ isOpen, onClose, folder }: ManageResourcesProp
                         <div className="space-y-2">
                             <h3 className="text-sm font-bold text-text-muted uppercase tracking-widest">Add New Resource</h3>
                             <form onSubmit={handleSubmit} className="mb-4">
-                                <div className="grid grid-cols-1 gap-4 items-end">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start mb-4">
                                     <CustomInput 
                                         label="Resource Title"
                                         placeholder="Enter title" 
                                         value={title}
                                         onChange={(e: any) => setTitle(e.target.value)}
                                         roleColor="primary"
-                                        containerClassName="h-11"
                                     />
-                                    <div className="flex gap-2 p-1 bg-light/5 rounded-xl border-2 border-light/10 h-11 items-center w-full mb-2">
-                                        <button type="button" onClick={() => setType('FILE')} className={`flex-1 px-5 py-1 rounded-lg font-bold transition-all hover:cursor-pointer ${type === 'FILE' ? 'bg-primary/35 text-primary' : 'text-text-muted hover:bg-primary/10'}`}>File</button>
-                                        <button type="button" onClick={() => setType('LINK')} className={`flex-1 px-5 py-1 rounded-lg font-bold transition-all hover:cursor-pointer ${type === 'LINK' ? 'bg-primary/35 text-primary' : 'text-text-muted hover:bg-primary/10'}`}>Link</button>
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-[11px] uppercase font-bold text-text-muted tracking-wider ml-1">
+                                            Select File Type
+                                        </label>
+                                        <div className="flex gap-2 p-1 bg-light/5 rounded-xl border-2 border-light/10 h-11 items-center w-full">
+                                            <button type="button" onClick={() => setType('FILE')} className={`flex-1 px-5 py-1 rounded-lg font-bold transition-all hover:cursor-pointer ${type === 'FILE' ? 'bg-primary/35 text-primary' : 'text-text-muted hover:bg-primary/10'}`}>File</button>
+                                            <button type="button" onClick={() => setType('LINK')} className={`flex-1 px-5 py-1 rounded-lg font-bold transition-all hover:cursor-pointer ${type === 'LINK' ? 'bg-primary/35 text-primary' : 'text-text-muted hover:bg-primary/10'}`}>Link</button>
+                                        </div>
                                     </div>
                                 </div>
                                 {type === 'FILE' ? (
-                                <div className="space-y-2">
-                                    <span className="text-[11px] uppercase ml-1 font-bold text-text-muted">Select File</span> 
-                                    <button 
-                                        type="button" 
-                                        onClick={() => fileInputRef.current?.click()} 
-                                        className="w-full h-11 flex items-center justify-between px-4 bg-light/5 rounded-xl border-2 border-light/10 text-text-muted hover:border-primary/50 transition-all cursor-pointer"
-                                    >
-                                        <span className="truncate">{file ? file.name : "Click to Select file"}</span>
-                                        <Upload size={18} className="shrink-0 ml-2" />
-                                    </button>
-                                </div>
-                            ) : (
-                                <CustomInput
-                                    label="Resource URL" 
-                                    placeholder="https://www.example.com" 
-                                    value={url} 
-                                    onChange={(e: any) => setUrl(e.target.value)} 
-                                    roleColor="primary" 
-                                    containerClassName="h-11"
-                                />
-                            )}
-                            <input 
-                                type="file" 
-                                ref={fileInputRef} 
-                                onChange={(e) => setFile(e.target.files?.[0] || null)} 
-                                className="hidden" 
-                            />
+                                    <CustomInput 
+                                        label="Select File"
+                                        type="file"
+                                        name="file"
+                                        icon={Upload}
+                                        value={file}
+                                        onChange={(e: any) => setFile(e.target.file)}
+                                        placeholder="Click to Select file"
+                                        roleColor="primary"
+                                    />
+                                ) : (
+                                    <CustomInput
+                                        label="Resource URL" 
+                                        placeholder="https://www.example.com" 
+                                        value={url} 
+                                        onChange={(e: any) => setUrl(e.target.value)} 
+                                        roleColor="primary"
+                                        icon={Link}
+                                    />
+                                )}
                             </form>
                         </div>
                     </div>

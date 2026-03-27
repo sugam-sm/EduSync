@@ -6,6 +6,7 @@ import { FormButton } from '../../../components/Buttons/formButton';
 import { Button } from '../../../components/Buttons/customButton';
 import { type AppDispatch, type RootState } from '../../../store';
 import { fetchQuizStudentResults, fetchQuizRemarks, submitBulkRemarks, clearTeacherRemarkData } from '../../../features/learning/teacherRemarkSlice';
+import { fetchUsers } from '../../../features/organization/userSlice';
 import { addToast } from '../../../features/toasts/toastSlice';
 
 interface PostQuizEvalPopupProps {
@@ -13,11 +14,13 @@ interface PostQuizEvalPopupProps {
     onClose: () => void;
     quizId: number;
     quizTitle: string;
+    endDatetime: string | null | undefined;
 }
 
-export const PostQuizEvalPopup = ({ isOpen, onClose, quizId, quizTitle }: PostQuizEvalPopupProps) => {
+export const PostQuizEvalPopup = ({ isOpen, onClose, quizId, quizTitle, endDatetime }: PostQuizEvalPopupProps) => {
     const dispatch = useDispatch<AppDispatch>();
     const { studentResults, existingRemarks, isLoading, isSubmitting } = useSelector((state: RootState) => state.teacherRemark);
+    const { users } = useSelector((state: RootState) => state.user);
 
     const [remarkInputs, setRemarkInputs] = useState<Record<number, string>>({});
 
@@ -25,11 +28,14 @@ export const PostQuizEvalPopup = ({ isOpen, onClose, quizId, quizTitle }: PostQu
         if (isOpen && quizId) {
             dispatch(fetchQuizStudentResults(quizId));
             dispatch(fetchQuizRemarks({ quiz_id: quizId }));
+            if (users.length === 0) {
+                dispatch(fetchUsers());
+            }
         }
         return () => {
             dispatch(clearTeacherRemarkData());
         };
-    }, [isOpen, quizId, dispatch]);
+    }, [isOpen, quizId, dispatch, users.length]);
 
     // Pre-fill existing remarks
     useEffect(() => {
@@ -125,10 +131,53 @@ export const PostQuizEvalPopup = ({ isOpen, onClose, quizId, quizTitle }: PostQu
                                                 <User size={20} strokeWidth={2.5} />
                                             </div>
                                             <div>
-                                                <h4 className="font-bold text-text-heading text-sm">{student.student_name}</h4>
-                                                <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">
-                                                    {student.status === 'completed' ? 'Completed' : student.status === 'auto-submitted' ? 'Auto-Submitted' : 'In Progress'}
-                                                </p>
+                                                <h4 className="font-bold text-text-heading text-sm">
+                                                    {student.student_name}
+                                                    {users.find(u => u.id === student.student_id)?.username && (
+                                                        <span className="text-text-muted/60 font-medium ml-1">
+                                                            | {users.find(u => u.id === student.student_id)?.username}
+                                                        </span>
+                                                    )}
+                                                </h4>
+                                                <div className="flex items-center gap-2 mt-0.5">
+                                                    {(() => {
+                                                        const now = new Date();
+                                                        const end = endDatetime ? new Date(endDatetime) : null;
+                                                        const isClosed = end && now > end;
+                                                        
+                                                        const rawStatus = (student.status || 'not-started').toLowerCase();
+                                                        
+                                                        const statusLabels: Record<string, { label: string, color: string }> = {
+                                                            'completed': { label: 'Completed', color: 'bg-success/10 text-success border-success/20' },
+                                                            'auto-submitted': { label: 'Auto-Submitted', color: 'bg-info/10 text-info border-info/20' },
+                                                            'submitted': { label: 'Submitted', color: 'bg-success/10 text-success border-success/20' },
+                                                            'in-progress': { 
+                                                                label: isClosed ? 'Missed / Timed Out' : 'In Progress', 
+                                                                color: isClosed ? 'bg-failure/10 text-failure border-failure/20' : 'bg-primary/10 text-primary border-primary/20' 
+                                                            },
+                                                            'not-started': { 
+                                                                label: isClosed ? 'Missed' : 'Not Started', 
+                                                                color: isClosed ? 'bg-failure/10 text-failure border-failure/20' : 'bg-text-muted/10 text-text-muted border-text-muted/10' 
+                                                            },
+                                                            'missed': { label: 'Missed', color: 'bg-failure/10 text-failure border-failure/20' },
+                                                            'pending': { 
+                                                                label: isClosed ? 'Missed' : 'Pending', 
+                                                                color: isClosed ? 'bg-failure/10 text-failure border-failure/20' : 'bg-text-muted/10 text-text-muted border-text-muted/10' 
+                                                            }
+                                                        };
+
+                                                        const info = statusLabels[rawStatus] || { 
+                                                            label: student.status || 'N/A', 
+                                                            color: isClosed && rawStatus !== 'completed' ? 'bg-failure/10 text-failure border-failure/20' : 'bg-light/10 text-text-muted border-light/5' 
+                                                        };
+
+                                                        return (
+                                                            <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border-2 ${info.color}`}>
+                                                                {info.label}
+                                                            </span>
+                                                        );
+                                                    })()}
+                                                </div>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/20">
