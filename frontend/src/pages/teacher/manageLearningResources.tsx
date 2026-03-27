@@ -9,6 +9,7 @@ import { CreateFolderPopup } from "./create/createFolderPopup";
 import { CreateFlashcardDeckPopup } from "./create/createFlashcardDeckPopup";
 import { UpdateFolderPopup } from "./update/updateFolderPopup";
 import { UpdateFlashcardDeckPopup } from "./update/updateFlashcardDeckPopup";
+import { CreateFlashcardsWithAIPopup } from "./create/createFlashcardsWithAIPopup";
 import { ManageResources } from "./manage/manageResources";
 import { ManageFlashcards } from "./manage/manageFlashcards";
 import { FlashcardDisplayPopup } from "../../components/flashcardDisplayPopup";
@@ -40,6 +41,10 @@ export const ManageLearningResources = () => {
 
     const [selectedFolder, setSelectedFolder] = useState<ResourceFolder | null>(null);
     const [selectedDeck, setSelectedDeck] = useState<FlashcardDeck | null>(null);
+
+    const [isCreateAIOpen, setIsCreateAIOpen] = useState(false);
+    const [aiInitialTitle, setAiInitialTitle] = useState('');
+    const [createDeckKey, setCreateDeckKey] = useState(0);
 
     useEffect(() => { dispatch(fetchGrades()); }, [dispatch]);
     useEffect(() => {
@@ -85,7 +90,7 @@ export const ManageLearningResources = () => {
     const isLoading = sectionMode === 'resources' ? isResLoading : isDeckLoading;
 
     return (
-        <div className='flex flex-col items-center justify-center align-middle h-full w-screen relative'>
+        <div className='flex flex-col items-center justify-center align-middle h-full w-full relative'>
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-0 mx-auto mb-5 items-center justify-between w-[90%] sm:w-[80%] md:w-[73%]">
                 <h1 className="w-full sm:w-[60%] text-primary text-3xl font-bold text-center sm:text-left">
                     Manage {sectionMode === 'resources' ? 'Resources' : 'Flashcards'}
@@ -136,8 +141,24 @@ export const ManageLearningResources = () => {
                             <p className="font-bold">Loading...</p>
                         </div>
                     ) : selectedGrade === "All" ? (
-                        <div className="text-center mt-20 text-text-muted">
-                            <p className="text-md font-bold">Select a class to manage content.</p>
+                        <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
+                            <div>
+                                {sectionMode === 'resources' ?
+                                    <>
+                                        <h3 className="text-2xl font-bold text-primary">Select a Grade</h3>
+                                        <p className="text-text-muted font-semibold text-sm max-w-sm mx-auto">
+                                            Choose a grade from the dropdown above to manage resources for that grade.
+                                        </p>
+                                    </>
+                                    :
+                                    <>
+                                        <h3 className="text-2xl font-bold text-primary">Select a Grade</h3>
+                                        <p className="text-text-muted font-semibold text-sm max-w-sm mx-auto">
+                                            Choose a grade from the dropdown above to manage flashcards for that grade.
+                                        </p>
+                                    </>
+                                }
+                            </div>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 pb-15">
@@ -175,7 +196,31 @@ export const ManageLearningResources = () => {
             </section>
 
             <CreateFolderPopup isOpen={isCreateFolderPopupOpen} onClose={() => setIsCreateFolderOpen(false)} gradeId={selectedGrade} />
-            <CreateFlashcardDeckPopup isOpen={isCreateDeckPopupOpen} onClose={() => setIsCreateDeckOpen(false)} gradeId={selectedGrade} />
+            <CreateFlashcardDeckPopup 
+                key={createDeckKey}
+                isOpen={isCreateDeckPopupOpen} 
+                onClose={() => setIsCreateDeckOpen(false)} 
+                gradeId={selectedGrade} 
+                onSwitchToAI={(title: string) => {
+                    setIsCreateDeckOpen(false);
+                    setAiInitialTitle(title);
+                    setIsCreateAIOpen(true);
+                }}
+            />
+            <CreateFlashcardsWithAIPopup
+                isOpen={isCreateAIOpen}
+                onClose={() => setIsCreateAIOpen(false)}
+                gradeId={selectedGrade}
+                initialTitle={aiInitialTitle}
+                onBack={() => {
+                    setIsCreateAIOpen(false);
+                    setIsCreateDeckOpen(true);
+                }}
+                onDiscard={() => {
+                    setCreateDeckKey(prev => prev + 1);
+                    setAiInitialTitle('');
+                }}
+            />
             <UpdateFolderPopup isOpen={isUpdateFolderPopupOpen} onClose={() => { setIsUpdateFolderOpen(false); setSelectedFolder(null); }} folder={selectedFolder} />
             <UpdateFlashcardDeckPopup isOpen={isUpdateDeckPopupOpen} onClose={() => { setIsUpdateDeckOpen(false); setSelectedDeck(null); }} deck={selectedDeck} />
 
