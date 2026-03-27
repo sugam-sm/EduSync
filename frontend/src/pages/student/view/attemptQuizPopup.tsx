@@ -28,9 +28,10 @@ export const AttemptQuizPopup = ({ isOpen, onClose, quiz }: AttemptQuizPopupProp
     const { openDecidePopup, DecidePopup } = DecisionPopup();
 
     const [currentIdx, setCurrentIdx] = useState(0);
-    const [timeLeft, setTimeLeft] = useState<number>(0);
+    const [timeLeft, setTimeLeft] = useState<number | null>(null);
     const [isStarted, setIsStarted] = useState(false);
     const [showLobby, setShowLobby] = useState(true);
+    const [isTimerInitialized, setIsTimerInitialized] = useState(false);
 
     const now = new Date();
     const startTime = quiz.start_datetime ? new Date(quiz.start_datetime) : null;
@@ -50,12 +51,13 @@ export const AttemptQuizPopup = ({ isOpen, onClose, quiz }: AttemptQuizPopupProp
 
     // Reset/Initialize Timer for current question
     useEffect(() => {
-        if (currentQuestion && isStarted) {
-            const timeLimit = currentQuestion.time_override_seconds || quiz.default_time_per_question || 60;
+        if (currentQuestion && isStarted && !showLobby) {
+            const timeLimit = Number(currentQuestion.time_override_seconds || quiz.default_time_per_question || 60);
             setTimeLeft(timeLimit);
+            setIsTimerInitialized(true);
             questionStartTimeRef.current = Date.now();
         }
-    }, [currentIdx, currentQuestion, quiz.default_time_per_question, isStarted]);
+    }, [currentIdx, currentQuestion, quiz.default_time_per_question, isStarted, showLobby]);
 
     const handleFinish = useCallback(async (isAuto = false) => {
         if (!quiz.id || isSubmittingRef.current) return;
@@ -93,6 +95,7 @@ export const AttemptQuizPopup = ({ isOpen, onClose, quiz }: AttemptQuizPopupProp
         }
 
         isSubmittingRef.current = false;
+        setIsTimerInitialized(false); // Reset for next question
 
         // Move to next question or finish
         if (currentIdx < questions.length - 1) {
@@ -112,21 +115,21 @@ export const AttemptQuizPopup = ({ isOpen, onClose, quiz }: AttemptQuizPopupProp
 
     // Timer countdown
     useEffect(() => {
-        if (!isStarted || showLobby || timeLeft <= 0) return;
+        if (!isStarted || showLobby || timeLeft === null || timeLeft <= 0 || !isTimerInitialized) return;
         
         const interval = setInterval(() => {
-            setTimeLeft(prev => Math.max(0, prev - 1));
+            setTimeLeft(prev => (prev !== null && prev > 0) ? prev - 1 : 0);
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [isStarted, showLobby, timeLeft <= 0]);
+    }, [isStarted, showLobby, timeLeft, isTimerInitialized]);
 
     // Handle time up automatically
     useEffect(() => {
-        if (isStarted && !showLobby && timeLeft === 0) {
+        if (isStarted && !showLobby && timeLeft === 0 && isTimerInitialized) {
             handleTimeUp();
         }
-    }, [timeLeft, isStarted, showLobby, handleTimeUp]);
+    }, [timeLeft, isStarted, showLobby, handleTimeUp, isTimerInitialized]);
 
     // Start Quiz Session
     const handleStartQuiz = async () => {
@@ -139,10 +142,13 @@ export const AttemptQuizPopup = ({ isOpen, onClose, quiz }: AttemptQuizPopupProp
             }));
             return;
         }
+
         if (quiz.id) {
-            await dispatch(startQuizAction(quiz.id));
-            setIsStarted(true);
-            setShowLobby(false);
+            const result = await dispatch(startQuizAction(quiz.id));
+            if (startQuizAction.fulfilled.match(result)) {
+                setIsStarted(true);
+                setShowLobby(false);
+            }
         }
     };
 
@@ -191,9 +197,6 @@ export const AttemptQuizPopup = ({ isOpen, onClose, quiz }: AttemptQuizPopupProp
                             </div>
                             <div className="text-center">
                                 <h2 className="text-2xl font-black text-primary uppercase tracking-tighter">{quiz.title}</h2>
-                                {quiz.topic_tag && (
-                                    <p className="text-xs font-bold text-text-muted uppercase tracking-widest mt-1">{quiz.topic_tag}</p>
-                                )}
                             </div>
                         </div>
 
@@ -243,7 +246,13 @@ export const AttemptQuizPopup = ({ isOpen, onClose, quiz }: AttemptQuizPopupProp
                                 </div>
                             )}
                             <FormButton
-                                onClick={handleStartQuiz}
+                                onClick={() => openDecidePopup({
+                                    question: "Are you sure you want to start this assessment? You cannot re-attempt once started.",
+                                    confirmText: "Yes, Start",
+                                    cancelText: "Not Yet",
+                                    variant: "primary",
+                                    onConfirm: () => handleStartQuiz()
+                                })}
                                 isLoading={isQuizLoading}
                                 className="w-full py-5 text-base font-black uppercase tracking-widest"
                             >
@@ -251,6 +260,7 @@ export const AttemptQuizPopup = ({ isOpen, onClose, quiz }: AttemptQuizPopupProp
                             </FormButton>
                         </div>
                     </div>
+                    <DecidePopup />
                 </div>
             </Portal>
         );
@@ -268,7 +278,7 @@ export const AttemptQuizPopup = ({ isOpen, onClose, quiz }: AttemptQuizPopupProp
                 <div className="w-full max-w-4xl bg-surface border-2 border-light/10 rounded-[2.5rem] shadow-2xl flex flex-col h-[90vh] relative">
                     
                     {/* Security Overlay - Danger Zone pulse if time low */}
-                    {timeLeft < 5 && (
+                    {timeLeft !== null && timeLeft < 5 && (
                         <div className="absolute inset-0 border-4 border-failure/20 rounded-[2.5rem] animate-pulse pointer-events-none z-10" />
                     )}
 
@@ -288,17 +298,17 @@ export const AttemptQuizPopup = ({ isOpen, onClose, quiz }: AttemptQuizPopupProp
                             </div>
                             <div>
                                 <h3 className="font-black text-xl text-primary tracking-tight">Question {currentIdx + 1} of {questions.length}</h3>
-                                <p className="text-[10px] font-bold text-text-muted uppercase tracking-[0.2em]">{quiz.topic_tag || 'Standard Assessment'}</p>
+                                <p className="text-[10px] font-bold text-text-muted uppercase tracking-[0.2em]">Standard Assessment</p>
                             </div>
                         </div>
 
                         <div className={`flex items-center gap-3 px-5 py-2.5 rounded-2xl border-2 transition-all ${
-                            timeLeft < 10 
+                            timeLeft !== null && timeLeft < 10 
                             ? 'bg-failure/10 border-failure/40 text-failure scale-110' 
                             : 'bg-primary/5 border-primary/20 text-primary'
                         }`}>
-                            <Clock size={18} className={timeLeft < 10 ? 'animate-spin-slow' : ''} />
-                            <span className="font-black text-lg tabular-nums">{formatTime(timeLeft)}</span>
+                            <Clock size={18} className={timeLeft !== null && timeLeft < 10 ? 'animate-spin-slow' : ''} />
+                            <span className="font-black text-lg tabular-nums">{timeLeft !== null ? formatTime(timeLeft) : '--:--'}</span>
                         </div>
                     </div>
 
@@ -366,10 +376,22 @@ export const AttemptQuizPopup = ({ isOpen, onClose, quiz }: AttemptQuizPopupProp
                                 />
                             ) : (
                                 <FormButton 
-                                    onClick={() => handleFinish()} 
+                                    onClick={() => {
+                                        if (isAnswered) {
+                                            openDecidePopup({
+                                                question: "Are you sure you want to finish the assessment?",
+                                                confirmText: "Yes, Finish",
+                                                cancelText: "Review",
+                                                variant: "primary",
+                                                onConfirm: () => handleFinish()
+                                            });
+                                        } else {
+                                            dispatch(addToast({ message: "Select an answer first!", type: 'info' }));
+                                        }
+                                    }} 
                                     isLoading={isQuizLoading} 
                                     variant='primary' 
-                                    className='flex-1 h-16 font-black tracking-widest uppercase bg-green-500 hover:bg-green-600 border-green-400'
+                                    className='flex-1 h-16 font-black tracking-widest uppercase bg-green-500 hover:bg-green-600 border-green-400 border-2'
                                 >
                                     <Send size={20} className="mr-2" /> Finish Assessment
                                 </FormButton>
