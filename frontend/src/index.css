@@ -16,6 +16,19 @@
   --color-failure: #e45858;
   --color-infoBg: #163C59;
   --color-info: #3da9fc;
+  --color-warning: #ff8e3c;
+  
+  --animate-spread-left: spread-left 1.5s ease-in-out infinite;
+  --animate-spread-right: spread-right 1.5s ease-in-out infinite;
+
+  @keyframes spread-left {
+    0%, 100% { transform: translateX(0) scale(1); opacity: 0.7; }
+    50% { transform: translateX(-8px) scale(1.2); opacity: 1; }
+  }
+  @keyframes spread-right {
+    0%, 100% { transform: translateX(0) scale(1); opacity: 0.7; }
+    50% { transform: translateX(8px) scale(1.2); opacity: 1; }
+  }
 }
 
 body {
@@ -63,4 +76,21 @@ select:-webkit-autofill {
   background: transparent;
 }
 
+@keyframes fadeSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
 
+@keyframes swing {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(12deg); }
+  50% { transform: rotate(-10deg); }
+  75% { transform: rotate(6deg); }
+  100% { transform: rotate(0deg); }
+}
