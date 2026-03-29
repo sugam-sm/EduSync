@@ -3,7 +3,7 @@ import api from '../../api';
 
 export interface Flashcard {
     id?: number;
-    deck: number; 
+    deck: number;
     front: string;
     back: string;
     front_image?: string | null;
@@ -18,6 +18,7 @@ export interface FlashcardDeck {
     created_by?: number;
     created_at?: string;
     cards: Flashcard[];
+    is_ai_generated?: boolean;
 }
 
 interface FlashcardState {

@@ -46,10 +46,8 @@ export type QuizResultType = QuizAttempt;
 export interface Quiz {
     id?: number;
     title: string;
-    description?: string;
     sub_assign: number;
     created_by?: number;
-    topic_tag?: string;
     is_active: boolean;
     is_published: boolean;
     start_datetime?: string | null;
@@ -58,6 +56,7 @@ export interface Quiz {
     created_at?: string;
     questions: Question[];
     questions_count?: number;
+    is_ai_generated?: boolean;
 }
 
 interface QuizState {
