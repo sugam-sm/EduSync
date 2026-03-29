@@ -1,0 +1,14 @@
+# node_modules (HUGE — reinstalled inside container anyway)
+node_modules/
+
+# Build output
+dist/
+
+# Dev artifacts
+.git/
+.gitignore
+*.md
+
+# IDE
+.vscode/
+.idea/
