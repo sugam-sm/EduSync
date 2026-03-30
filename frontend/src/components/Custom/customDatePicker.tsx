@@ -103,17 +103,23 @@ export const CustomDatePicker = ({ value, onChange, roleColor = "primary" }: Dat
             <div key={`empty-${i}`} className="h-8"></div>
           ))}
           {daySlots.map(d => {
+            const dateObj = new Date(year, month, d);
             const isSelected = selectedDate?.getDate() === d && selectedDate?.getMonth() === month && selectedDate?.getFullYear() === year;
-            const isToday = new Date().getDate() === d && new Date().getMonth() === month && new Date().getFullYear() === year;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const isToday = today.getDate() === d && today.getMonth() === month && today.getFullYear() === year;
+            const isFuture = dateObj > today;
 
             let bgClass = "hover:bg-primary/20 hover:text-primary text-text-body cursor-pointer";
-            if (isSelected) bgClass = "bg-primary text-white font-bold shadow-md cursor-pointer";
+            if (isFuture) bgClass = "opacity-20 cursor-not-allowed text-text-muted";
+            else if (isSelected) bgClass = "bg-primary text-white font-bold shadow-md cursor-pointer";
             else if (isToday) bgClass = "bg-light/10 text-primary font-bold cursor-pointer";
 
             return (
               <button
                 type="button"
                 key={d}
+                disabled={isFuture}
                 onClick={() => handleDayClick(d)}
                 className={`h-8 w-8 rounded-full text-xs transition-all flex items-center justify-center mx-auto ${bgClass}`}
               >
@@ -143,9 +149,6 @@ export const CustomDatePicker = ({ value, onChange, roleColor = "primary" }: Dat
           <span className={`text-xs font-bold tracking-wide uppercase ${value ? "text-primary" : "text-text-muted"}`}>
             Filter
           </span>
-          {value && (
-            <div className="absolute -top-1 -right-2 w-2 h-2 bg-primary rounded-full" />
-          )}
         </div>
       </div>
 

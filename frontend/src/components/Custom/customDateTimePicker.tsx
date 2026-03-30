@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
+import { useDispatch } from "react-redux";
 import { Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Button } from "../Buttons/customButton";
+import { addToast } from "../../features/toasts/toastSlice";
 
 const activeBorderColors: Record<string, string> = {
   primary: "border-primary",
@@ -40,6 +42,7 @@ const formatValue = (d: Date | null): string => {
 };
 
 export const CustomDateTimePicker = ({ label, value, onChange, roleColor = "primary" }: DateTimePickerProps) => {
+  const dispatch = useDispatch();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -109,6 +112,20 @@ export const CustomDateTimePicker = ({ label, value, onChange, roleColor = "prim
     setSelectedDate(d);
   };
 
+  const handleConfirm = () => {
+    if (!selectedDate) {
+      dispatch(addToast({ message: "Please select a date and time.", type: "failure" }));
+      return;
+    }
+    const now = new Date();
+    if (selectedDate < now) {
+      dispatch(addToast({ message: "Cannot select a past time.", type: "failure" }));
+      return;
+    }
+    onChange(formatValue(selectedDate));
+    setIsOpen(false);
+  };
+
   const renderCalendar = () => {
     const year = viewDate.getFullYear();
     const month = viewDate.getMonth();
@@ -145,12 +162,17 @@ export const CustomDateTimePicker = ({ label, value, onChange, roleColor = "prim
           ))}
           {daySlots.map(d => {
             const dateObj = new Date(year, month, d);
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            
+            const isPast = dateObj < today;
             const isSaturday = dateObj.getDay() === 6;
             const isSelected = selectedDate?.getDate() === d && selectedDate?.getMonth() === month && selectedDate?.getFullYear() === year;
             const isToday = new Date().getDate() === d && new Date().getMonth() === month && new Date().getFullYear() === year;
             
             let bgClass = "hover:bg-primary/20 hover:text-primary text-text-body cursor-pointer";
-            if (isSaturday) bgClass = "bg-failure/40 text-failure font-bold cursor-not-allowed";
+            if (isPast) bgClass = "bg-light/5 text-text-muted/30 font-bold cursor-not-allowed";
+            else if (isSaturday) bgClass = "bg-failure/40 text-failure font-bold cursor-not-allowed";
             else if (isSelected) bgClass = "bg-primary text-white font-bold shadow-md cursor-pointer";
             else if (isToday) bgClass = "bg-light/10 text-primary font-bold cursor-pointer";
 
@@ -158,7 +180,7 @@ export const CustomDateTimePicker = ({ label, value, onChange, roleColor = "prim
               <button
                 type="button"
                 key={d}
-                disabled={isSaturday}
+                disabled={isPast || isSaturday}
                 onClick={() => handleDayClick(d)}
                 className={`h-8 w-8 rounded-full text-xs transition-all flex items-center justify-center mx-auto ${bgClass}`}
               >
@@ -269,15 +291,18 @@ export const CustomDateTimePicker = ({ label, value, onChange, roleColor = "prim
 
       {/* Dropdown Popover */}
       {isOpen && (
-        <div className="absolute -top-50 mb-2 left-0 z-[9999] p-5 bg-surface/95 backdrop-blur-md border-2 border-light/10 rounded-3xl w-full">
-          {renderCalendar()}
+        <>
+          <div className="fixed inset-0 z-[9998] bg-surface/60 backdrop-blur-sm rounded-4xl" onClick={(e) => { e.stopPropagation(); setIsOpen(false); }} />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] p-6 bg-surface/95 backdrop-blur-xl border-2 border-light/10 rounded-3xl w-[340px] max-w-[90vw] shadow-2xl">
+            {renderCalendar()}
           {renderTimePicker()}
           
           <div className="mt-4 pt-4 border-t-2 border-light/10 flex gap-2">
-                <Button label="Cancel" onClick={() => { setSelectedDate(parseValue(value)); setIsOpen(false); }} variant='failure' className='w-full' />
-                <Button label="Confirm" onClick={() => { if (selectedDate) onChange(formatValue(selectedDate)); setIsOpen(false); }} variant='primary' className='w-full' />
+            <Button label="Cancel" onClick={() => { setSelectedDate(parseValue(value)); setIsOpen(false); }} variant='failure' className='w-full' />
+            <Button label="Confirm" onClick={handleConfirm} variant='primary' className='w-full' />
           </div>
         </div>
+        </>
       )}
     </div>
   );

@@ -73,7 +73,7 @@ export const CustomInput = ({
         )}
 
         {/* NUMBER CONTROLS */}
-        {isNumber && (
+        {isNumber && !props.disabled && !props.readOnly && (
           <div className="flex items-center gap-1 border-l-2 border-light/10 pl-2 ml-1">
             <button
               type="button"
