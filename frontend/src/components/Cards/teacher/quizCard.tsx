@@ -23,17 +23,17 @@ export const QuizCard = ({ quiz, onEdit, onModify, onEvaluate }: QuizCardProps) 
     const cardRef = useRef<HTMLDivElement>(null);
 
     const getStatusInfo = () => {
-        if (!quiz.is_published) return { label: 'Draft', color: 'bg-text-muted/10 text-text-muted border-text-muted/40', dot: 'bg-text-muted' };
+        if (!quiz.is_published) return { label: 'Draft', color: 'bg-text-muted/10 text-text-muted border-text-muted/40' };
 
         const now = new Date();
         const start = quiz.start_datetime ? new Date(quiz.start_datetime) : null;
         const end = quiz.end_datetime ? new Date(quiz.end_datetime) : null;
 
-        if (start && now < start) return { label: 'Scheduled', color: 'bg-info/10 text-info border-info/40', dot: 'bg-info' };
-        if (start && end && now >= start && now <= end) return { label: 'Live', color: 'bg-success/10 text-success border-success/40', dot: 'bg-success', ping: true };
-        if (end && now > end) return { label: 'Closed', color: 'bg-failure/10 text-failure border-failure/40', dot: 'bg-failure' };
+        if (start && now < start) return { label: 'Scheduled', color: 'bg-info/10 text-info border-info/40' };
+        if (start && end && now >= start && now <= end) return { label: 'Live', color: 'bg-success/10 text-success border-success/40' };
+        if (end && now > end) return { label: 'Closed', color: 'bg-failure/10 text-failure border-failure/40' };
 
-        return { label: 'Published', color: 'bg-primary/10 text-primary border-primary/40', dot: 'bg-primary' };
+        return { label: 'Published', color: 'bg-primary/10 text-primary border-primary/40' };
     };
 
     const status = getStatusInfo();
@@ -87,27 +87,25 @@ export const QuizCard = ({ quiz, onEdit, onModify, onEvaluate }: QuizCardProps) 
                     <div className="hidden md:block p-3 rounded-xl bg-primary/10 text-primary shrink-0">
                         <HelpCircle size={24} />
                     </div>
-                    <div className="flex-1 min-w-0 space-y-1">
-                        <div className="flex items-center gap-2">
-                            <h3 className="font-bold text-lg text-primary truncate" title={quiz.title}>
-                                {quiz.title}
-                            </h3>
-                            <span className={`relative flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider border-2 ${status.color}`}>
-                                <span className="relative flex h-2 w-2">
-                                    {status.ping && <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${status.dot}`}></span>}
-                                    <span className={`relative inline-flex rounded-full h-2 w-2 ${status.dot}`}></span>
+                    <div className="flex-1 min-w-0 flex flex-col gap-2 py-1">
+                        <h3 className="font-bold text-lg text-primary truncate leading-none" title={quiz.title}>
+                            {quiz.title}
+                        </h3>
+                        <div className="flex items-center flex-wrap gap-4">
+                            <div className="flex items-center gap-1.5">
+                                <span className={`relative flex items-center px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${status.color}`}>
+                                    {status.label}
                                 </span>
-                                {status.label}
-                            </span>
-                            {quiz.is_ai_generated && (
-                                <span className="bg-primary/20 text-primary border-2 border-primary/40 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider">
-                                    AI
-                                </span>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-widest text-primary/70">
-                            <Clock size={12} className="shrink-0" />
-                            <span className="truncate">{quiz.default_time_per_question || 60}s Per Question</span>
+                                {quiz.is_ai_generated && (
+                                    <span className="bg-primary/20 text-primary border border-primary/40 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider">
+                                        AI
+                                    </span>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-widest text-primary/70">
+                                <Clock size={12} className="shrink-0" />
+                                <span className="truncate">{quiz.default_time_per_question || 60}s Per Question</span>
+                            </div>
                         </div>
                     </div>
                 </div>
