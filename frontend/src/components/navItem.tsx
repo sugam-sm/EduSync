@@ -27,7 +27,7 @@ export const NavButton = ({ to, label, icon }: NavButtonProps) => (
             : icon}
         </span>
         
-        <span className="text-[10.5px] lg:block lg:text-sm leading-none duration-300">
+        <span className="text-[11px] leading-none duration-300">
           {label}
         </span>
       </>
