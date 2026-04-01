@@ -150,8 +150,8 @@ const attendanceSlice = createSlice({
                 // Update active session if it matches
                 if (state.activeSession && state.activeSession.id === action.payload.session) {
                     if (!state.activeSession.attendances) state.activeSession.attendances = [];
-                    const existing = state.activeSession.attendances.findIndex(a => 
-                        (action.payload.student_username && a.student_username === action.payload.student_username) || 
+                    const existing = state.activeSession.attendances.findIndex(a =>
+                        (action.payload.student_username && a.student_username === action.payload.student_username) ||
                         (a.student === action.payload.student)
                     );
                     if (existing !== -1) {
@@ -164,8 +164,8 @@ const attendanceSlice = createSlice({
                 const sessionIndex = state.sessions.findIndex(s => s.id === action.payload.session);
                 if (sessionIndex !== -1) {
                     if (!state.sessions[sessionIndex].attendances) state.sessions[sessionIndex].attendances = [];
-                    const attIndex = state.sessions[sessionIndex].attendances!.findIndex(a => 
-                        (action.payload.student_username && a.student_username === action.payload.student_username) || 
+                    const attIndex = state.sessions[sessionIndex].attendances!.findIndex(a =>
+                        (action.payload.student_username && a.student_username === action.payload.student_username) ||
                         (a.student === action.payload.student)
                     );
                     if (attIndex !== -1) {
