@@ -26,7 +26,14 @@ const savedUser = localStorage.getItem('user');
 
 // initializing the state with default values
 const initialState: LoginState = {
-  user: savedUser ? JSON.parse(savedUser) : null,
+  user: (() => {
+    try {
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch {
+      localStorage.removeItem('user');
+      return null;
+    }
+  })(),
   isAuthenticated: !!localStorage.getItem('accessToken'),
   isVerifying: true,
   accessToken: localStorage.getItem('accessToken'),
