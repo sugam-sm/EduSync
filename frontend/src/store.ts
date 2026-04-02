@@ -13,6 +13,7 @@ import quizReducer from "./features/learning/quizSllice"
 import teacherRemarkReducer from "./features/learning/teacherRemarkSlice"
 import attendanceReducer from "./features/analytics/attendanceSlice";
 import roleReducer from "./features/organization/roleSlice";
+import notificationReducer from "./features/notifications/notificationSlice";
 
 export const store = configureStore({
     reducer: {
@@ -29,6 +30,7 @@ export const store = configureStore({
         teacherRemark: teacherRemarkReducer,
         attendance: attendanceReducer,
         role: roleReducer,
+        notification: notificationReducer,
     }
 });
 
