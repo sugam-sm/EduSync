@@ -50,6 +50,8 @@ INSTALLED_APPS = [
     'organizations',
     'users',
     'learning',
+    'analytics',
+    'notifications',
 ]
 
 MIDDLEWARE = [
@@ -60,7 +62,6 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
 ROOT_URLCONF = 'edusync.urls'
@@ -139,12 +140,7 @@ AUTH_USER_MODEL = 'users.User'
 
 # CORS settings
 raw_origins = [
-    os.getenv('CORS_ORIGIN_f1_1'),
-    os.getenv('CORS_ORIGIN_f1_2'),
-    os.getenv('CORS_ORIGIN_f2_1'),
-    os.getenv('CORS_ORIGIN_f2_2'),
-    os.getenv('CORS_ORIGIN_f3_1'),
-    os.getenv('CORS_ORIGIN_f3_2'),
+    os.getenv('CORS_ORIGIN'),
 ]
 
 CORS_ALLOWED_ORIGINS = [origin for origin in raw_origins if origin is not None]
@@ -172,3 +168,12 @@ SIMPLE_JWT = {
 
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+X_FRAME_OPTIONS = 'ALLOWALL'
+
+# Celery Configuration Options
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL')
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND')
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
