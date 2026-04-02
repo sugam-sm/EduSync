@@ -23,6 +23,8 @@ class Resource(models.Model):
     
     file = models.FileField(upload_to='learning_resources/', null=True, blank=True)
     url = models.URLField(null=True, blank=True)
+    
+    extracted_text = models.TextField(null=True, blank=True)
 
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
@@ -34,6 +36,7 @@ class FlashcardDeck(models.Model):
     sub_assign = models.ForeignKey(AssignSubject, on_delete=models.CASCADE, related_name='decks')
     created_by = models.ForeignKey(Teacher, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
+    is_ai_generated = models.BooleanField(default=False)
 
     class Meta:
         verbose_name_plural = "Flashcard Decks"
@@ -55,10 +58,8 @@ class Flashcard(models.Model):
 
 class Quiz(models.Model):
     title = models.CharField(max_length=255)
-    description = models.TextField(blank=True, null=True)
     sub_assign = models.ForeignKey(AssignSubject, on_delete=models.CASCADE, related_name='quizzes')
     created_by = models.ForeignKey(Teacher, on_delete=models.CASCADE)
-    topic_tag = models.CharField(max_length=100, blank=True, null=True, help_text="Used for tracking specific weaknesses")
     is_active = models.BooleanField(default=True)
     is_published = models.BooleanField(default=False)
     
@@ -68,6 +69,7 @@ class Quiz(models.Model):
     
     default_time_per_question = models.PositiveIntegerField(default=60, help_text="In seconds")
     created_at = models.DateTimeField(auto_now_add=True)
+    is_ai_generated = models.BooleanField(default=False)
     
     class Meta:
         verbose_name_plural = "Quizzes"

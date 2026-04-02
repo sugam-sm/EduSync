@@ -9,6 +9,7 @@ from .serializers import (
     FlashcardSerializer, QuizSerializer, QuestionSerializer, ChoiceSerializer,
 )
 from users.models import Student
+from notifications.utils import notify_students_in_grade
 
 class ResourcePermissions(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -43,6 +44,39 @@ class ResourceFolderViewSet(viewsets.ModelViewSet):
 
         return base_query.none()
 
+    def perform_create(self, serializer):
+        folder = serializer.save()
+        grade = folder.sub_assign.grade
+        subject_name = folder.sub_assign.subject.name
+        teacher_name = self.request.user.full_name
+        notify_students_in_grade(
+            grade=grade,
+            title="New Resource Folder",
+            message=f"{teacher_name} added a new resource folder '{folder.name}' for {subject_name}.",
+            notif_type='RESOURCE',
+            action_url='/resources'
+        )
+
+    def perform_update(self, serializer):
+        folder = serializer.save()
+        notify_students_in_grade(
+            grade=folder.sub_assign.grade,
+            title="Resource Folder Updated",
+            message=f"The resource folder '{folder.name}' for {folder.sub_assign.subject.name} was updated.",
+            notif_type='RESOURCE',
+            action_url='/resources'
+        )
+
+    def perform_destroy(self, instance):
+        notify_students_in_grade(
+            grade=instance.sub_assign.grade,
+            title="Resource Folder Deleted",
+            message=f"The resource folder '{instance.name}' for {instance.sub_assign.subject.name} was removed.",
+            notif_type='RESOURCE',
+            action_url='/resources'
+        )
+        instance.delete()
+
 class ResourceViewSet(viewsets.ModelViewSet):
     serializer_class = ResourceSerializer
     permission_classes = [permissions.IsAuthenticated, ResourcePermissions]
@@ -67,6 +101,41 @@ class ResourceViewSet(viewsets.ModelViewSet):
             return base_query.filter(folder__sub_assign__grade=user.student_profile.grade).distinct()
         return base_query.none()
 
+    def perform_create(self, serializer):
+        resource = serializer.save()
+        if resource.type == 'FILE':
+            from .tasks import process_resource_to_text
+            transaction.on_commit(lambda: process_resource_to_text.delay(resource.id))
+
+        # Notify students in the grade about the new resource
+        grade = resource.folder.sub_assign.grade
+        subject_name = resource.folder.sub_assign.subject.name
+        teacher_name = self.request.user.full_name
+        notify_students_in_grade(
+            grade=grade,
+            title="New Resource Uploaded",
+            message=f"{teacher_name} uploaded '{resource.title}' for {subject_name}.",
+            notif_type='RESOURCE',
+            action_url='/resources'
+        )
+
+    def perform_destroy(self, instance):
+        notify_students_in_grade(
+            grade=instance.folder.sub_assign.grade,
+            title="Resource Deleted",
+            message=f"The resource '{instance.title}' was removed from {instance.folder.sub_assign.subject.name}.",
+            notif_type='RESOURCE',
+            action_url='/resources'
+        )
+        instance.delete()
+
+    @action(detail=True, methods=['post'])
+    def generate_content(self, request, pk=None):
+        content_type = request.data.get('content_type', 'FLASHCARD')
+        from .tasks import trigger_content_generation
+        trigger_content_generation.delay(pk, content_type)
+        return Response({'status': f'{content_type} generation started'}, status=status.HTTP_202_ACCEPTED)
+
 class FlashcardDeckViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, ResourcePermissions]
     serializer_class = FlashcardDeckSerializer
@@ -89,6 +158,100 @@ class FlashcardDeckViewSet(viewsets.ModelViewSet):
                 queryset = queryset.filter(sub_assign__subject_id=selected_subject)
             return queryset.distinct()
         return base_query.none()
+
+    def create(self, request, *args, **kwargs):
+        if request.data.get('creation_mode') == 'ai':
+            from organizations.models import AssignSubject
+            from .tasks import trigger_content_generation, process_resource_to_text
+            
+            grade_id = request.data.get('grade_id')
+            resource_id = request.data.get('resource_id')
+            file = request.FILES.get('file')
+            prompt = request.data.get('prompt', '')
+            title = request.data.get('title', '')
+            card_count = int(request.data.get('card_count', 10))
+
+            print(f"--- AI API REQUEST RECEIVED ---")
+            print(f"Title: {title}, Prompt Length: {len(prompt)}, Resource ID: {resource_id}, File: {'Yes' if file else 'No'}")
+
+            sub_assign = AssignSubject.objects.filter(teacher__user=request.user, grade_id=grade_id).first()
+            if not sub_assign:
+                return Response({"error": "You are not assigned to this grade."}, status=status.HTTP_400_BAD_REQUEST)
+
+            if resource_id:
+                trigger_content_generation.delay(
+                    int(resource_id), content_type='FLASHCARD', prompt_text=prompt,
+                    title=title, sub_assign_id=sub_assign.id,
+                    creator_id=request.user.teacher_profile.user_id,
+                    question_count=card_count
+                )
+                return Response({"status": "AI Generation queued for resource."}, status=status.HTTP_202_ACCEPTED)
+            
+            if file:
+                from .models import ResourceFolder
+                folder, _ = ResourceFolder.objects.get_or_create(
+                    name="AI Temp Folder", 
+                    sub_assign=sub_assign, 
+                    uploaded_by=request.user.teacher_profile
+                )
+                resource = Resource.objects.create(
+                    title=title or 'AI Generated',
+                    type='FILE',
+                    folder=folder,
+                    file=file
+                )
+                process_resource_to_text.delay(resource.id, auto_generate='FLASHCARD')
+                return Response({"status": "File uploaded and AI Generation queued."}, status=status.HTTP_202_ACCEPTED)
+
+            # Prompt-only generation (no file or resource)
+            if prompt:
+                trigger_content_generation.delay(
+                    None, content_type='FLASHCARD', prompt_text=prompt,
+                    title=title, sub_assign_id=sub_assign.id,
+                    creator_id=request.user.teacher_profile.user_id,
+                    question_count=card_count
+                )
+                return Response({"status": "AI Generation started from prompt."}, status=status.HTTP_202_ACCEPTED)
+
+            return Response({"error": "Please provide a prompt, file, or resource for AI generation."}, status=status.HTTP_400_BAD_REQUEST)
+
+        response = super().create(request, *args, **kwargs)
+        # Notify students for manual flashcard deck creation
+        if response.status_code == 201:
+            deck_data = response.data
+            from organizations.models import AssignSubject
+            try:
+                sub_assign = AssignSubject.objects.select_related('grade', 'subject').get(pk=deck_data.get('sub_assign'))
+                notify_students_in_grade(
+                    grade=sub_assign.grade,
+                    title="New Flashcard Deck",
+                    message=f"{request.user.full_name} created a new flashcard deck '{deck_data.get('title')}' for {sub_assign.subject.name}.",
+                    notif_type='FLASHCARD',
+                    action_url='/assessments'
+                )
+            except AssignSubject.DoesNotExist:
+                pass
+        return response
+
+    def perform_update(self, serializer):
+        deck = serializer.save()
+        notify_students_in_grade(
+            grade=deck.sub_assign.grade,
+            title="Flashcard Deck Updated",
+            message=f"The flashcard deck '{deck.title}' for {deck.sub_assign.subject.name} was updated.",
+            notif_type='FLASHCARD',
+            action_url='/assessments'
+        )
+
+    def perform_destroy(self, instance):
+        notify_students_in_grade(
+            grade=instance.sub_assign.grade,
+            title="Flashcard Deck Deleted",
+            message=f"The flashcard deck '{instance.title}' was removed.",
+            notif_type='FLASHCARD',
+            action_url='/assessments'
+        )
+        instance.delete()
 
 class FlashcardViewSet(viewsets.ModelViewSet):
     serializer_class = FlashcardSerializer
@@ -143,6 +306,112 @@ class QuizViewSet(viewsets.ModelViewSet):
                 queryset = queryset.filter(sub_assign__subject_id=selected_subject)
             return queryset.distinct()
         return base_query.none()
+
+    def perform_update(self, serializer):
+        # Check if the quiz is transitioning to published
+        old_published = serializer.instance.is_published
+        quiz = serializer.save()
+        if not old_published and quiz.is_published:
+            # Quiz was just published - notify students
+            notify_students_in_grade(
+                grade=quiz.sub_assign.grade,
+                title="Quiz Published",
+                message=f"A quiz '{quiz.title}' for {quiz.sub_assign.subject.name} is now available to take.",
+                notif_type='QUIZ',
+                action_url='/assessments'
+            )
+        else:
+            notify_students_in_grade(
+                grade=quiz.sub_assign.grade,
+                title="Quiz Updated",
+                message=f"The quiz '{quiz.title}' for {quiz.sub_assign.subject.name} was updated.",
+                notif_type='QUIZ',
+                action_url='/assessments'
+            )
+
+    def perform_destroy(self, instance):
+        notify_students_in_grade(
+            grade=instance.sub_assign.grade,
+            title="Quiz Deleted",
+            message=f"The quiz '{instance.title}' was removed.",
+            notif_type='QUIZ',
+            action_url='/assessments'
+        )
+        instance.delete()
+
+    def create(self, request, *args, **kwargs):
+        if request.data.get('creation_mode') == 'ai':
+            from organizations.models import AssignSubject
+            from .tasks import trigger_content_generation, process_resource_to_text
+            
+            grade_id = request.data.get('grade_id')
+            resource_id = request.data.get('resource_id')
+            file = request.FILES.get('file')
+            prompt = request.data.get('prompt', '')
+            title = request.data.get('title', '')
+            question_count = int(request.data.get('question_count', 10))
+
+            print(f"--- AI API QUIZ REQUEST RECEIVED ---")
+            print(f"Title: {title}, Prompt Length: {len(prompt)}, Resource ID: {resource_id}, File: {'Yes' if file else 'No'}")
+
+            sub_assign = AssignSubject.objects.filter(teacher__user=request.user, grade_id=grade_id).first()
+            if not sub_assign:
+                return Response({"error": "You are not assigned to this grade."}, status=status.HTTP_400_BAD_REQUEST)
+
+            if resource_id:
+                trigger_content_generation.delay(
+                    int(resource_id), content_type='QUIZ', prompt_text=prompt,
+                    title=title, sub_assign_id=sub_assign.id,
+                    creator_id=request.user.teacher_profile.user_id,
+                    question_count=question_count
+                )
+                return Response({"status": "AI Quiz generation queued for resource."}, status=status.HTTP_202_ACCEPTED)
+            
+            if file:
+                from .models import ResourceFolder
+                folder, _ = ResourceFolder.objects.get_or_create(
+                    name="AI Temp Folder", 
+                    sub_assign=sub_assign, 
+                    uploaded_by=request.user.teacher_profile
+                )
+                resource = Resource.objects.create(
+                    title=title or 'AI Generated',
+                    type='FILE',
+                    folder=folder,
+                    file=file
+                )
+                process_resource_to_text.delay(resource.id, auto_generate='QUIZ')
+                return Response({"status": "File uploaded and AI Quiz generation queued."}, status=status.HTTP_202_ACCEPTED)
+
+            # Prompt-only generation (no file or resource)
+            if prompt:
+                trigger_content_generation.delay(
+                    None, content_type='QUIZ', prompt_text=prompt,
+                    title=title, sub_assign_id=sub_assign.id,
+                    creator_id=request.user.teacher_profile.user_id,
+                    question_count=question_count
+                )
+                return Response({"status": "AI Quiz generation started from prompt."}, status=status.HTTP_202_ACCEPTED)
+
+            return Response({"error": "Please provide a prompt, file, or resource for AI generation."}, status=status.HTTP_400_BAD_REQUEST)
+
+        response = super().create(request, *args, **kwargs)
+        # Notify students for manual quiz creation
+        if response.status_code == 201:
+            quiz_data = response.data
+            from organizations.models import AssignSubject
+            try:
+                sub_assign = AssignSubject.objects.select_related('grade', 'subject').get(pk=quiz_data.get('sub_assign'))
+                notify_students_in_grade(
+                    grade=sub_assign.grade,
+                    title="New Quiz Created",
+                    message=f"{request.user.full_name} created a new quiz '{quiz_data.get('title')}' for {sub_assign.subject.name}.",
+                    notif_type='QUIZ',
+                    action_url='/assessments'
+                )
+            except AssignSubject.DoesNotExist:
+                pass
+        return response
 
 class QuestionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated, ResourcePermissions]

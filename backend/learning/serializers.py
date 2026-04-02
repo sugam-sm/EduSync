@@ -18,7 +18,7 @@ class Base64ImageField(serializers.ImageField):
 class ResourceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Resource
-        fields = '__all__'
+        fields = ['id', 'title', 'type', 'folder', 'file', 'url', 'uploaded_at']
 
 class ResourceFolderSerialzer(serializers.ModelSerializer):
     resources = ResourceSerializer(many=True, read_only=True)
@@ -81,8 +81,12 @@ class FlashcardDeckSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = FlashcardDeck
-        fields = ['id', 'title', 'sub_assign', 'created_by', 'created_at', 'cards', 'grade_id', 'subject_name', 'grade_info', 'created_by_name', 'card_count']
-        read_only_fields = ['id', 'sub_assign', 'created_by', 'created_at']
+        fields = [
+            'id', 'title', 'sub_assign', 'created_by', 'created_at', 'cards', 
+            'grade_id', 'subject_name', 'grade_info', 'created_by_name', 
+            'card_count', 'is_ai_generated'
+        ]
+        read_only_fields = ['id', 'sub_assign', 'created_by', 'created_at', 'is_ai_generated']
 
     def validate(self, data):
         grade_id = data.get('grade_id')
@@ -155,12 +159,12 @@ class QuizSerializer(serializers.ModelSerializer):
     class Meta:
         model = Quiz
         fields = [
-            'id', 'title', 'description', 'sub_assign', 'created_by', 'topic_tag', 
+            'id', 'title', 'sub_assign', 'created_by', 
             'is_active', 'is_published', 'start_datetime', 'end_datetime', 
             'default_time_per_question', 'created_at', 'grade_id', 'questions', 'questions_count',
-            'subject_name', 'grade_info', 'created_by_name'
+            'subject_name', 'grade_info', 'created_by_name', 'is_ai_generated'
         ]
-        read_only_fields = ['id', 'sub_assign', 'created_by', 'created_at']
+        read_only_fields = ['id', 'sub_assign', 'created_by', 'created_at', 'is_ai_generated']
 
     def validate(self, data):
         grade_id = data.get('grade_id')
