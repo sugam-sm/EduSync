@@ -10,6 +10,7 @@ from .serializers import (
 )
 from users.models import Student
 from learning.models import Quiz
+from notifications.utils import create_notification
 
 class SessionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -190,6 +191,16 @@ class TeacherQuizRemarkViewSet(viewsets.ModelViewSet):
                 )
                 created.append(obj)
 
+        # Notify each student who received a remark
+        for remark in created:
+            create_notification(
+                user=remark.student.user,
+                title="New Teacher Remark",
+                message=f"{teacher.user.full_name} left a remark on quiz '{quiz.title}'.",
+                notif_type='REMARK',
+                action_url='/analytics'
+            )
+
         return Response(
             TeacherQuizRemarkSerializer(created, many=True).data,
             status=status.HTTP_201_CREATED
@@ -311,6 +322,17 @@ class QuizAttemptViewSet(viewsets.ModelViewSet):
             
             attempt.total_score = score
             attempt.save()
+
+        # Notify the teacher who created the quiz that a student finished
+        quiz = attempt.quiz
+        if quiz.created_by:
+            create_notification(
+                user=quiz.created_by.user,
+                title="Quiz Attempt Completed",
+                message=f"{student.user.full_name} completed the quiz '{quiz.title}' with a score of {attempt.total_score}.",
+                notif_type='QUIZ',
+                action_url='/assessments'
+            )
             
         return Response(QuizAttemptSerializer(attempt, context={'request': request}).data)
 
