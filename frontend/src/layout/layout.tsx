@@ -10,6 +10,7 @@ import Logo from '../assets/logos/medium-logo.svg';
 
 import { logout, reset } from '../features/login/loginSlice.ts';
 import { addToast } from '../features/toasts/toastSlice.ts';
+import { NotificationPanel } from '../components/NotificationPanel.tsx';
 
 // Sidebar Item
 const SidebarItem = ({ name, path, icon: Icon, collapsed, isFirst, isLast }: { name: string, path: string, icon: any, collapsed: boolean, isFirst?: boolean, isLast?: boolean }) => {
@@ -148,6 +149,8 @@ export const Layout = () => {
               <span className="truncate max-w-[120px] text-text-body text-[11px] font-medium">{user?.org_name}</span>
             </div>
           </div>
+
+          <NotificationPanel />
 
           <button
             onClick={() =>
