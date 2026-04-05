@@ -53,6 +53,7 @@ export interface Quiz {
     start_datetime?: string | null;
     end_datetime?: string | null;
     default_time_per_question: number;
+    default_points_per_question: number;
     created_at?: string;
     questions: Question[];
     questions_count?: number;
