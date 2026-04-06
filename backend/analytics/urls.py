@@ -1,6 +1,9 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import SessionViewSet, AttendanceViewSet, TeacherQuizRemarkViewSet, QuizAttemptViewSet
+from .views import (
+    SessionViewSet, AttendanceViewSet, TeacherQuizRemarkViewSet,
+    QuizAttemptViewSet, AnalyticsDashboardView,
+)
 
 router = DefaultRouter()
 router.register(r'sessions', SessionViewSet, basename='session')
@@ -9,5 +12,6 @@ router.register(r'quiz-remarks', TeacherQuizRemarkViewSet, basename='teacher-qui
 router.register(r'quiz-attempts', QuizAttemptViewSet, basename='quiz-attempt')
 
 urlpatterns = [
+    path('dashboard/', AnalyticsDashboardView.as_view(), name='analytics-dashboard'),
     path('', include(router.urls)),
 ]
