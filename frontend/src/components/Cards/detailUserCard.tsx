@@ -1,5 +1,5 @@
-import { 
-  AtSign, Mail, Phone, VenusAndMars, UserRound, GraduationCap, 
+import {
+  AtSign, Mail, Phone, VenusAndMars, UserRound, GraduationCap,
   School, HeartHandshake, Link, BookOpen, Contact, X
 } from "lucide-react";
 import { type User } from '../../features/organization/userSlice';
@@ -12,14 +12,15 @@ interface UserDetailCardProps {
 
 export const UserDetailCard = ({ user, onClose }: UserDetailCardProps) => {
   const isTeacher = user.role_name?.toLowerCase() === 'teacher';
+  const isAdmin = user.role_name?.toLowerCase() === 'admin';
   const teacherData = user.teacher_profile;
   const studentData = user.student_profile;
   const isActive = user.is_active === true;
 
   const DetailRow = ({ icon: Icon, label, value }: { icon: any, label: string, value: string | number | undefined | null }) => (
     <div className="flex items-center gap-2 p-2 sm:p-4 bg-light/5 rounded-2xl border border-light/5">
-      <div className={`${isTeacher ? 'text-info' : 'text-primary'}`}>
-        <Icon size={30} strokeWidth={2.5}/>
+      <div className={`${isAdmin ? 'text-text-muted text-warning' : isTeacher ? 'text-info' : 'text-primary'}`}>
+        <Icon size={30} strokeWidth={2.5} />
       </div>
       <div>
         <p className="text-[10px] uppercase font-bold text-text-body tracking-widest">{label}</p>
@@ -39,9 +40,8 @@ export const UserDetailCard = ({ user, onClose }: UserDetailCardProps) => {
                 {user.fullname || `${user.first_name} ${user.last_name}`}
               </h2>
               <div className="flex items-center gap-2">
-                <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase tracking-wider border-2 ${
-                  isTeacher ? 'bg-info/10 text-info border-info/40' : 'bg-primary/10 text-primary border-primary/40'
-                }`}>
+                <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase tracking-wider border-2 ${isAdmin ? 'bg-warning/10 text-warning border-warning/40' : isTeacher ? 'bg-info/10 text-info border-info/40' : 'bg-primary/10 text-primary border-primary/40'
+                  }`}>
                   {user.role_name}
                 </span>
                 <span className={`relative flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] h-full font-bold uppercase border-2 ${isActive ? 'bg-success/10 text-success border-success/40' : 'bg-failure/10 text-failure border-failure/40'}`}>
@@ -53,9 +53,9 @@ export const UserDetailCard = ({ user, onClose }: UserDetailCardProps) => {
                 </span>
               </div>
             </div>
-            <button 
-              type="button" 
-              onClick={onClose} 
+            <button
+              type="button"
+              onClick={onClose}
               className="p-2 hover:bg-failure/20 hover:text-failure text-text-muted rounded-full transition-all hover:rotate-90 cursor-pointer duration-300"
             >
               <X size={24} strokeWidth={3} />
@@ -76,7 +76,7 @@ export const UserDetailCard = ({ user, onClose }: UserDetailCardProps) => {
             <div className="col-span-2">
               <DetailRow icon={VenusAndMars} label="Gender" value={user.gender} />
             </div>
-            
+
             {isTeacher ? (
               <>
                 <div className="col-span-2">
@@ -89,7 +89,7 @@ export const UserDetailCard = ({ user, onClose }: UserDetailCardProps) => {
                   <DetailRow icon={GraduationCap} label="Qualification" value={teacherData?.qualification} />
                 </div>
               </>
-            ) : (
+            ) : isAdmin ? null : (
               <>
                 <div className="col-span-2">
                   <DetailRow icon={School} label="Grade" value={studentData?.grade ? `${studentData.grade_name} - ${studentData.section}` : "N/A"} />
