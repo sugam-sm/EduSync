@@ -1,4 +1,5 @@
-import { Building2, Mail, ExternalLink, PenSquare, Trash2, ShieldCheck } from "lucide-react";
+import { useState } from 'react';
+import { Mail, Edit, Trash2, ShieldCheck, MoreVertical, X } from "lucide-react";
 import { ActionButton } from "../../Buttons/actionButton";
 
 interface OrganizationCardProps {
@@ -8,66 +9,69 @@ interface OrganizationCardProps {
 }
 
 export const OrganizationCard = ({ organization, onEdit, onDelete }: OrganizationCardProps) => {
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
   const isActive = organization.is_active !== false;
 
   return (
-    <div className={`relative w-full bg-surface border-2 border-light/10 rounded-2xl p-6 transition-all duration-300 group flex flex-col hover:-translate-y-1 hover:border-primary hover:shadow-md hover:shadow-primary/20`}>
+    <div className={`relative w-full bg-surface border-2 border-light/10 rounded-xl p-5 hover:-translate-y-1 transition-all duration-300 group flex flex-col hover:shadow-md hover:border-primary hover:shadow-primary/50`}>
       
-      {/* Status Badge */}
-      <div className="flex justify-between items-start mb-5">
-        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border-2 ${
-          isActive 
-            ? 'bg-success/10 text-success border-success/30' 
-            : 'bg-failure/10 text-failure border-failure/30'
-        }`}>
-          <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-success animate-pulse' : 'bg-failure'}`} />
-          {isActive ? 'Active' : 'Suspended'}
+      {/* Mobile Popup Overlay */}
+      {isActionsOpen && (
+        <div className="md:hidden absolute right-2.5 top-10 z-20 p-2 rounded-xl shadow-xl flex flex-col gap-2 animate-in fade-in zoom-in-95 duration-200">
+          <ActionButton Icon={Edit} variant='custom' isTeacher={false} onClick={() => {onEdit(); setIsActionsOpen(false);}} className="p-2!" />
+          <ActionButton Icon={Trash2} variant='failure' onClick={() => {onDelete(); setIsActionsOpen(false);}} className="p-2!" />
         </div>
+      )}
 
-        <div className="flex gap-2">
-           <ActionButton Icon={PenSquare} variant='custom' isTeacher={false} onClick={onEdit} className="p-2! bg-primary/10 hover:bg-primary text-primary hover:text-white border-2 border-primary/20 rounded-xl" />
-           <ActionButton Icon={Trash2} variant='failure' onClick={onDelete} className="p-2! rounded-xl border-2 border-failure/20" />
-        </div>
-      </div>
+      <div className="flex justify-between items-start mb-4">
+        <div className="space-y-2">
+          <h3 className="uppercase font-bold text-lg leading-tight transition-all duration-300 text-primary truncate max-w-[200px] sm:max-w-[250px]">
+            {organization.name}
+          </h3>
+          
+          <div className='flex gap-2 items-center flex-wrap'>
+             <span className="px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase tracking-wider border-2 bg-primary/10 text-primary border-primary/40">
+               ORG
+             </span>
 
-      {/* Main Info */}
-      <div className="mb-6">
-        <div className="flex items-center gap-4 mb-4">
-            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border-2 border-primary/10 shadow-inner group-hover:scale-110 transition-transform duration-300">
-                {organization.logo ? (
-                     <img src={organization.logo} alt="" className="w-full h-full object-cover rounded-xl" />
-                ) : (
-                    <Building2 size={28} />
-                )}
-            </div>
-            <div className="min-w-0">
-                <h3 className="text-xl font-bold text-text-heading tracking-tight leading-tight group-hover:text-primary transition-colors truncate">
-                    {organization.name}
-                </h3>
-                <div className="flex items-center gap-2 mt-1 text-text-muted text-[10px] font-bold uppercase tracking-widest opacity-70">
-                    <ShieldCheck size={10} className="text-primary" /> Authority Hub
-                </div>
-            </div>
-        </div>
-      </div>
-
-      {/* Details List */}
-      <div className="space-y-3 grow">
-        <div className="flex items-center gap-3 p-3 bg-bg/40 rounded-xl border border-light/5 group-hover:bg-bg/60 transition-colors">
-          <div className="p-1.5 bg-surface text-primary rounded-lg border border-light/5">
-            <Mail size={14} />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-text-muted opacity-60 leading-tight mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis">Admin Registry</p>
-            <p className="text-sm font-bold text-text-body truncate">{organization.email}</p>
+            <span className={`relative flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase tracking-wider border-2 ${isActive ? 'bg-success/10 text-success border-success/40' : 'bg-failure/10 text-failure border-failure/40'}`}>
+              <span className="relative flex h-2 w-2 shrink-0">
+                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isActive ? 'bg-success' : 'bg-failure'}`}></span>
+                <span className={`relative inline-flex rounded-full h-2 w-2 ${isActive ? 'bg-success' : 'bg-failure'}`}></span>
+              </span>
+              {isActive ? 'Active' : 'Inactive'}
+            </span>
           </div>
         </div>
+
+        {/* Desktop Buttons & Mobile Toggle */}
+        <div className="flex items-center gap-1">
+          <div className="hidden md:flex gap-1 shrink-0">
+            <ActionButton Icon={Edit} variant='custom' isTeacher={false} onClick={onEdit} className="p-2!" />
+            <ActionButton Icon={Trash2} variant='failure' onClick={onDelete} className="p-2!" />
+          </div>
+          
+          <button 
+            onClick={() => setIsActionsOpen(!isActionsOpen)}
+            className={`md:hidden hover:cursor-pointer p-1 rounded-full transition-all duration-300 shrink-0 ${isActionsOpen ? ' text-failure hover:bg-failure/40' : 'hover:bg-light/10 text-text-body'}`}
+          >
+            {isActionsOpen ? <X size={20} /> : <MoreVertical size={20} />}
+          </button>
+        </div>
       </div>
 
-      <button onClick={onEdit} className="mt-6 w-full py-3.5 bg-bg border-2 border-light/10 hover:border-primary/40 text-text-muted hover:text-primary rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 group/btn hover:cursor-pointer">
-          Configuration <ExternalLink size={12} className="opacity-0 group-hover/btn:opacity-100 transition-opacity" />
-      </button>
+      <div className="grow space-y-3 mt-1">
+        <div className="flex items-center gap-3 text-[14px] text-text-muted">
+          <Mail size={15} className="shrink-0 opacity-70" />
+          <span className="font-medium truncate tracking-wide">{organization.email}</span>
+        </div>
 
+        <div className="flex items-center gap-3 text-[14px] text-text-muted">
+          <ShieldCheck size={15} className="shrink-0 opacity-70" />
+          <span className="font-medium tracking-wide">Domain Hub Registered</span>
+        </div>
+        
+      </div>
     </div>
   );
 };
