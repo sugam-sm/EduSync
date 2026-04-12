@@ -84,7 +84,7 @@ const initialState: QuizState = {
 
 export const fetchQuizzes = createAsyncThunk(
     'quiz/fetchQuizzes',
-    async (params: { grade_id?: string | number, subject_id?: string | number } | undefined, { rejectWithValue }) => {
+    async (params: { grade?: string | number, subject?: string | number } | undefined, { rejectWithValue }) => {
         try {
             const response = await api.get('/api/learning/quizzes/', { params });
             return response.data;
