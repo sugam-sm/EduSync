@@ -77,6 +77,22 @@ export const deleteGrade = createAsyncThunk(
     }
 );
 
+export const bulkUploadGrades = createAsyncThunk(
+    'grade/bulkUpload',
+    async (file: File, { rejectWithValue }) => {
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const response = await api.post('/api/organizations/grades/bulk_upload/', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            return response.data;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data || 'Bulk upload failed');
+        }
+    }
+);
+
 const gradeSlice = createSlice({
     name: 'grade',
     initialState,
@@ -132,6 +148,19 @@ const gradeSlice = createSlice({
                 state.isLoading = false;
                 state.isError = true;
                 state.message = action.payload?.detail || 'Failed to delete grade.';
+            })
+            .addCase(bulkUploadGrades.pending, (state) => {
+                state.isLoading = true;
+            })
+            .addCase(bulkUploadGrades.fulfilled, (state, action: any) => {
+                state.isLoading = false;
+                state.isSuccess = true;
+                state.message = action.payload?.detail || "Import successful";
+            })
+            .addCase(bulkUploadGrades.rejected, (state, action: any) => {
+                state.isLoading = false;
+                state.isError = true;
+                state.message = action.payload?.detail || "Bulk upload failed";
             });
     }
 });

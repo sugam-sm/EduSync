@@ -26,9 +26,9 @@ const initialState: SubjectState = {
 
 export const fetchSubjects = createAsyncThunk(
     'subject/fetchSubjects',
-    async (_, { rejectWithValue }) => {
+    async (params: { grade?: number | string } | undefined, { rejectWithValue }) => {
         try {
-            const response = await api.get('/api/organizations/subjects/');
+            const response = await api.get('/api/organizations/subjects/', { params });
             return response.data;
         } catch (error: any) {
             return rejectWithValue(error.response?.data || 'Failed to fetch subjects.');
@@ -68,6 +68,22 @@ export const deleteSubject = createAsyncThunk(
             return subjectId;
         } catch (error: any) {
             return rejectWithValue(error.response?.data || "Failed to delete subject.");
+        }
+    }
+);
+
+export const bulkUploadSubjects = createAsyncThunk(
+    'subject/bulkUpload',
+    async (file: File, { rejectWithValue }) => {
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const response = await api.post('/api/organizations/subjects/bulk_upload/', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            return response.data;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data || 'Bulk upload failed');
         }
     }
 );
@@ -127,6 +143,19 @@ const subjectSlice = createSlice({
                 state.isLoading = false;
                 state.isError = true;
                 state.message = action.payload?.detail || 'Failed to delete subject.';
+            })
+            .addCase(bulkUploadSubjects.pending, (state) => {
+                state.isLoading = true;
+            })
+            .addCase(bulkUploadSubjects.fulfilled, (state, action: any) => {
+                state.isLoading = false;
+                state.isSuccess = true;
+                state.message = action.payload?.detail || "Import successful";
+            })
+            .addCase(bulkUploadSubjects.rejected, (state, action: any) => {
+                state.isLoading = false;
+                state.isError = true;
+                state.message = action.payload?.detail || "Bulk upload failed";
             });
     }
 });
