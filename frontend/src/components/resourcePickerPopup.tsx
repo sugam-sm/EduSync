@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { X, Search, Upload, CheckCircle2, ChevronRight, FolderClosed, FileIcon, Loader2 } from 'lucide-react';
-import { type RootState, type AppDispatch } from '../../store';
-import { fetchResourceFolders, type Resource } from '../../features/learning/resourceSlice';
-import { Portal } from '../Portal';
-import { Button } from '../Buttons/customButton';
+import { type RootState, type AppDispatch } from '../store';
+import { fetchResourceFolders, type Resource } from '../features/learning/resourceSlice';
+import { Portal } from './Portal';
+import { Button } from './Buttons/customButton';
+import { addToast } from '../features/toasts/toastSlice';
 
 interface ResourcePickerPopupProps {
     isOpen: boolean;
@@ -23,7 +24,7 @@ export const ResourcePickerPopup = ({ isOpen, onClose, gradeId, onFileSelect }: 
 
     useEffect(() => {
         if (isOpen && gradeId) {
-            dispatch(fetchResourceFolders({ grade_id: gradeId }));
+            dispatch(fetchResourceFolders({ grade: gradeId }));
         }
     }, [isOpen, gradeId, dispatch]);
 
@@ -42,9 +43,20 @@ export const ResourcePickerPopup = ({ isOpen, onClose, gradeId, onFileSelect }: 
     const handleUploadNew = () => {
         const input = document.createElement('input');
         input.type = 'file';
+        input.accept = 'image/*,application/pdf';
         input.onchange = (e: any) => {
             const file = e.target.files?.[0];
             if (file) {
+                const isImage = file.type.startsWith('image/');
+                const isPdf = file.type === 'application/pdf';
+                
+                if (!isImage && !isPdf) {
+                    dispatch(addToast({
+                        message: "Only images and PDFs are supported for AI generation.",
+                        type: 'failure'
+                    }));
+                    return;
+                }
                 onFileSelect(file);
                 onClose();
             }
@@ -54,10 +66,18 @@ export const ResourcePickerPopup = ({ isOpen, onClose, gradeId, onFileSelect }: 
 
     if (!isOpen) return null;
 
-    // Filter resources across folders
+    // Filter resources across folders: Only Image or PDF
     const allFileResources = folders.flatMap(folder => 
         folder.resources.filter(r => r.type === 'FILE')
-    ).filter(r => 
+    ).filter(r => {
+        const title = r.title.toLowerCase();
+        const file = r.file?.toLowerCase() || '';
+        
+        const isImage = /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(title) || /\.(jpg|jpeg|png|gif|bmp|webp)(\?.*)?$/i.test(file);
+        const isPdf = title.endsWith('.pdf') || file.includes('.pdf');
+        
+        return isImage || isPdf;
+    }).filter(r => 
         r.title.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
