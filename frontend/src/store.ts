@@ -9,11 +9,10 @@ import subjectsReducer from "./features/organization/subjectSlice"
 import assignSubReducer from "./features/organization/assignSubjectSlice"
 import resourceReducer from "./features/learning/resourceSlice"
 import flashcardReducer from "./features/learning/flashcardSlice"
-import quizReducer from "./features/learning/quizSllice"
+import quizReducer from "./features/learning/quizSlice"
 import teacherRemarkReducer from "./features/learning/teacherRemarkSlice"
 import attendanceReducer from "./features/analytics/attendanceSlice";
 import dashboardReducer from "./features/analytics/dashboardSlice";
-import roleReducer from "./features/organization/roleSlice";
 
 export const store = configureStore({
     reducer: {
@@ -30,7 +29,6 @@ export const store = configureStore({
         teacherRemark: teacherRemarkReducer,
         attendance: attendanceReducer,
         dashboard: dashboardReducer,
-        role: roleReducer,
     }
 });
 
