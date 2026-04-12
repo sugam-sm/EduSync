@@ -41,7 +41,7 @@ const initialState: ResourceState = {
 // Resource Folders thunks
 export const fetchResourceFolders = createAsyncThunk(
     'resource/fetchFolders',
-    async (params: { grade_id?: string | number, subject_id?: string | number } | undefined, { rejectWithValue }) => {
+    async (params: { grade?: string | number, subject?: string | number } | undefined, { rejectWithValue }) => {
         try {
             const response = await api.get('/api/learning/resourcefolders/', { params });
             return response.data;
@@ -58,7 +58,7 @@ export const createResourceFolder = createAsyncThunk(
             const response = await api.post('/api/learning/resourcefolders/', folderData);
             return response.data;
         } catch (error: any) {
-            return rejectWithValue(error.response?.data?.grade_id || error.response?.data?.sub_assign || "Failed to create folder.");
+            return rejectWithValue(error.response?.data?.grade || error.response?.data?.sub_assign || "Failed to create folder.");
         }
     }
 );

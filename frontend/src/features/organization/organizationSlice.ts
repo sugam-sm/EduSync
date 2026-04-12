@@ -45,7 +45,7 @@ export const fetchOrganizations = createAsyncThunk(
     'organization/fetchAll',
     async (_, thunkAPI) => {
         try {
-            const response = await api.get('/api/organizations/list/');
+            const response = await api.get('/api/organizations/');
             return response.data;
         } catch (error: any) {
             return thunkAPI.rejectWithValue(error.response?.data?.detail || 'Failed to fetch organizations.');
@@ -72,7 +72,7 @@ export const updateOrganizationById = createAsyncThunk(
     'organization/updateById',
     async ({ id, data }: { id: number; data: any }, thunkAPI) => {
         try {
-            const response = await api.patch(`/api/organizations/list/${id}/`, data);
+            const response = await api.patch(`/api/organizations/${id}/`, data);
             return response.data;
         } catch (error: any) {
             return thunkAPI.rejectWithValue(error.response?.data?.detail || 'Failed to update organization.');
@@ -85,7 +85,7 @@ export const createOrganization = createAsyncThunk(
     'organization/create',
     async (data: any, thunkAPI) => {
         try {
-            const response = await api.post('/api/organizations/list/', data);
+            const response = await api.post('/api/organizations/', data);
             return response.data;
         } catch (error: any) {
             return thunkAPI.rejectWithValue(error.response?.data?.detail || 'Failed to create organization.');
@@ -98,7 +98,7 @@ export const deleteOrganization = createAsyncThunk(
     'organization/delete',
     async (id: number, thunkAPI) => {
         try {
-            await api.delete(`/api/organizations/list/${id}/`);
+            await api.delete(`/api/organizations/${id}/`);
             return id;
         } catch (error: any) {
             return thunkAPI.rejectWithValue(error.response?.data?.detail || 'Failed to delete organization.');

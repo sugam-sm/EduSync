@@ -42,7 +42,7 @@ const initialState: FlashcardState = {
 // Flashcard Deck Thunks
 export const fetchFlashcardDecks = createAsyncThunk(
     'flashcard/fetchDecks',
-    async (params: { grade_id?: string | number, subject_id?: string | number } | undefined, { rejectWithValue }) => {
+    async (params: { grade?: string | number, subject?: string | number } | undefined, { rejectWithValue }) => {
         try {
             const response = await api.get('/api/learning/decks/', { params });
             return response.data;
@@ -59,7 +59,7 @@ export const createFlashcardDeck = createAsyncThunk(
             const response = await api.post('/api/learning/decks/', deckData);
             return response.data;
         } catch (error: any) {
-            return rejectWithValue(error.response?.data?.grade_id || "Failed to create deck.");
+            return rejectWithValue(error.response?.data?.grade || "Failed to create deck.");
         }
     }
 );

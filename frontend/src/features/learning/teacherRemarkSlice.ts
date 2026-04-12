@@ -60,7 +60,7 @@ export const fetchQuizStudentResults = createAsyncThunk(
 
 export const fetchQuizRemarks = createAsyncThunk(
     'teacherRemark/fetchQuizRemarks',
-    async (params: { quiz_id?: number; subject_id?: number }, { rejectWithValue }) => {
+    async (params: { quiz_id?: number; subject?: number }, { rejectWithValue }) => {
         try {
             const response = await api.get(`/api/analytics/quiz-remarks/`, { params });
             return response.data;

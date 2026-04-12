@@ -13,6 +13,9 @@ const toastSlice = createSlice({
   initialState,
   reducers: {
     addToast: (state, action: PayloadAction<Omit<ToastItem, 'id'>>) => {
+      const isDuplicate = state.some(t => t.message === action.payload.message);
+      if (isDuplicate) return;
+
       if (state.length >= 5) {
         state.pop();
       }

@@ -69,7 +69,7 @@ const initialState: DashboardState = {
 
 export const fetchDashboardData = createAsyncThunk(
     'dashboard/fetchData',
-    async (params: { student_id?: string | number; grade_id?: string | number; subject_id?: string | number }, { rejectWithValue }) => {
+    async (params: { student_id?: string | number; grade?: string | number; subject?: string | number }, { rejectWithValue }) => {
         try {
             const response = await api.get('/api/analytics/dashboard/', { params });
             return response.data;

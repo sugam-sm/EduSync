@@ -48,7 +48,7 @@ const initialState: AttendanceState = {
 
 export const fetchSessions = createAsyncThunk(
     'attendance/fetchSessions',
-    async (params: { grade_id?: string | number } | undefined, { rejectWithValue }) => {
+    async (params: { grade?: string | number, subject?: string | number } | undefined, { rejectWithValue }) => {
         try {
             const response = await api.get('/api/analytics/sessions/', { params });
             return response.data;
@@ -98,7 +98,7 @@ export const fetchGradeStudents = createAsyncThunk(
     'attendance/fetchGradeStudents',
     async (gradeId: number | string, { rejectWithValue }) => {
         try {
-            const response = await api.get(`/api/students/?grade_id=${gradeId}`);
+            const response = await api.get(`/api/students/?grade=${gradeId}`);
             return response.data;
         } catch (error: any) {
             return rejectWithValue(error.response?.data || 'Failed to fetch students.');
@@ -176,10 +176,19 @@ const attendanceSlice = createSlice({
                 }
             })
             // FETCH STUDENTS
-            .addCase(fetchGradeStudents.pending, (state) => { state.isLoading = true; })
+            .addCase(fetchGradeStudents.pending, (state) => {
+                state.isLoading = true;
+                state.currentStudents = [];
+            })
             .addCase(fetchGradeStudents.fulfilled, (state, action) => {
                 state.isLoading = false;
                 state.currentStudents = action.payload;
+            })
+            .addCase(fetchGradeStudents.rejected, (state, action: any) => {
+                state.isLoading = false;
+                state.isError = true;
+                state.currentStudents = [];
+                state.message = action.payload;
             });
     }
 });

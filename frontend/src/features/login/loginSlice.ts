@@ -8,6 +8,7 @@ interface userDetails {
   role: 'superadmin' | 'admin' | 'teacher' | 'student';
   org_name: string;
   is_superuser?: boolean;
+  needs_password_change: boolean;
 }
 // Defining the shape and initial state of our login state
 interface LoginState {
