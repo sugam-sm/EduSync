@@ -6,11 +6,12 @@ import { CardButton } from "../../components/Buttons/cardButton";
 import { GradeCard } from "../../components/Cards/admin/gradeCard";
 import { CreateGradePopup } from "./create/createGradePopup";
 import { UpdateGradePopup } from "./update/updateGradePopup";
+import { CsvUploadPopup } from "../../components/csvUploadPopup";
 import { DecisionPopup } from "../../components/decision popup";
 import { CustomDropdown } from "../../components/Custom/customDropdown";
 import { BackToTop } from "../../components/Custom/backToTop";
 import { type AppDispatch, type RootState } from "../../store";
-import { fetchGrades, deleteGrade, type GradeDetails } from "../../features/organization/gradeSlice";
+import { fetchGrades, deleteGrade, bulkUploadGrades, type GradeDetails } from "../../features/organization/gradeSlice";
 import { addToast } from "../../features/toasts/toastSlice";
 
 export const ManageGrades = () => {
@@ -19,6 +20,7 @@ export const ManageGrades = () => {
     const [isCreatePopupOpen, setIsCreatePopupOpen] = useState(false);
     const [isUpdatePopupOpen, setIsUpdatePopupOpen] = useState(false);
     const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [isCsvPopupOpen, setIsCsvPopupOpen] = useState(false);
     const [selectedGrade, setSelectedGrade] = useState<GradeDetails | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedYear, setSelectedYear] = useState<string | number>("All");
@@ -83,67 +85,59 @@ export const ManageGrades = () => {
     }, [searchQuery, selectedYear]);
 
     return (
-        <div className='flex flex-col items-center justify-center align-middle h-full w-full relative'>
-            <CreateGradePopup isOpen={isCreatePopupOpen} onClose={() => setIsCreatePopupOpen(false)} />
-            <UpdateGradePopup isOpen={isUpdatePopupOpen} onClose={() => setIsUpdatePopupOpen(false)} grade={selectedGrade} />
-            <DecidePopup />
+        <div className='flex flex-col items-center justify-start h-full w-full relative overflow-hidden p-4'>
 
-            <div className="flex flex-col sm:flex-row gap-4 sm:gap-0 mx-auto mb-5 items-center justify-center sm:justify-between w-[90%] sm:w-[80%] md:w-[73%]">
-                <h1 className="w-full sm:w-[60%] text-primary text-3xl font-bold text-center sm:text-left">Manage Grades</h1>
-                <Button
-                    label="Upload CSV"
-                    Icon={FileUp}
-                    onClick={() => dispatch(addToast({ message: "CSV Upload feature coming soon!", type: 'info' }))}
-                    variant="primary"
-                    className="w-full sm:w-[50%] md:w-[40%] lg:w-[25%]"
-                />
-            </div>
-
-            <section className="w-[90%] sm:w-[80%] md:w-[75%] mx-auto relative">
-                <div className="bg-surface border-2 border-light/3 rounded-2xl mb-2 flex items-center justify-between p-3 gap-1 ">
-                    <div className="hidden sm:flex w-[15%] items-center gap-2 px-2 text-primary">
-                        <School size={30} strokeWidth={2.5} />
+            <section className="w-[90%] sm:w-[85%] md:w-[80%] lg:w-[75%] mx-auto flex-1 flex flex-col overflow-hidden relative">
+                <div className="bg-surface border-2 border-light/3 rounded-2xl mb-2 flex flex-col md:flex-row items-center p-3 gap-3">
+                    <div className="flex items-center gap-4 flex-1 w-full">
+                        <div className="text-primary shrink-0">
+                            <School size={30} strokeWidth={2.5} />
+                        </div>
+                        <div className="group flex items-center flex-1 h-11.25 text-text-heading border-2 border-light/20 rounded-2xl focus-within:border-primary font-semibold text-md transition-all duration-400 bg-light/5">
+                            <input
+                                type="text"
+                                placeholder="Search for Grade"
+                                className="w-full pl-5 outline-none bg-transparent placeholder-text-muted/40"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                            <Search size={20} className="mr-3 text-light/30 group-focus-within:text-primary" />
+                        </div>
                     </div>
-                    <div className="group flex items-center w-[80%] sm:w-[60%] text-text-heading border-2 border-light/20 rounded-2xl focus-within:border-primary font-semibold text-md transition-all duration-400">
-                        <input
-                            type="text"
-                            placeholder="Search for Grade"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-5 py-2 outline-none placeholder-text-muted/40"
-                        />
-                        <Search size={20} className="mr-3 text-light/30 group-focus-within:text-primary" />
-                    </div>
-                    <div className="relative w-[15%]">
-                        <Button label="" Icon={Filter} onClick={() => setIsFilterOpen(!isFilterOpen)} variant="primary" className="w-full">
-                            <span className="hidden lg:block">Filter</span>
-                        </Button>
+                    
+                    <div className="flex items-center gap-3 w-full md:w-auto shrink-0">
+                        <div className="relative w-auto h-11.25">
+                            <Button label="" Icon={Filter} onClick={() => setIsFilterOpen(!isFilterOpen)} variant="primary" className="h-full px-4 min-w-11.25">
+                                <span className="hidden lg:block">Filter</span>
+                            </Button>
 
-                        {isFilterOpen && (
-                            <div className="absolute top-full right-0 mt-2 w-72 bg-surface border-2 border-light/10 p-6 rounded-2xl shadow-xl z-10">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="font-bold text-lg text-primary">Filters</h3>
-                                    <button onClick={() => setIsFilterOpen(false)}>
-                                        <X size={25} strokeWidth={3} className="text-failure hover:rotate-90 transition-all duration-300 hover:bg-failure/20 rounded-full p-1 hover:cursor-pointer" />
-                                    </button>
+                            {isFilterOpen && (
+                                <div className="absolute top-full right-0 mt-2 w-72 bg-surface border-2 border-light/10 p-6 rounded-2xl shadow-xl z-10">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="font-bold text-lg text-primary">Filters</h3>
+                                        <button onClick={() => setIsFilterOpen(false)}>
+                                            <X size={25} strokeWidth={3} className="text-failure hover:rotate-90 transition-all duration-300 hover:bg-failure/20 rounded-full p-1 hover:cursor-pointer" />
+                                        </button>
+                                    </div>
+                                    <CustomDropdown label="Academic Year" icon={School} value={selectedYear} onChange={setSelectedYear} options={academicYears} className='w-full' />
+                                    <Button label="Reset" onClick={() => setSelectedYear("All")} variant="failure" className="w-full mt-4" />
                                 </div>
-                                <CustomDropdown
-                                    label="Academic Year"
-                                    icon={School}
-                                    value={selectedYear}
-                                    onChange={setSelectedYear}
-                                    className='w-full'
-                                    options={academicYears}
-                                />
-                                <Button label="Reset" onClick={() => setSelectedYear("All")} variant="failure" className="w-full mt-4" />
-                            </div>
-                        )}
+                            )}
+                        </div>
+                        
+                        <Button
+                            label="Upload CSV"
+                            Icon={FileUp}
+                            onClick={() => setIsCsvPopupOpen(true)}
+                            variant="primary"
+                            className="h-11.25 flex-1 md:flex-none md:min-w-37.5"
+                        />
                     </div>
                 </div>
 
                 <div
                     ref={scrollRef}
-                    className="sm:p-5 p-2 border-2 border-light/3 rounded-2xl bg-surface max-w-full h-[65vh] lg:h-[70vh] overflow-auto mx-auto"
+                    className="sm:p-5 p-2 border-2 border-light/3 rounded-2xl bg-surface max-w-full flex-1 h-0 overflow-y-auto mx-auto w-full custom-scrollbar"
                 >
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center h-full gap-3 text-text-muted">
@@ -151,7 +145,7 @@ export const ManageGrades = () => {
                             <p className="font-bold">Syncing Grades...</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-3 w-full pb-20">
+                        <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-3 w-full pb-20">
                             <CardButton
                                 onClick={() => setIsCreatePopupOpen(true)}
                                 Icon={DiamondPlus}
@@ -175,6 +169,20 @@ export const ManageGrades = () => {
                 </div>
                 <BackToTop scrollRef={scrollRef} />
             </section>
+            <CreateGradePopup isOpen={isCreatePopupOpen} onClose={() => setIsCreatePopupOpen(false)} />
+            <UpdateGradePopup isOpen={isUpdatePopupOpen} onClose={() => setIsUpdatePopupOpen(false)} grade={selectedGrade} />
+            <DecidePopup />
+            <CsvUploadPopup 
+                isOpen={isCsvPopupOpen} 
+                onClose={() => {
+                    setIsCsvPopupOpen(false);
+                    dispatch(fetchGrades());
+                }}
+                onUpload={(file) => dispatch(bulkUploadGrades(file)).unwrap()}
+                title="Import Grades"
+                description="Upload CSV to bulk create Grades/Classes. Format expected: name, section."
+                samples={[{ label: "Grades", headers: ["name", "section"] }]}
+            />
         </div>
     );
 };
