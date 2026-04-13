@@ -48,19 +48,14 @@ export const ConfigureSubjectPopup = ({ isOpen, onClose, subject }: ConfigureSub
     }));
 
     const teacherOptions = useMemo(() => {
-        const teachersAssignedToOtherSubjects = assignSub
-            .filter(a => a.subject !== subject.id && a.teacher !== null)
-            .map(a => Number(a.teacher));
-
         const filteredTeachers = (users || [])
-            .filter(u => u.role_name === 'teacher')
-            .filter(u => !teachersAssignedToOtherSubjects.includes(Number(u.id)));
+            .filter(u => u.role_name === 'teacher');
 
         return filteredTeachers.map(u => ({
             label: `${u.fullname} (${u.username})`,
             value: u.id
         }));
-    }, [users, assignSub, subject.id]);
+    }, [users]);
 
     const handleAddAssignment = async (e: React.SyntheticEvent) => {
         e.preventDefault();
@@ -81,17 +76,28 @@ export const ConfigureSubjectPopup = ({ isOpen, onClose, subject }: ConfigureSub
             return;
         }
         
-        const result = await dispatch(createAssignSub({ 
-            subject: subject.id!, 
-            grade: Number(selectedGrade),
-            teacher: Number(selectedTeacher)
-        }));
+        const teacherObj = teacherOptions.find(t => t.value === selectedTeacher);
+        const gradeObj = gradeOptions.find(g => g.value === selectedGrade);
 
-        if (createAssignSub.fulfilled.match(result)) {
-            dispatch(addToast({ message: "Assignment added successfully", type: 'success' }));
-            setSelectedGrade('');
-            setSelectedTeacher('');
-        }
+        openDecidePopup({
+            question: `Are you sure you want to assign ${teacherObj?.label} to ${gradeObj?.label} for ${subject.name}?`,
+            confirmText: "Yes, Assign",
+            cancelText: "Cancel",
+            variant: "primary",
+            onConfirm: async () => {
+                const result = await dispatch(createAssignSub({ 
+                    subject: subject.id!, 
+                    grade: Number(selectedGrade),
+                    teacher: Number(selectedTeacher)
+                }));
+
+                if (createAssignSub.fulfilled.match(result)) {
+                    dispatch(addToast({ message: "Assignment added successfully", type: 'success' }));
+                    setSelectedGrade('');
+                    setSelectedTeacher('');
+                }
+            }
+        });
     };
 
     const handleDelete = (id: number) => {

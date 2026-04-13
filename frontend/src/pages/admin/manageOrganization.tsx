@@ -95,6 +95,14 @@ export const ManageOrganization = () => {
             return;
         }
 
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+            dispatch(addToast({
+                message: 'Invalid email format.',
+                type: 'info'
+            }));
+            return;
+        }
+
         if (formData.logo instanceof File) {
             const allowedExtensions = ['image/png', 'image/jpeg', 'image/jpg'];
             const maxSize = 2 * 1024 * 1024;
@@ -138,10 +146,7 @@ export const ManageOrganization = () => {
     };
 
     return (
-        <main className="flex flex-col justify-center w-full sm:w-[70%] xl:w-[50%] h-full mx-auto py-8">
-            <h1 className="text-2xl font-bold text-primary mb-6 text-center border-2 p-4 border-light/30 rounded-2xl shadow-sm bg-surface/50">
-                Organization Details
-            </h1>
+        <main className="flex flex-col justify-center w-full sm:w-[70%] xl:w-[50%] h-full mx-auto py-8 overflow-y-auto custom-scrollbar px-4 pt-10">
             
             <form onSubmit={handleSubmit} className="space-y-6 px-1 lg:px-2">
 
@@ -170,7 +175,7 @@ export const ManageOrganization = () => {
                             size={18} 
                         />
                         <input 
-                            type="email"
+                            type="text"
                             value={formData.email}
                             onChange={(e) => setFormData({...formData, email: e.target.value})}
                             placeholder="org@example.com"
