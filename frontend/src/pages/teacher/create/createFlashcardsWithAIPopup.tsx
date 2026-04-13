@@ -115,7 +115,7 @@ export const CreateFlashcardsWithAIPopup = ({ isOpen, onClose, grade, subject, i
                         const response = await api.post('/api/learning/decks/', formData);
                         if (response.status === 201 || response.status === 202 || response.status === 200) {
                             dispatch(addToast({ 
-                                message: 'Flashcard generation started in the background.', 
+                                message: 'Flashcard generation started in the background. Refresh the page after some time to see the updates.', 
                                 type: 'success' 
                             }));
                             handleClose(true);

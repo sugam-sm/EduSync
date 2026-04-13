@@ -162,7 +162,7 @@ export const CreateQuizWithAIPopup = ({
                         const response = await api.post('/api/learning/quizzes/', formData);
                         if (response.status === 201 || response.status === 202 || response.status === 200) {
                             dispatch(addToast({
-                                message: 'Quiz generation started in the background.',
+                                message: 'Quiz generation started in the background. Refresh the page after some time to see the updates.',
                                 type: 'success'
                             }));
                             handleClose(true);
