@@ -30,7 +30,7 @@ import { ManageAssessments } from './pages/teacher/manageAssessments';
 import { ManageSessions } from './pages/teacher/manageSessions';
 import { ManageAnalytics } from './pages/teacher/manageAnalytics';
 
-import { removeToast } from './features/toasts/toastSlice';
+import { removeToast, addToast } from './features/toasts/toastSlice';
 import { verifyUserToken, setVerifying } from './features/login/loginSlice';
 import { Toast } from './components/toast';
 import { type AppDispatch, type RootState } from './store';
@@ -112,9 +112,16 @@ interface ProtectedRouteProps {
 export const ProtectedRoute = ({ allowedRoles, isPublic }: ProtectedRouteProps) => {
     const { user } = useSelector((state: RootState) => state.login);
     const location = useLocation();
+    const dispatch = useDispatch<AppDispatch>();
 
     const path = location.pathname;
     const isErrorPage = path === '/unauthorized' || path.startsWith('/superadmin/unauthorized');
+
+    useEffect(() => {
+        if (user && user.needs_password_change && path !== '/settings' && !isErrorPage) {
+            dispatch(addToast({ message: "For your security, you must change your temporary password before accessing other features.", type: 'failure' }));
+        }
+    }, [user, path, isErrorPage, dispatch]);
 
     if (isPublic && user) {
         return <Navigate to="/" replace />;
@@ -128,6 +135,10 @@ export const ProtectedRoute = ({ allowedRoles, isPublic }: ProtectedRouteProps) 
         const role = user.role;
         if (allowedRoles && !allowedRoles.includes(role)) {
             return <Navigate to="/unauthorized" replace />;
+        }
+
+        if (user.needs_password_change && path !== '/settings') {
+            return <Navigate to="/settings" replace />;
         }
     }
 
