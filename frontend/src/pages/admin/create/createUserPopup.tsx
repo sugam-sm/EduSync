@@ -1,8 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  X, GraduationCap, Users, Mail, Phone, 
-  UserRound, VenusAndMars, BookOpen, School, HeartHandshake, Link 
-} from "lucide-react";
+import {   X, GraduationCap, Users, Mail, Phone, UserRound, VenusAndMars, BookOpen, School, HeartHandshake, Link, Copy, Check } from "lucide-react";
 
 import { CustomDropdown } from '../../../components/Custom/customDropdown';
 import { CustomInput } from '../../../components/Custom/customInput';
@@ -28,6 +25,10 @@ export const CreateUserPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose:
   const [gender, setGender] = useState('Male');
   const [selectedGradeId, setSelectedGradeId] = useState<number>(0);
 
+  // Generated credentials state
+  const [generatedCreds, setGeneratedCreds] = useState<{ username: string; password: string } | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
   const initialFormState: User = {
     first_name: '', middle_name: '', last_name: '',
     email: '', role: 3, gender: 'Male', role_name: '', is_active: true, 
@@ -50,11 +51,19 @@ export const CreateUserPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose:
     }
   };
 
+  const handleCopy = (text: string, field: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
+
   const handleClose = () => {
     setFormData(initialFormState);
     setRole('Student');
     setGender('Male');
     setSelectedGradeId(0);
+    setGeneratedCreds(null);
+    setCopiedField(null);
     dispatch(resetUserState());
     onClose();
   };
@@ -102,6 +111,11 @@ export const CreateUserPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose:
       return;
     }
 
+    if (formData.email && formData.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      dispatch(addToast({ message: "Invalid email format.", type: 'info' }));
+      return;
+    }
+
     const { student_profile, teacher_profile, ...baseData } = formData;
     const finalPayload: any = { ...baseData, gender, email: formData.email || null };
 
@@ -132,17 +146,8 @@ export const CreateUserPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose:
           dispatch(addToast({ message: 'User Added Successfully.', type: 'success' }));
           
           const { username, generated_password } = resultAction.payload;
-          const element = document.createElement("a");
-          const file = new Blob([
-            `User: ${formData.first_name}\nUsername: ${username}\nPassword: ${generated_password}`
-          ], {type: 'text/plain'});
-          element.href = URL.createObjectURL(file);
-          element.download = `${username}_credentials.txt`;
-          element.click();
-
-          dispatch(fetchUsers())
-
-          handleClose();
+          setGeneratedCreds({ username, password: generated_password });
+          dispatch(fetchUsers());
         }
       }
     });
@@ -170,6 +175,63 @@ export const CreateUserPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose:
 
   if (!isOpen) return null;
   const roleColor = role === 'Teacher' ? 'info' : 'primary';
+
+  // Show generated credentials screen
+  if (generatedCreds) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface/60 backdrop-blur-sm">
+        <div className="w-full max-w-md bg-surface/50 border-2 border-light/10 rounded-4xl shadow-2xl shadow-primary/5 flex flex-col">
+          <div className="px-8 pt-8 pb-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <h2 className="text-2xl font-extrabold text-success">{role} Created!</h2>
+                <p className="text-text-muted mt-1 font-medium text-sm">
+                  Save these credentials — the password cannot be retrieved later.
+                </p>
+              </div>
+              <button type="button" onClick={handleClose} className="p-2 hover:bg-failure/20 hover:text-failure rounded-full text-text-muted transition-all hover:rotate-90 duration-300 hover:cursor-pointer">
+                <X size={24} strokeWidth={3} />
+              </button>
+            </div>
+          </div>
+
+          <div className="px-8 pb-8 space-y-4">
+            <div className="bg-light/5 border-2 border-light/10 rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] uppercase font-bold text-text-muted tracking-widest">Username</p>
+                  <p className="text-lg font-bold text-text-heading mt-0.5">{generatedCreds.username}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleCopy(generatedCreds.username, 'username')}
+                  className="p-2 hover:bg-primary/20 rounded-xl text-text-muted hover:text-primary transition-all cursor-pointer"
+                >
+                  {copiedField === 'username' ? <Check size={18} strokeWidth={3} className="text-success" /> : <Copy size={18} strokeWidth={2.5} />}
+                </button>
+              </div>
+              <div className="border-t border-light/10" />
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] uppercase font-bold text-text-muted tracking-widest">Password</p>
+                  <p className="text-lg font-bold text-text-heading mt-0.5 font-mono">{generatedCreds.password}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleCopy(generatedCreds.password, 'password')}
+                  className="p-2 hover:bg-primary/20 rounded-xl text-text-muted hover:text-primary transition-all cursor-pointer"
+                >
+                  {copiedField === 'password' ? <Check size={18} strokeWidth={3} className="text-success" /> : <Copy size={18} strokeWidth={2.5} />}
+                </button>
+              </div>
+            </div>
+
+            <Button label="Done" onClick={handleClose} variant='primary' className='w-full py-3' />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface/60 backdrop-blur-sm">

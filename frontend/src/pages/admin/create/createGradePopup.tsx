@@ -76,7 +76,11 @@ export const CreateGradePopup = ({ isOpen, onClose }: { isOpen: boolean; onClose
             cancelText: "Cancel",
             variant: "secondary",
             onConfirm: async () => {
-                const result = await dispatch(createGrade(form as any));
+                const finalPayload = {
+                    ...form,
+                    class_teacher: form.class_teacher === '' ? null : Number(form.class_teacher)
+                };
+                const result = await dispatch(createGrade(finalPayload as any));
                 if (createGrade.fulfilled.match(result)) {
                     handleClose();
                     dispatch(addToast({ message: 'Grade created successfully.', type: 'success' }));
