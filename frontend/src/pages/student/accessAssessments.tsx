@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Loader2, ClipboardCheck, MessageSquare } from "lucide-react";
+import { BackToTop } from "../../components/Custom/backToTop";
 
 import { type AppDispatch, type RootState } from "../../store";
-import { fetchQuizzes, fetchQuizResults, type Quiz, type QuizResultType } from "../../features/learning/quizSllice";
+import { fetchQuizzes, fetchQuizResults, type Quiz, type QuizResultType } from "../../features/learning/quizSlice";
 import { fetchSubjects } from "../../features/organization/subjectSlice";
 import { fetchQuizRemarks } from "../../features/learning/teacherRemarkSlice";
 import { CustomDropdown } from "../../components/Custom/customDropdown";
@@ -16,6 +17,7 @@ import { ViewQuizResultPopup } from "./view/viewQuizResultPopup";
 
 export const AccessAssessments = () => {
     const dispatch = useDispatch<AppDispatch>();
+    const scrollRef = useRef<HTMLDivElement>(null);
     const { quizzes, quizResults, isQuizLoading } = useSelector((state: RootState) => state.quiz);
     const { subjects } = useSelector((state: RootState) => state.subject);
     const { existingRemarks: remarks, isLoading: isRemarkLoading } = useSelector((state: RootState) => state.teacherRemark);
@@ -31,18 +33,25 @@ export const AccessAssessments = () => {
     }, [dispatch]);
 
     useEffect(() => {
-        if (sectionMode === 'quizzes') {
-            dispatch(fetchQuizzes({ subject_id: selectedSubject || undefined }));
-        } else {
-            dispatch(fetchQuizRemarks({ subject_id: selectedSubject || undefined }));
+        if (subjects.length > 0 && selectedSubject === null) {
+            setSelectedSubject(subjects[0].id!);
+        }
+    }, [subjects]);
+    useEffect(() => {
+        if (selectedSubject) {
+            if (sectionMode === 'quizzes') {
+                dispatch(fetchQuizzes({ subject: selectedSubject }));
+            } else {
+                dispatch(fetchQuizRemarks({ subject: selectedSubject }));
+            }
         }
     }, [dispatch, selectedSubject, sectionMode]);
 
     const handleTakeQuiz = (quiz: Quiz) => {
         if (!quiz.questions || quiz.questions.length === 0) {
-            dispatch(addToast({ 
-                message: "This quiz is not available yet (no questions found).", 
-                type: "info" 
+            dispatch(addToast({
+                message: "This quiz is not available yet (no questions found).",
+                type: "info"
             }));
             return;
         }
@@ -52,14 +61,10 @@ export const AccessAssessments = () => {
     const isLoading = sectionMode === 'quizzes' ? isQuizLoading : isRemarkLoading;
 
     return (
-        <div className='flex flex-col items-center justify-center align-middle h-full w-full relative'>
-            <div className="flex flex-col sm:flex-row gap-4 sm:gap-0 mx-auto mb-5 items-center justify-between w-[90%] sm:w-[80%] md:w-[73%]">
-                <h1 className="w-full sm:w-[60%] text-primary text-3xl font-bold text-center sm:text-left tracking-tighter">
-                    {sectionMode === 'quizzes' ? 'Access Quizzes' : 'Access Remarks'}
-                </h1>
-            </div>
+        <div className='flex flex-col items-center justify-start h-full w-full relative overflow-hidden p-4'>
 
-            <section className="w-[90%] sm:w-[80%] md:w-[75%] mx-auto">
+
+            <section className="w-[90%] sm:w-[85%] md:w-[80%] lg:w-[75%] mx-auto flex-1 flex flex-col overflow-hidden">
                 <div className="bg-surface border-2 border-light/3 rounded-2xl mb-2 flex flex-col lg:flex-row justify-between items-center p-3 gap-3">
                     <div className="flex justify-between w-full xl:w-[53%]">
                         <div className="flex w-[20%] items-center gap-2 px-2 text-primary">
@@ -67,7 +72,7 @@ export const AccessAssessments = () => {
                         </div>
                         <div className="flex gap-2 w-[80%] 2xl:w-[50%]">
                             <span className="text-text-muted font-semibold flex items-center">Subject:</span>
-                            <CustomDropdown 
+                            <CustomDropdown
                                 className="w-full"
                                 options={subjects.map(s => ({ value: s.id, label: s.name }))}
                                 value={selectedSubject}
@@ -77,16 +82,16 @@ export const AccessAssessments = () => {
                         </div>
                     </div>
                     <div className="flex w-full 2xl:w-[30%] gap-1 p-1 bg-light/5 rounded-xl border-2 border-light/15">
-                        <button 
-                            type="button" 
-                            onClick={() => setSectionMode('quizzes')} 
+                        <button
+                            type="button"
+                            onClick={() => setSectionMode('quizzes')}
                             className={`w-[50%] py-1.5 rounded-lg font-bold transition-all cursor-pointer ${sectionMode === 'quizzes' ? 'bg-primary/35 text-primary' : 'text-text-muted hover:bg-primary/10'}`}
                         >
                             Quizzes
                         </button>
-                        <button 
-                            type="button" 
-                            onClick={() => setSectionMode('remarks')} 
+                        <button
+                            type="button"
+                            onClick={() => setSectionMode('remarks')}
                             className={`w-[50%] py-1.5 rounded-lg font-bold transition-all cursor-pointer ${sectionMode === 'remarks' ? 'bg-primary/35 text-primary' : 'text-text-muted hover:bg-primary/10'}`}
                         >
                             Remarks
@@ -94,31 +99,15 @@ export const AccessAssessments = () => {
                     </div>
                 </div>
 
-                <div className="sm:p-5 p-2 border-2 border-light/3 bg-surface h-[62.7vh] lg:h-[70vh] overflow-auto rounded-2xl mx-auto relative">
+                <div className="relative mx-auto flex-1 h-0 w-full min-h-75 mt-2">
+                    <div 
+                        className="sm:p-5 p-2 border-2 border-light/3 bg-surface h-full overflow-y-auto rounded-2xl custom-scrollbar"
+                        ref={scrollRef}
+                    >
                     {isLoading ? (
                         <div className="flex flex-col items-center h-full gap-3 text-text-muted justify-center mt-20">
                             <Loader2 className="animate-spin text-primary" size={40} />
                             <p className="font-bold">Loading content...</p>
-                        </div>
-                    ) : selectedSubject === null ? (
-                        <div className="flex flex-col items-center justify-center h-full text-center p-10 space-y-4">
-                            <div>
-                                {sectionMode === 'quizzes' ?
-                                    <>
-                                        <h3 className="text-2xl font-bold text-primary">Select a Subject</h3>
-                                        <p className="text-text-muted font-semibold text-sm max-w-sm mx-auto">
-                                            Choose a subject from the dropdown above to access quizzes for that subject.
-                                        </p>
-                                    </>
-                                    :
-                                    <>
-                                        <h3 className="text-2xl font-bold text-primary">Select a Subject</h3>
-                                        <p className="text-text-muted font-semibold text-sm max-w-sm mx-auto">
-                                            Choose a subject from the dropdown above to access remarks for that subject.
-                                        </p>
-                                    </>
-                                }
-                            </div>
                         </div>
                     ) : sectionMode === 'quizzes' ? (
                         quizzes.length === 0 ? (
@@ -128,11 +117,11 @@ export const AccessAssessments = () => {
                                 {quizzes.map((quiz) => {
                                     const result = quizResults.find(r => r.quiz === quiz.id);
                                     return (
-                                        <StudentQuizCard 
-                                            key={quiz.id} 
-                                            quiz={quiz} 
+                                        <StudentQuizCard
+                                            key={quiz.id}
+                                            quiz={quiz}
                                             result={result}
-                                            onTakeQuiz={() => handleTakeQuiz(quiz)} 
+                                            onTakeQuiz={() => handleTakeQuiz(quiz)}
                                             onViewResult={() => setViewResult(result || null)}
                                         />
                                     );
@@ -145,32 +134,34 @@ export const AccessAssessments = () => {
                         ) : (
                             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 pb-15">
                                 {remarks.map((remark) => (
-                                    <StudentRemarkCard 
-                                        key={remark.id} 
+                                    <StudentRemarkCard
+                                        key={remark.id}
                                         remark={remark}
                                     />
                                 ))}
                             </div>
                         )
                     )}
+                    </div>
+                    <BackToTop scrollRef={scrollRef} />
                 </div>
             </section>
 
             {/* View Popups */}
             {activeQuiz && (
-                <AttemptQuizPopup 
-                    isOpen={!!activeQuiz} 
-                    onClose={() => setActiveQuiz(null)} 
-                    quiz={activeQuiz} 
+                <AttemptQuizPopup
+                    isOpen={!!activeQuiz}
+                    onClose={() => setActiveQuiz(null)}
+                    quiz={activeQuiz}
                 />
             )}
 
             {viewResult && (
-                <ViewQuizResultPopup 
-                    isOpen={!!viewResult} 
-                    onClose={() => setViewResult(null)} 
-                    result={viewResult} 
-                    quiz={quizzes.find(q => q.id === viewResult.quiz)} 
+                <ViewQuizResultPopup
+                    isOpen={!!viewResult}
+                    onClose={() => setViewResult(null)}
+                    result={viewResult}
+                    quiz={quizzes.find(q => q.id === viewResult.quiz)}
                 />
             )}
         </div>

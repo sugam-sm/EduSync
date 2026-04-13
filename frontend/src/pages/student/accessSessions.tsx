@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Loader2, History, ClipboardCheck, BookOpen, Clock, X } from "lucide-react";
+import { Loader2, History, ClipboardCheck, Clock, X } from "lucide-react";
+import { BackToTop } from "../../components/Custom/backToTop";
 import { type AppDispatch, type RootState } from "../../store";
 import { fetchSessions } from "../../features/analytics/attendanceSlice";
 import { fetchSubjects } from "../../features/organization/subjectSlice";
@@ -9,6 +10,7 @@ import { CustomDatePicker } from "../../components/Custom/customDatePicker";
 
 export const AccessSessions = () => {
     const dispatch = useDispatch<AppDispatch>();
+    const scrollRef = useRef<HTMLDivElement>(null);
     const { sessions, isLoading: isSessionsLoading } = useSelector((state: RootState) => state.attendance);
     const { subjects, isLoading: isSubjectsLoading } = useSelector((state: RootState) => state.subject);
     const { user } = useSelector((state: RootState) => state.login);
@@ -20,6 +22,11 @@ export const AccessSessions = () => {
         dispatch(fetchSubjects());
     }, [dispatch]);
 
+    useEffect(() => {
+        if (subjects.length > 0 && selectedSubject === "All") {
+            setSelectedSubject(subjects[0].id!);
+        }
+    }, [subjects]);
     useEffect(() => {
         if (selectedSubject !== "All") {
             dispatch(fetchSessions());
@@ -36,7 +43,7 @@ export const AccessSessions = () => {
             .filter(attendance => String(attendance.student_name) === String(user?.full_name) || String(attendance.student_username) === String(user?.username))
             .map(attendance => ({
                 ...attendance,
-                subject_id: session.subject,
+                subject: session.subject,
                 subject_name: session.subject_name || "Unknown Subject",
                 teacher_name: session.teacher_name || "Unknown Teacher",
                 session_start: session.start_time,
@@ -44,7 +51,7 @@ export const AccessSessions = () => {
                 date: session.start_time ? new Date(session.start_time).toLocaleDateString() : 'N/A'
             }))
     ).filter(record => {
-        const matchesSubject = selectedSubject === "All" || record.subject_id === selectedSubject;
+        const matchesSubject = record.subject === selectedSubject;
         const matchesDate = !searchDate || (record.session_start && record.session_start.startsWith(searchDate));
         return matchesSubject && matchesDate;
     }).sort((a, b) => new Date(b.marked_at || 0).getTime() - new Date(a.marked_at || 0).getTime());
@@ -57,14 +64,10 @@ export const AccessSessions = () => {
     };
 
     return (
-        <div className='flex flex-col items-center justify-center align-middle h-full w-full relative'>
-            <div className="flex flex-col sm:flex-row gap-4 sm:gap-0 mx-auto mb-5 items-center justify-between w-[90%] sm:w-[80%] md:w-[73%]">
-                <h1 className="w-full sm:w-[60%] text-primary text-3xl font-bold text-center sm:text-left tracking-tighter">
-                    My Attendance History
-                </h1>
-            </div>
+        <div className='flex flex-col items-center justify-start h-full w-full relative overflow-hidden p-4'>
 
-            <section className="w-[90%] sm:w-[80%] md:w-[75%] mx-auto">
+
+            <section className="w-[90%] sm:w-[85%] md:w-[80%] lg:w-[75%] mx-auto flex-1 flex flex-col overflow-hidden">
                 <div className="bg-surface border-2 border-light/3 rounded-2xl mb-2 flex flex-col lg:flex-row justify-between items-center p-3 gap-3">
                     <div className="flex flex-row lg:contents items-center gap-2 w-full lg:w-auto justify-between pr-2">
                         <div className="flex justify-between w-full xl:w-[53%]">
@@ -106,21 +109,15 @@ export const AccessSessions = () => {
                     </div>
                 </div>
 
-                <div className="sm:p-5 p-2 border-2 border-light/3 bg-surface h-[62.7vh] lg:h-[70vh] overflow-auto rounded-2xl mx-auto relative">
+                <div className="relative mx-auto flex-1 h-0 w-full min-h-75 mt-2">
+                    <div 
+                        className="sm:p-5 p-2 border-2 border-light/3 bg-surface h-full overflow-y-auto rounded-2xl custom-scrollbar"
+                        ref={scrollRef}
+                    >
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center h-full gap-3 text-text-muted opacity-50">
                             <Loader2 className="animate-spin text-primary" size={40} />
                             <p className="font-bold tracking-widest uppercase text-xs">Syncing Attendance History...</p>
-                        </div>
-                    ) : selectedSubject === "All" ? (
-                        <div className="flex flex-col items-center justify-center h-full text-center p-10 space-y-4">
-                            <BookOpen size={60} className="text-primary opacity-20" />
-                            <div>
-                                <h3 className="text-2xl font-bold text-primary">Select a Subject</h3>
-                                <p className="text-text-muted font-semibold text-sm max-w-sm mx-auto">
-                                    Choose a subject from the dropdown above to view your attendance history for that subject.
-                                </p>
-                            </div>
                         </div>
                     ) : (attendanceRecords.length === 0) ? (
                         <div className="flex flex-col items-center justify-center h-full text-center p-10 space-y-4 opacity-50">
@@ -178,7 +175,7 @@ export const AccessSessions = () => {
                                     <div className="flex flex-row md:flex-col items-center gap-2 w-full md:w-auto shrink-0 border-t md:border-t-0 md:border-l border-light/5 pt-3 md:pt-0 md:pl-4">
                                         <span className="text-[9px] font-black text-text-muted uppercase tracking-tighter md:hidden">Status:</span>
                                         <div className={`px-4 py-1.5 rounded-xl font-black text-xs uppercase tracking-widest text-center min-w-[100px] ${record.status === 'PRESENT' ? 'bg-success/20 text-success' :
-                                                record.status === 'LATE' ? 'bg-info/20 text-info' : 'bg-failure/20 text-failure'
+                                            record.status === 'LATE' ? 'bg-info/20 text-info' : 'bg-failure/20 text-failure'
                                             }`}>
                                             {record.status}
                                         </div>
@@ -187,6 +184,8 @@ export const AccessSessions = () => {
                             ))}
                         </div>
                     )}
+                    </div>
+                    <BackToTop scrollRef={scrollRef} />
                 </div>
             </section>
         </div>
