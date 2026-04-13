@@ -7,22 +7,23 @@ import { FormButton } from '../../../components/Buttons/formButton';
 import { Button } from '../../../components/Buttons/customButton';
 import { DecisionPopup } from '../../../components/decision popup';
 import { addToast } from '../../../features/toasts/toastSlice';
-import { createFlashcardDeck, resetFlashcardState } from '../../../features/learning/flashcardSlice';
+import { resetFlashcardState } from '../../../features/learning/flashcardSlice';
 import { Portal } from '../../../components/Portal';
-import { ResourcePickerPopup } from '../../../components/Custom/resourcePickerPopup';
+import { ResourcePickerPopup } from '../../../components/resourcePickerPopup';
 import type { Resource } from '../../../features/learning/resourceSlice';
 import api from '../../../api';
 
 interface CreateFlashcardsWithAIPopupProps {
     isOpen: boolean;
     onClose: () => void;
-    gradeId: string | number;
+    grade: string | number;
+    subject: string | number;
     initialTitle?: string;
     onBack?: () => void;
     onDiscard?: () => void;
 }
 
-export const CreateFlashcardsWithAIPopup = ({ isOpen, onClose, gradeId, initialTitle = '', onBack, onDiscard }: CreateFlashcardsWithAIPopupProps) => {
+export const CreateFlashcardsWithAIPopup = ({ isOpen, onClose, grade, subject, initialTitle = '', onBack, onDiscard }: CreateFlashcardsWithAIPopupProps) => {
     const dispatch = useDispatch<AppDispatch>();
     const { isLoading, isError, message } = useSelector((state: RootState) => state.flashcard);
     
@@ -34,6 +35,7 @@ export const CreateFlashcardsWithAIPopup = ({ isOpen, onClose, gradeId, initialT
     const [selectedFile, setSelectedFile] = useState<File | Resource | null>(null);
     const [cardCount, setCardCount] = useState<number>(10);
     const [isPickerOpen, setIsPickerOpen] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -91,43 +93,42 @@ export const CreateFlashcardsWithAIPopup = ({ isOpen, onClose, gradeId, initialT
             confirmText: "Yes, Generate",
             cancelText: "Cancel",
             variant: "secondary",
-            onConfirm: async () => {
-                const formData = new FormData();
-                formData.append('title', title);
-                formData.append('grade_id', String(gradeId));
-                formData.append('prompt', prompt);
-                formData.append('card_count', String(cardCount));
-                formData.append('creation_mode', 'ai');
-                
-                if (selectedFile) {
-                    if (selectedFile instanceof File) {
-                        formData.append('file', selectedFile);
-                    } else {
-                        formData.append('resource_id', String(selectedFile.id));
+                onConfirm: async () => {
+                    setIsGenerating(true);
+                    const formData = new FormData();
+                    formData.append('title', title);
+                    formData.append('grade', String(grade));
+                    formData.append('subject', String(subject));
+                    formData.append('prompt', prompt);
+                    formData.append('card_count', String(cardCount));
+                    formData.append('creation_mode', 'ai');
+                    
+                    if (selectedFile) {
+                        if (selectedFile instanceof File) {
+                            formData.append('file', selectedFile);
+                        } else {
+                            formData.append('resource_id', String(selectedFile.id));
+                        }
                     }
-                }
 
-                try {
-                    const response = await api.post('/api/learning/decks/', formData);
-                    if (response.status === 201 || response.status === 202 || response.status === 200) {
+                    try {
+                        const response = await api.post('/api/learning/decks/', formData);
+                        if (response.status === 201 || response.status === 202 || response.status === 200) {
+                            dispatch(addToast({ 
+                                message: 'Flashcard generation started in the background.', 
+                                type: 'success' 
+                            }));
+                            handleClose(true);
+                        }
+                    } catch (err: any) {
                         dispatch(addToast({ 
-                            message: 'AI Flashcard generation has been queued. Page will refresh in 5 seconds...', 
-                            type: 'success' 
+                            message: err.response?.data?.error || 'Failed to start AI generation.', 
+                            type: 'failure' 
                         }));
-                        handleClose(true);
-
-                        // Reload page after 5 seconds to show newly generated content
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 5000);
+                    } finally {
+                        setIsGenerating(false);
                     }
-                } catch (err: any) {
-                    dispatch(addToast({ 
-                        message: err.response?.data?.error || 'Failed to start AI generation.', 
-                        type: 'failure' 
-                    }));
                 }
-            }
         });
     };
 
@@ -170,7 +171,7 @@ export const CreateFlashcardsWithAIPopup = ({ isOpen, onClose, gradeId, initialT
                                 <button 
                                     type="button"
                                     onClick={() => setIsPickerOpen(true)}
-                                    className={`w-full h-[52px] flex items-center gap-3 px-4 rounded-xl border-2 transition-all ${
+                                    className={`w-full h-13 flex items-center gap-3 px-4 rounded-xl border-2 transition-all ${
                                         selectedFile 
                                         ? "bg-primary/5 border-primary/40 text-primary" 
                                         : "bg-light/5 border-light/10 text-text-muted hover:border-primary/30"
@@ -204,7 +205,7 @@ export const CreateFlashcardsWithAIPopup = ({ isOpen, onClose, gradeId, initialT
 
                     <div className="p-6 border-light/10 flex gap-4 pt-1 bg-transparent">
                         <Button label="Back" onClick={onBack || (() => handleClose())} variant='failure' className='flex-1 py-3' />
-                        <FormButton type="submit" isLoading={isLoading} variant='primary' className='flex-2 py-3'>
+                        <FormButton type="submit" isLoading={isLoading || isGenerating} variant='primary' className='flex-2 py-3'>
                             Generate Flashcards
                         </FormButton>
                     </div>
@@ -213,7 +214,7 @@ export const CreateFlashcardsWithAIPopup = ({ isOpen, onClose, gradeId, initialT
                 <ResourcePickerPopup 
                     isOpen={isPickerOpen}
                     onClose={() => setIsPickerOpen(false)}
-                    gradeId={gradeId}
+                    gradeId={grade}
                     onFileSelect={handleFileSelect}
                 />
             </div>

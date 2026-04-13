@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Loader2, Folders, Layers, FolderPlus, LayersPlus } from "lucide-react";
 
@@ -16,7 +16,7 @@ import { FlashcardDisplayPopup } from "../../components/flashcardDisplayPopup";
 import { BackToTop } from "../../components/Custom/backToTop";
 
 import { type AppDispatch, type RootState } from "../../store";
-import { fetchGrades } from "../../features/organization/gradeSlice";
+import { fetchAssignSubs } from "../../features/organization/assignSubjectSlice";
 import { fetchResourceFolders, type ResourceFolder } from "../../features/learning/resourceSlice";
 import { fetchFlashcardDecks, type FlashcardDeck } from "../../features/learning/flashcardSlice";
 import { FlashcardDeckCard } from "../../components/Cards/teacher/flashcardDeckCard";
@@ -24,11 +24,12 @@ import { FlashcardDeckCard } from "../../components/Cards/teacher/flashcardDeckC
 export const ManageLearningResources = () => {
     const dispatch = useDispatch<AppDispatch>();
     const scrollRef = useRef<HTMLDivElement>(null);
-    const { grades } = useSelector((state: RootState) => state.grade);
+    const { assignSub } = useSelector((state: RootState) => state.assignSub);
     const { folders, isLoading: isResLoading } = useSelector((state: RootState) => state.resource);
     const { flashcard_decks, isLoading: isDeckLoading } = useSelector((state: RootState) => state.flashcard);
 
     const [selectedGrade, setSelectedGrade] = useState<string | number>("All");
+    const [selectedSubject, setSelectedSubject] = useState<string | number>("All");
     const [sectionMode, setSectionMode] = useState<'resources' | 'flashcards'>('resources');
 
     const [isCreateFolderPopupOpen, setIsCreateFolderOpen] = useState(false);
@@ -46,16 +47,60 @@ export const ManageLearningResources = () => {
     const [aiInitialTitle, setAiInitialTitle] = useState('');
     const [createDeckKey, setCreateDeckKey] = useState(0);
 
-    useEffect(() => { dispatch(fetchGrades()); }, [dispatch]);
+    // Fetch teacher's assignments once
+    useEffect(() => { dispatch(fetchAssignSubs()); }, [dispatch]);
+
+    // Derive unique grades securely from assignments
+    const gradeOptions = useMemo(() => {
+        const seen = new Map<number, { label: string; value: number }>();
+        assignSub.forEach(a => {
+            if (a.grade && !seen.has(a.grade)) {
+                seen.set(a.grade, { label: `${a.grade_name || ''} ${a.grade_section || ''}`.trim(), value: a.grade });
+            }
+        });
+        return Array.from(seen.values());
+    }, [assignSub]);
+
+    // Synchronously derive subjects for the selected grade to prevent UI overlap
+    const subjectOptions = useMemo(() => {
+        if (selectedGrade === "All") return [];
+        const seen = new Map<number, { label: string; value: number }>();
+        assignSub.forEach(a => {
+            if (a.grade === selectedGrade && a.subject && !seen.has(a.subject)) {
+                seen.set(a.subject, { label: a.subject_name || '', value: a.subject });
+            }
+        });
+        return Array.from(seen.values());
+    }, [assignSub, selectedGrade]);
+
+    // Auto-select first grade when grades load
     useEffect(() => {
-        if (selectedGrade !== "All") {
+        if (gradeOptions.length > 0 && (selectedGrade === "All" || !gradeOptions.find(g => g.value === selectedGrade))) {
+            setSelectedGrade(gradeOptions[0].value);
+        }
+    }, [gradeOptions, selectedGrade]);
+
+    // Auto-select first subject when specific grade subjects load
+    useEffect(() => {
+        if (subjectOptions.length > 0) {
+            if (!subjectOptions.find(s => s.value === selectedSubject)) {
+                setSelectedSubject(subjectOptions[0].value);
+            }
+        } else {
+            setSelectedSubject("All");
+        }
+    }, [subjectOptions, selectedSubject]);
+
+    // Fetch data when grade + subject are selected
+    useEffect(() => {
+        if (selectedGrade !== "All" && selectedSubject !== "All") {
             if (sectionMode === 'resources') {
-                dispatch(fetchResourceFolders({ grade_id: selectedGrade }));
+                dispatch(fetchResourceFolders({ grade: selectedGrade, subject: selectedSubject }));
             } else {
-                dispatch(fetchFlashcardDecks({ grade_id: selectedGrade }));
+                dispatch(fetchFlashcardDecks({ grade: selectedGrade, subject: selectedSubject }));
             }
         }
-    }, [dispatch, selectedGrade, sectionMode]);
+    }, [dispatch, selectedGrade, selectedSubject, sectionMode]);
 
     const handleEditFolder = (folder: ResourceFolder) => {
         setSelectedFolder(folder);
@@ -82,83 +127,69 @@ export const ManageLearningResources = () => {
         setIsDisplayPopupOpen(true);
     };
 
-    const gradeOptions = grades.map(grade => ({
-        label: `${grade.name} ${grade.section}`,
-        value: grade.id!
-    }));
-
     const isLoading = sectionMode === 'resources' ? isResLoading : isDeckLoading;
 
     return (
-        <div className='flex flex-col items-center justify-center align-middle h-full w-full relative'>
-            <div className="flex flex-col sm:flex-row gap-4 sm:gap-0 mx-auto mb-5 items-center justify-between w-[90%] sm:w-[80%] md:w-[73%]">
-                <h1 className="w-full sm:w-[60%] text-primary text-3xl font-bold text-center sm:text-left">
-                    Manage {sectionMode === 'resources' ? 'Resources' : 'Flashcards'}
-                </h1>
-            </div>
+        <div className='flex flex-col items-center justify-start h-full w-full relative overflow-hidden p-4'>
 
-            <section className="w-[90%] sm:w-[80%] md:w-[75%] mx-auto">
-                <div className="bg-surface border-2 border-light/3 rounded-2xl mb-2 flex flex-col lg:flex-row justify-between items-center p-3 gap-3">
-                    <div className="flex justify-between w-full xl:w-[53%]">
-                        <div className="flex w-[20%] items-center gap-2 px-2 text-primary">
-                            {sectionMode === 'resources' ? < Folders size={30} strokeWidth={3} /> : <Layers size={30} strokeWidth={3} />}
+
+            <section className="w-[90%] sm:w-[85%] md:w-[80%] lg:w-[75%] mx-auto flex-1 flex flex-col overflow-hidden">
+                <div className="bg-surface border-2 border-light/3 rounded-2xl mb-2 flex flex-col lg:flex-row items-center p-3 gap-4 lg:gap-6">
+                    {/* Group 1: Icon + Grade */}
+                    <div className="flex items-center gap-4 w-full lg:w-auto flex-1">
+                        <div className="text-primary shrink-0">
+                            {sectionMode === 'resources' ? <Folders size={30} strokeWidth={3} /> : <Layers size={30} strokeWidth={3} />}
                         </div>
-                        <div className="flex gap-2 w-[80%] 2xl:w-[35%]">
-                            <span className="text-text-muted font-semibold flex items-center">Grade:</span>
+                        <div className="flex items-center gap-2 flex-1">
+                            <span className="text-text-muted font-bold text-sm whitespace-nowrap">Grade:</span>
                             <CustomDropdown
-                                className="w-full"
+                                className="w-full flex-1 h-11.5"
                                 value={selectedGrade}
                                 onChange={setSelectedGrade}
                                 options={gradeOptions}
                             />
                         </div>
                     </div>
-                    <div className="flex w-full 2xl:w-[30%] gap-1 p-1 bg-light/5 rounded-xl border-2 border-light/15">
+                    
+                    {/* Group 2: Subject */}
+                    <div className="flex items-center gap-2 w-full lg:w-auto flex-1">
+                        <span className="text-text-muted font-bold text-sm whitespace-nowrap">Subject:</span>
+                        <CustomDropdown
+                            className="w-full flex-1 h-11.5"
+                            value={selectedSubject}
+                            onChange={setSelectedSubject}
+                            options={subjectOptions}
+                        />
+                    </div>
+
+                    {/* Group 3: Toggle Buttons */}
+                    <div className="flex w-full lg:w-75 h-11.5 gap-1 p-1 bg-light/5 rounded-xl border-2 border-light/15 shrink-0">
                         <button
                             type="button"
                             onClick={() => setSectionMode('resources')}
-                            className={`w-[50%] py-1.5 rounded-lg font-bold transition-all cursor-pointer ${sectionMode === 'resources' ? 'bg-primary/35 text-primary' : 'text-text-muted hover:bg-primary/10'}`}
+                            className={`flex-1 h-full rounded-lg font-bold transition-all cursor-pointer ${sectionMode === 'resources' ? 'bg-primary/35 text-primary' : 'text-text-muted hover:bg-primary/10'}`}
                         >
                             Resources
                         </button>
                         <button
                             type="button"
                             onClick={() => setSectionMode('flashcards')}
-                            className={`w-[50%] py-1.5 rounded-lg font-bold transition-all cursor-pointer ${sectionMode === 'flashcards' ? 'bg-primary/35 text-primary' : 'text-text-muted hover:bg-primary/10'}`}
+                            className={`flex-1 h-full rounded-lg font-bold transition-all cursor-pointer ${sectionMode === 'flashcards' ? 'bg-primary/35 text-primary' : 'text-text-muted hover:bg-primary/10'}`}
                         >
                             Flashcards
                         </button>
                     </div>
                 </div>
 
-                <div
-                    className="sm:p-5 p-2 border-2 border-light/3 bg-surface h-[62.7vh] lg:h-[70vh] overflow-auto rounded-2xl mx-auto relative"
-                    ref={scrollRef}
-                >
+                <div className="relative mx-auto flex-1 h-0 w-full min-h-75 mt-2">
+                    <div
+                        className="sm:p-5 p-2 border-2 border-light/3 bg-surface h-full overflow-y-auto rounded-2xl custom-scrollbar"
+                        ref={scrollRef}
+                    >
                     {isLoading ? (
                         <div className="flex flex-col items-center h-full gap-3 text-text-muted justify-center">
                             <Loader2 className="animate-spin text-primary" size={40} />
                             <p className="font-bold">Loading...</p>
-                        </div>
-                    ) : selectedGrade === "All" ? (
-                        <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
-                            <div>
-                                {sectionMode === 'resources' ?
-                                    <>
-                                        <h3 className="text-2xl font-bold text-primary">Select a Grade</h3>
-                                        <p className="text-text-muted font-semibold text-sm max-w-sm mx-auto">
-                                            Choose a grade from the dropdown above to manage resources for that grade.
-                                        </p>
-                                    </>
-                                    :
-                                    <>
-                                        <h3 className="text-2xl font-bold text-primary">Select a Grade</h3>
-                                        <p className="text-text-muted font-semibold text-sm max-w-sm mx-auto">
-                                            Choose a grade from the dropdown above to manage flashcards for that grade.
-                                        </p>
-                                    </>
-                                }
-                            </div>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 pb-15">
@@ -189,18 +220,18 @@ export const ManageLearningResources = () => {
                         </div>
                     )}
 
-                    <div className="sticky bottom-0 left-0 w-full flex justify-end p-2 z-50">
-                        <BackToTop scrollRef={scrollRef} />
                     </div>
+                    <BackToTop scrollRef={scrollRef} />
                 </div>
             </section>
 
-            <CreateFolderPopup isOpen={isCreateFolderPopupOpen} onClose={() => setIsCreateFolderOpen(false)} gradeId={selectedGrade} />
-            <CreateFlashcardDeckPopup 
+            <CreateFolderPopup isOpen={isCreateFolderPopupOpen} onClose={() => setIsCreateFolderOpen(false)} grade={selectedGrade} subject={selectedSubject} />
+            <CreateFlashcardDeckPopup
                 key={createDeckKey}
-                isOpen={isCreateDeckPopupOpen} 
-                onClose={() => setIsCreateDeckOpen(false)} 
-                gradeId={selectedGrade} 
+                isOpen={isCreateDeckPopupOpen}
+                onClose={() => setIsCreateDeckOpen(false)}
+                grade={selectedGrade}
+                subject={selectedSubject}
                 onSwitchToAI={(title: string) => {
                     setIsCreateDeckOpen(false);
                     setAiInitialTitle(title);
@@ -210,7 +241,8 @@ export const ManageLearningResources = () => {
             <CreateFlashcardsWithAIPopup
                 isOpen={isCreateAIOpen}
                 onClose={() => setIsCreateAIOpen(false)}
-                gradeId={selectedGrade}
+                grade={selectedGrade}
+                subject={selectedSubject}
                 initialTitle={aiInitialTitle}
                 onBack={() => {
                     setIsCreateAIOpen(false);

@@ -194,7 +194,7 @@ export const PostQuizEvalPopup = ({ isOpen, onClose, quizId, quizTitle, endDatet
                                             <MessageCircle size={16} />
                                         </div>
                                         <textarea
-                                            className="w-full bg-surface/80 border-2 border-light/10 rounded-2xl pl-10 pr-4 py-3 text-text-heading text-sm font-semibold outline-none focus:border-primary transition-all min-h-[80px] resize-none placeholder:text-text-muted/40"
+                                            className="w-full bg-surface/80 border-2 border-light/10 rounded-2xl pl-10 pr-4 py-3 text-text-heading text-sm font-semibold outline-none focus:border-primary transition-all min-h-20 resize-none placeholder:text-text-muted/40"
                                             placeholder={`Write a remark for ${student.student_name.split(' ')[0]}...`}
                                             value={remarkInputs[student.student_id] || ''}
                                             onChange={(e) => handleRemarkChange(student.student_id, e.target.value)}

@@ -14,11 +14,12 @@ import { ManageFlashcards } from '../manage/manageFlashcards';
 interface CreateDeckPopupProps {
     isOpen: boolean;
     onClose: () => void;
-    gradeId: string | number;
+    grade: string | number;
+    subject: string | number;
     onSwitchToAI?: (title: string) => void;
 }
 
-export const CreateFlashcardDeckPopup = ({ isOpen, onClose, gradeId, onSwitchToAI }: CreateDeckPopupProps) => {
+export const CreateFlashcardDeckPopup = ({ isOpen, onClose, grade, subject, onSwitchToAI }: CreateDeckPopupProps) => {
     const dispatch = useDispatch<AppDispatch>();
     const { isLoading, isError, message } = useSelector((state: RootState) => state.flashcard);
 
@@ -53,6 +54,16 @@ export const CreateFlashcardDeckPopup = ({ isOpen, onClose, gradeId, onSwitchToA
 
     const handleSubmit = async (e: React.SyntheticEvent) => {
         e.preventDefault();
+
+        if (!grade || grade === 'All') {
+            dispatch(addToast({ message: "You have not selected any grade.", type: 'failure' }));
+            return;
+        }
+
+        if (!subject || subject === 'All') {
+            dispatch(addToast({ message: "You have not selected any subject.", type: 'failure' }));
+            return;
+        }
 
         if (!deckTitle.trim()) {
             dispatch(addToast({ message: "Deck title is required.", type: 'info' }));
@@ -137,7 +148,7 @@ export const CreateFlashcardDeckPopup = ({ isOpen, onClose, gradeId, onSwitchToA
                     <ManageFlashcards
                         isOpen={true}
                         onClose={() => handleClose(true)}
-                        deck={{ title: deckTitle, grade_id: gradeId } as any}
+                        deck={{ title: deckTitle, grade: grade, subject: subject } as any}
                         isStepMode={true}
                         onBack={() => setStep(1)}
                         onComplete={() => handleClose(true)}

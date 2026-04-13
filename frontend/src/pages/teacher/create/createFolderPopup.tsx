@@ -13,10 +13,11 @@ import { Portal } from '../../../components/Portal';
 interface CreateFolderPopupProps {
     isOpen: boolean;
     onClose: () => void;
-    gradeId: string | number;
+    grade: string | number;
+    subject: string | number;
 }
 
-export const CreateFolderPopup = ({ isOpen, onClose, gradeId }: CreateFolderPopupProps) => {
+export const CreateFolderPopup = ({ isOpen, onClose, grade, subject }: CreateFolderPopupProps) => {
     const dispatch = useDispatch<AppDispatch>();
     const { isLoading, isError, message } = useSelector((state: RootState) => state.resource);
     
@@ -38,6 +39,16 @@ export const CreateFolderPopup = ({ isOpen, onClose, gradeId }: CreateFolderPopu
     const handleSubmit = async (e: React.SyntheticEvent) => {
         e.preventDefault();
 
+        if (!grade || grade === 'All') {
+            dispatch(addToast({ message: "You have not selected any grade.", type: 'failure' }));
+            return;
+        }
+
+        if (!subject || subject === 'All') {
+            dispatch(addToast({ message: "You have not selected any subject.", type: 'failure' }));
+            return;
+        }
+
         if (!folderName.trim()) {
             dispatch(addToast({ message: "Folder name is required.", type: 'info' }));
             return;
@@ -51,7 +62,8 @@ export const CreateFolderPopup = ({ isOpen, onClose, gradeId }: CreateFolderPopu
             onConfirm: async () => {
                 const result = await dispatch(createResourceFolder({ 
                     name: folderName, 
-                    grade_id: gradeId as number 
+                    grade: grade as number,
+                    subject: subject as number
                 } as any)); 
 
                 if (createResourceFolder.fulfilled.match(result)) {

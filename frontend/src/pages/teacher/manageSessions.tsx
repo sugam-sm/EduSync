@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Loader2, PlayCircle, History, Activity, X } from "lucide-react";
 import { type AppDispatch, type RootState } from "../../store";
@@ -17,16 +17,17 @@ import {
 } from "../../features/analytics/attendanceSlice";
 import { addToast } from "../../features/toasts/toastSlice";
 import { DecisionPopup } from "../../components/decision popup";
-import { fetchGrades } from "../../features/organization/gradeSlice";
+import { fetchAssignSubs } from "../../features/organization/assignSubjectSlice";
 export const ManageSessions = () => {
     const dispatch = useDispatch<AppDispatch>();
     const scrollRef = useRef<HTMLDivElement>(null);
     const { openDecidePopup, DecidePopup } = DecisionPopup();
 
-    const { grades } = useSelector((state: RootState) => state.grade);
+    const { assignSub } = useSelector((state: RootState) => state.assignSub);
     const { sessions, activeSession, isLoading } = useSelector((state: RootState) => state.attendance);
 
     const [selectedGrade, setSelectedGrade] = useState<string | number>("All");
+    const [selectedSubject, setSelectedSubject] = useState<string | number>("All");
     const [sectionMode, setSectionMode] = useState<'active' | 'history'>('active');
     const [searchDate, setSearchDate] = useState<string>("");
 
@@ -35,15 +36,56 @@ export const ManageSessions = () => {
     const [isManagePopupOpen, setIsManagePopupOpen] = useState(false);
     const [selectedSession, setSelectedSession] = useState<Session | null>(null);
 
-    useEffect(() => {
-        dispatch(fetchGrades());
-    }, [dispatch]);
+    // Fetch teacher's assignments once
+    useEffect(() => { dispatch(fetchAssignSubs()); }, [dispatch]);
 
+    // Derive unique grades securely from assignments
+    const gradeOptions = useMemo(() => {
+        const seen = new Map<number, { label: string; value: number }>();
+        assignSub.forEach(a => {
+            if (a.grade && !seen.has(a.grade)) {
+                seen.set(a.grade, { label: `${a.grade_name || ''} ${a.grade_section || ''}`.trim(), value: a.grade });
+            }
+        });
+        return Array.from(seen.values());
+    }, [assignSub]);
+
+    // Synchronously derive subjects for the selected grade to prevent UI overlap
+    const subjectOptions = useMemo(() => {
+        if (selectedGrade === "All") return [];
+        const seen = new Map<number, { label: string; value: number }>();
+        assignSub.forEach(a => {
+            if (a.grade === selectedGrade && a.subject && !seen.has(a.subject)) {
+                seen.set(a.subject, { label: a.subject_name || '', value: a.subject });
+            }
+        });
+        return Array.from(seen.values());
+    }, [assignSub, selectedGrade]);
+
+    // Auto-select first grade when grades load
     useEffect(() => {
-        if (selectedGrade !== "All") {
-            dispatch(fetchSessions({ grade_id: selectedGrade }));
+        if (gradeOptions.length > 0 && (selectedGrade === "All" || !gradeOptions.find(g => g.value === selectedGrade))) {
+            setSelectedGrade(gradeOptions[0].value);
         }
-    }, [dispatch, selectedGrade]);
+    }, [gradeOptions, selectedGrade]);
+
+    // Auto-select first subject when specific grade subjects load
+    useEffect(() => {
+        if (subjectOptions.length > 0) {
+            if (!subjectOptions.find(s => s.value === selectedSubject)) {
+                setSelectedSubject(subjectOptions[0].value);
+            }
+        } else {
+            setSelectedSubject("All");
+        }
+    }, [subjectOptions, selectedSubject]);
+
+    // Fetch sessions when grade + subject selected
+    useEffect(() => {
+        if (selectedGrade !== "All" && selectedSubject !== "All") {
+            dispatch(fetchSessions({ grade: selectedGrade, subject: selectedSubject }));
+        }
+    }, [dispatch, selectedGrade, selectedSubject]);
 
     const handleManageSession = (session: Session) => {
         setSelectedSession(session);
@@ -57,16 +99,20 @@ export const ManageSessions = () => {
             cancelText: "Cancel",
             variant: "primary",
             onConfirm: () => {
-                dispatch(endSession(session.id!));
-                dispatch(addToast({ message: "Session ended successfully.", type: 'success' }));
+                dispatch(endSession(session.id!))
+                    .unwrap()
+                    .then(() => {
+                        dispatch(addToast({ message: "Session ended successfully.", type: 'success' }));
+                        if (selectedGrade !== "All" && selectedSubject !== "All") {
+                            dispatch(fetchSessions({ grade: selectedGrade, subject: selectedSubject }));
+                        }
+                    })
+                    .catch((err) => {
+                        dispatch(addToast({ message: typeof err === 'string' ? err : "Failed to end session.", type: 'failure' }));
+                    });
             }
         });
     };
-
-    const gradeOptions = grades.map(grade => ({
-        label: `${grade.name} ${grade.section}`,
-        value: grade.id!
-    }));
 
     // Filter sessions based on toggle and date
     const filteredSessions = sessions.filter(s => {
@@ -78,51 +124,60 @@ export const ManageSessions = () => {
     const hasActiveSession = sessions.some(s => s.is_active) || !!activeSession;
 
     return (
-        <div className='flex flex-col items-center justify-center align-middle h-full w-full relative'>
-            <div className="flex flex-col sm:flex-row gap-4 sm:gap-0 mx-auto mb-5 items-center justify-between w-[90%] sm:w-[80%] md:w-[73%]">
-                <h1 className="w-full sm:w-[60%] text-primary text-3xl font-bold text-center sm:text-left">
-                    Manage {sectionMode === 'active' ? 'Sessions' : 'History'}
-                </h1>
-            </div>
+        <div className='flex flex-col items-center justify-start h-full w-full relative overflow-hidden p-4'>
 
-            <section className="w-[90%] sm:w-[80%] md:w-[75%] mx-auto relative">
-                <div className="bg-surface border-2 border-light/3 rounded-2xl mb-2 flex flex-col lg:flex-row justify-between items-center p-3 gap-1 md:gap-3">
-                    <div className="flex justify-between items-center w-full xl:w-[53%]">
-                        <div className="flex w-[20%] items-center gap-2 px-2 text-primary">
+
+            <section className="w-[90%] sm:w-[85%] md:w-[80%] lg:w-[75%] mx-auto flex-1 flex flex-col overflow-hidden relative">
+                <div className="bg-surface border-2 border-light/3 rounded-2xl mb-2 flex flex-col lg:flex-row items-center p-3 gap-4 lg:gap-6">
+                    {/* Group 1: Icon + Grade */}
+                    <div className="flex items-center gap-4 w-full lg:w-auto flex-1">
+                        <div className="text-primary shrink-0">
                             {sectionMode === 'active' ? <Activity size={30} strokeWidth={3} /> : <History size={30} strokeWidth={3} />}
                         </div>
-                        <div className="flex gap-2 w-[80%] 2xl:w-[35%]">
-                            <span className="text-text-muted font-bold flex items-center whitespace-nowrap text-sm">Grade:</span>
+                        <div className="flex items-center gap-2 flex-1">
+                            <span className="text-text-muted font-bold text-sm whitespace-nowrap">Grade:</span>
                             <CustomDropdown
-                                className="w-full"
+                                className="w-full flex-1 h-11.5"
                                 value={selectedGrade}
                                 onChange={setSelectedGrade}
                                 options={gradeOptions}
                             />
                         </div>
                     </div>
+                    
+                    {/* Group 2: Subject */}
+                    <div className="flex items-center gap-2 w-full lg:w-auto flex-1">
+                        <span className="text-text-muted font-bold text-sm whitespace-nowrap">Subject:</span>
+                        <CustomDropdown
+                            className="w-full flex-1 h-11.5"
+                            value={selectedSubject}
+                            onChange={setSelectedSubject}
+                            options={subjectOptions}
+                        />
+                    </div>
 
-                    <div className="flex flex-row lg:contents items-center gap-2 w-full lg:w-auto justify-between">
-                        <div className={`flex-1 lg:flex-none lg:w-auto xl:min-w-[280px] 2xl:w-[30%] order-1 lg:order-3 flex gap-1 p-1 bg-light/5 rounded-xl border-2 border-light/15`}>
+                    {/* Group 3: Toggle Buttons & Date Filter */}
+                    <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto shrink-0">
+                        <div className="flex w-full sm:w-75 h-11.5 gap-1 p-1 bg-light/5 rounded-xl border-2 border-light/15">
                             <button
                                 type="button"
                                 onClick={() => setSectionMode('active')}
-                                className={`w-[50%] py-1.5 rounded-lg font-bold transition-all cursor-pointer ${sectionMode === 'active' ? 'bg-primary/35 text-primary shadow-sm' : 'text-text-muted hover:bg-primary/10'}`}
+                                className={`flex-1 h-full rounded-lg font-bold transition-all cursor-pointer ${sectionMode === 'active' ? 'bg-primary/35 text-primary' : 'text-text-muted hover:bg-primary/10'}`}
                             >
-                                Live
+                                Active
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setSectionMode('history')}
-                                className={`w-[50%] py-1.5 rounded-lg font-bold transition-all cursor-pointer ${sectionMode === 'history' ? 'bg-primary/35 text-primary shadow-sm' : 'text-text-muted hover:bg-primary/10'}`}
+                                className={`flex-1 h-full rounded-lg font-bold transition-all cursor-pointer ${sectionMode === 'history' ? 'bg-primary/35 text-primary' : 'text-text-muted hover:bg-primary/10'}`}
                             >
                                 History
                             </button>
                         </div>
 
                         {sectionMode === 'history' && (
-                            <div className="w-auto flex items-center gap-2 relative group order-2 lg:order-2">
-                                <div className="relative">
+                            <div className="w-full sm:w-auto flex items-center gap-2 relative group">
+                                <div className="relative w-full sm:w-auto">
                                     <CustomDatePicker
                                         value={searchDate}
                                         onChange={setSearchDate}
@@ -133,7 +188,7 @@ export const ManageSessions = () => {
                                                 e.stopPropagation();
                                                 setSearchDate("");
                                             }}
-                                            className="absolute -top-2 -right-2 lg:opacity-0 lg:group-hover:opacity-100 p-1.5 bg-failure text-white border-2 border-surface rounded-full hover:scale-110 active:scale-95 transition-all cursor-pointer shadow-lg z-10 animate-in zoom-in-50 fade-in duration-200"
+                                            className="absolute -top-2 -right-2 p-1.5 bg-failure text-white border-2 border-surface rounded-full hover:scale-110 active:scale-95 transition-all cursor-pointer shadow-lg z-10"
                                             title="Clear Filter"
                                         >
                                             <X size={12} strokeWidth={4} />
@@ -145,34 +200,15 @@ export const ManageSessions = () => {
                     </div>
                 </div>
 
-                <div
-                    className="sm:p-5 p-2 border-2 border-light/3 bg-surface h-[62.7vh] lg:h-[70vh] overflow-auto rounded-2xl mx-auto relative"
-                    ref={scrollRef}
-                >
+                <div className="relative mx-auto flex-1 h-0 w-full min-h-75 mt-2">
+                    <div
+                        className="sm:p-5 p-2 border-2 border-light/3 bg-surface h-full overflow-y-auto rounded-2xl custom-scrollbar"
+                        ref={scrollRef}
+                    >
                     {isLoading ? (
                         <div className="flex flex-col items-center h-full gap-3 text-text-muted justify-center">
                             <Loader2 className="animate-spin text-primary" size={40} />
                             <p className="font-bold tracking-widest uppercase text-xs">Syncing Session Data...</p>
-                        </div>
-                    ) : selectedGrade === "All" ? (
-                        <div className="flex flex-col items-center justify-center h-full text-center p-10 space-y-4">
-                            <div>
-                                {sectionMode === 'active' ?
-                                    <>
-                                        <h3 className="text-2xl font-bold text-primary">Select a Grade</h3>
-                                        <p className="text-text-muted font-semibold text-sm max-w-sm mx-auto">
-                                            Choose a grade from the dropdown above to start a session for that grade.
-                                        </p>
-                                    </>
-                                    :
-                                    <>
-                                        <h3 className="text-2xl font-bold text-primary">Select a Grade</h3>
-                                        <p className="text-text-muted font-semibold text-sm max-w-sm mx-auto">
-                                            Choose a grade from the dropdown above to view attendance history for that grade.
-                                        </p>
-                                    </>
-                                }
-                            </div>
                         </div>
                     ) : (
                         <div className={sectionMode === 'active'
@@ -183,11 +219,13 @@ export const ManageSessions = () => {
                             {sectionMode === 'active' && !hasActiveSession && (
                                 <>
                                     <div className="flex flex-col items-center gap-2">
-                                        <span className="text-text-muted font-semibold text-md text-center">Click the button below to start session for grade {grades.find(g => g.id === selectedGrade)?.name} {grades.find(g => g.id === selectedGrade)?.section}</span>
+                                        <span className="text-sm text-text-muted mt-2 text-center max-w-sm">
+                                            Ready to begin today's session for grade {gradeOptions.find(g => g.value === selectedGrade)?.label}? Start a new session to track attendance and monitor engagement in real-time.
+                                        </span>
                                         <CardButton
                                             onClick={() => setIsStartPopupOpen(true)}
                                             Icon={PlayCircle}
-                                            className="w-[100px] h-[100px] rounded-full"
+                                            className="w-25 h-25 rounded-full"
                                         />
                                     </div>
                                 </>
@@ -220,10 +258,8 @@ export const ManageSessions = () => {
                             )}
                         </div>
                     )}
-
-                    <div className="sticky bottom-0 left-0 w-full flex justify-end p-2 z-50">
-                        <BackToTop scrollRef={scrollRef} />
                     </div>
+                    <BackToTop scrollRef={scrollRef} />
                 </div>
             </section>
 
@@ -231,7 +267,8 @@ export const ManageSessions = () => {
             <StartSessionPopup
                 isOpen={isStartPopupOpen}
                 onClose={() => setIsStartPopupOpen(false)}
-                gradeId={selectedGrade}
+                grade={selectedGrade as number}
+                subject={selectedSubject as number}
             />
 
             {selectedSession && (

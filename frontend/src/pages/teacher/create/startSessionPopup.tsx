@@ -13,13 +13,14 @@ import { Portal } from '../../../components/Portal';
 interface StartSessionPopupProps {
     isOpen: boolean;
     onClose: () => void;
-    gradeId: string | number;
+    grade: string | number;
+    subject: string | number;
 }
 
-export const StartSessionPopup = ({ isOpen, onClose, gradeId }: StartSessionPopupProps) => {
+export const StartSessionPopup = ({ isOpen, onClose, grade, subject }: StartSessionPopupProps) => {
     const dispatch = useDispatch<AppDispatch>();
     const { isLoading } = useSelector((state: RootState) => state.attendance);
-    const { assignSub } = useSelector((state: RootState) => state.assignSub);    
+    const { assignSub } = useSelector((state: RootState) => state.assignSub);
     const { openDecidePopup, DecidePopup } = DecisionPopup();
 
     useEffect(() => {
@@ -28,15 +29,20 @@ export const StartSessionPopup = ({ isOpen, onClose, gradeId }: StartSessionPopu
         }
     }, [dispatch, isOpen]);
 
-    const assignment = assignSub.find(a => String(a.grade) === String(gradeId));
-    const subjectId = assignment?.subject;
+    const assignment = assignSub.find(a => String(a.grade) === String(grade) && String(a.subject) === String(subject));
+    const subjectId = subject;
     const subjectName = assignment?.subject_name || "Unknown Subject";
 
     const handleSubmit = async (e: React.SyntheticEvent) => {
         e.preventDefault();
 
-        if (!subjectId) {
-            dispatch(addToast({ message: "No subject assigned for this grade.", type: 'failure' }));
+        if (!grade || grade === "All") {
+            dispatch(addToast({ message: "No grade selected.", type: 'failure' }));
+            return;
+        }
+
+        if (!subjectId || subjectId === "All") {
+            dispatch(addToast({ message: "No subject assigned or selected for this grade.", type: 'failure' }));
             return;
         }
 
@@ -46,10 +52,10 @@ export const StartSessionPopup = ({ isOpen, onClose, gradeId }: StartSessionPopu
             cancelText: "Cancel",
             variant: "primary",
             onConfirm: async () => {
-                const result = await dispatch(startSession({ 
-                    grade: Number(gradeId), 
-                    subject: Number(subjectId) 
-                })); 
+                const result = await dispatch(startSession({
+                    grade: Number(grade),
+                    subject: Number(subjectId)
+                }));
 
                 if (startSession.fulfilled.match(result)) {
                     dispatch(addToast({ message: 'Session started successfully.', type: 'success' }));
@@ -76,7 +82,7 @@ export const StartSessionPopup = ({ isOpen, onClose, gradeId }: StartSessionPopu
                                     <p className="text-text-muted mt-1 font-medium">Begin tracking attendance for today</p>
                                 </div>
                             </div>
-                            <button type="button" onClick={onClose} className="p-2 hover:bg-failure/20 hover:text-failure rounded-full text-text-muted transition-all hover:rotate-90 duration-300 hover:cursor-pointer"><X size={24} strokeWidth={3}/></button>
+                            <button type="button" onClick={onClose} className="p-2 hover:bg-failure/20 hover:text-failure rounded-full text-text-muted transition-all hover:rotate-90 duration-300 hover:cursor-pointer"><X size={24} strokeWidth={3} /></button>
                         </div>
                     </div>
 

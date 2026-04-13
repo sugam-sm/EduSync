@@ -7,7 +7,7 @@ import { FormButton } from '../../../components/Buttons/formButton';
 import { Button } from '../../../components/Buttons/customButton';
 import { DecisionPopup } from '../../../components/decision popup';
 import { addToast } from '../../../features/toasts/toastSlice';
-import { resetQuizState } from '../../../features/learning/quizSllice';
+import { resetQuizState } from '../../../features/learning/quizSlice';
 import { Portal } from '../../../components/Portal';
 import { ManageQuiz } from '../manage/manageQuiz';
 import { CustomDateTimePicker } from '../../../components/Custom/customDateTimePicker';
@@ -15,11 +15,12 @@ import { CustomDateTimePicker } from '../../../components/Custom/customDateTimeP
 interface CreateQuizPopupProps {
     isOpen: boolean;
     onClose: () => void;
-    gradeId: string | number;
-    onSwitchToAI?: (title: string, time: number | string, startDatetime: string, endDatetime: string) => void;
+    grade: string | number;
+    subject: string | number;
+    onSwitchToAI?: (title: string, time: number | string, points: number | string, startDatetime: string, endDatetime: string) => void;
 }
 
-export const CreateQuizPopup = ({ isOpen, onClose, gradeId, onSwitchToAI }: CreateQuizPopupProps) => {
+export const CreateQuizPopup = ({ isOpen, onClose, grade, subject, onSwitchToAI }: CreateQuizPopupProps) => {
     const dispatch = useDispatch<AppDispatch>();
     const { isError, message } = useSelector((state: RootState) => state.quiz);
     const { openDecidePopup, DecidePopup } = DecisionPopup();
@@ -32,6 +33,7 @@ export const CreateQuizPopup = ({ isOpen, onClose, gradeId, onSwitchToAI }: Crea
     const [creationMode, setCreationMode] = useState<'manual' | 'ai'>('manual');
 
     const [defaultTime, setDefaultTime] = useState<number | string>(30);
+    const [defaultPoints, setDefaultPoints] = useState<number | string>(1);
 
     const [startDatetime, setStartDatetime] = useState("");
     const [endDatetime, setEndDatetime] = useState("");
@@ -58,6 +60,7 @@ export const CreateQuizPopup = ({ isOpen, onClose, gradeId, onSwitchToAI }: Crea
         setTitle("");
         setCreationMode('manual');
         setDefaultTime(30);
+        setDefaultPoints(1);
 
         setStartDatetime("");
         setEndDatetime("");
@@ -71,6 +74,10 @@ export const CreateQuizPopup = ({ isOpen, onClose, gradeId, onSwitchToAI }: Crea
         }
         if (!defaultTime || Number(defaultTime) < 30) {
             dispatch(addToast({ message: "Default timer must be at least 30 seconds and cannot be negative.", type: 'info' }));
+            return false;
+        }
+        if (!defaultPoints || Number(defaultPoints) < 1) {
+            dispatch(addToast({ message: "Points per question must be at least 1.", type: 'info' }));
             return false;
         }
         if (!startDatetime) {
@@ -98,13 +105,15 @@ export const CreateQuizPopup = ({ isOpen, onClose, gradeId, onSwitchToAI }: Crea
     const quizData = useMemo(() => ({
         title,
         default_time_per_question: defaultTime,
+        default_points_per_question: defaultPoints,
         start_datetime: startDatetime || null,
         end_datetime: endDatetime || null,
         is_published: false,
-        grade_id: gradeId as number,
+        grade: grade as number,
+        subject: subject as number,
         creation_mode: creationMode,
         questions: []
-    } as any), [title, defaultTime, startDatetime, endDatetime, gradeId, creationMode]);
+    } as any), [title, defaultTime, defaultPoints, startDatetime, endDatetime, grade, subject, creationMode]);
 
     if (!isOpen) return null;
 
@@ -116,6 +125,14 @@ export const CreateQuizPopup = ({ isOpen, onClose, gradeId, onSwitchToAI }: Crea
                 <form
                     onSubmit={(e) => { 
                         e.preventDefault(); 
+                        if (!grade || grade === "All") {
+                            dispatch(addToast({ message: "You have not selected any grade.", type: 'failure' }));
+                            return;
+                        }
+                        if (!subject || subject === "All") {
+                            dispatch(addToast({ message: "You have not selected any subject.", type: 'failure' }));
+                            return;
+                        }
                         if (creationMode === 'ai') {
                             if (!title.trim()) {
                                 dispatch(addToast({ message: "Quiz title is required.", type: 'info' }));
@@ -133,7 +150,11 @@ export const CreateQuizPopup = ({ isOpen, onClose, gradeId, onSwitchToAI }: Crea
                                 dispatch(addToast({ message: "End time must be after start time.", type: 'info' }));
                                 return;
                             }
-                            onSwitchToAI?.(title, defaultTime, startDatetime, endDatetime);
+                            if (!defaultPoints || Number(defaultPoints) < 1) {
+                                dispatch(addToast({ message: "Points per question must be at least 1.", type: 'info' }));
+                                return;
+                            }
+                            onSwitchToAI?.(title, defaultTime, defaultPoints, startDatetime, endDatetime);
                             return;
                         }
                         if (validateStep1()) setStep(2); 
@@ -180,7 +201,7 @@ export const CreateQuizPopup = ({ isOpen, onClose, gradeId, onSwitchToAI }: Crea
                             roleColor="primary"
                         />
 
-                        <div className="grid grid-cols-1 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <CustomInput
                                 label="Timer (sec) per question"
                                 type="number"
@@ -198,6 +219,27 @@ export const CreateQuizPopup = ({ isOpen, onClose, gradeId, onSwitchToAI }: Crea
                                 onBlur={() => {
                                     if (defaultTime !== "" && Number(defaultTime) < 30) {
                                         setDefaultTime(30);
+                                    }
+                                }}
+                                roleColor="primary"
+                            />
+                            <CustomInput
+                                label="Points per question"
+                                type="number"
+                                min="1"
+                                value={defaultPoints}
+                                onChange={(e: any) => {
+                                    const val = e.target.value;
+                                    if (val === "") {
+                                        setDefaultPoints("");
+                                    } else {
+                                        const numVal = Number(val);
+                                        setDefaultPoints(isNaN(numVal) ? 1 : Math.max(1, numVal));
+                                    }
+                                }}
+                                onBlur={() => {
+                                    if (defaultPoints !== "" && Number(defaultPoints) < 1) {
+                                        setDefaultPoints(1);
                                     }
                                 }}
                                 roleColor="primary"

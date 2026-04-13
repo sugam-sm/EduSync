@@ -3,9 +3,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { X, Loader2, CheckCircle2, Users, Clock } from "lucide-react";
 import { type AppDispatch, type RootState } from "../../../store";
 import { Button } from "../../../components/Buttons/customButton";
-import { type Session, markAttendance, fetchGradeStudents, endSession } from "../../../features/analytics/attendanceSlice";
+import { type Session, markAttendance, fetchGradeStudents } from "../../../features/analytics/attendanceSlice";
 import { CustomDropdown } from "../../../components/Custom/customDropdown";
-import { DecisionPopup } from "../../../components/decision popup";
+
 import { addToast } from "../../../features/toasts/toastSlice";
 
 interface ManageAttendancePopupProps {
@@ -17,7 +17,6 @@ interface ManageAttendancePopupProps {
 export const ManageAttendancePopup = ({ isOpen, onClose, session: initialSession }: ManageAttendancePopupProps) => {
     const dispatch = useDispatch<AppDispatch>();
     const { currentStudents, isLoading } = useSelector((state: RootState) => state.attendance);
-    const { openDecidePopup, DecidePopup } = DecisionPopup();
 
     // Derived session from store to ensure reactivity when marking attendance
     const sessionFromStore = useSelector((state: RootState) => 
@@ -185,26 +184,7 @@ export const ManageAttendancePopup = ({ isOpen, onClose, session: initialSession
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 pt-2 flex gap-2 bg-transparent md:w-[70%] md:ml-auto">
-                    {session.is_active && (
-                        <Button
-                            label="End Session"
-                            variant="failure"
-                            onClick={() => {
-                                openDecidePopup({
-                                    question: "Do you really want to end this session?",
-                                    confirmText: "Yes, End Session",
-                                    cancelText: "Cancel",
-                                    variant: "primary",
-                                    onConfirm: () => {
-                                        dispatch(endSession(session.id!));
-                                        onClose();
-                                    }
-                                });
-                            }}
-                            className="flex-1"
-                        />
-                    )}
+                <div className="p-6 pt-2 flex gap-2 bg-transparent md:w-[55%] md:ml-auto">
                     <Button
                         label="Done Marking"
                         variant="primary"
@@ -213,7 +193,7 @@ export const ManageAttendancePopup = ({ isOpen, onClose, session: initialSession
                     />
                 </div>
             </div>
-            <DecidePopup />
+
         </div>
     );
 };

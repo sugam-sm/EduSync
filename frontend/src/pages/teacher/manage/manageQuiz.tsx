@@ -16,7 +16,7 @@ import {
     createQuestion, 
     updateQuestion,
     deleteQuestion 
-} from '../../../features/learning/quizSllice';
+} from '../../../features/learning/quizSlice';
 import { addToast } from '../../../features/toasts/toastSlice';
 
 interface ManageQuizProps {
@@ -66,7 +66,7 @@ export const ManageQuiz = ({
             quiz: currentQuiz.id || 0,
             question_text: '',
             question_type: 'MCQ',
-            points_override: 1,
+            points_override: currentQuiz.default_points_per_question || 1,
             time_override_seconds: currentQuiz.default_time_per_question || 30,
             order: 0,
             choices: [
@@ -107,7 +107,7 @@ export const ManageQuiz = ({
             quiz: currentQuiz.id || 0,
             question_text: '',
             question_type: 'MCQ',
-            points_override: 1,
+            points_override: currentQuiz.default_points_per_question || 1,
             time_override_seconds: currentQuiz.default_time_per_question || 30,
             order: questions.length,
             choices: [
@@ -127,7 +127,7 @@ export const ManageQuiz = ({
         const newQuestions = questions.filter((_, idx) => idx !== selectedIndex);
         setQuestions(newQuestions);
         setSelectedIndex(Math.max(0, selectedIndex - 1));
-        dispatch(addToast({ message: "Question removed locally.", type: 'success' }));
+        dispatch(addToast({ message: "Question successfully deleted.", type: 'success' }));
     };
 
     const updateField = (field: keyof Question, value: any) => {
@@ -423,7 +423,7 @@ export const ManageQuiz = ({
                                 <div className="space-y-2">
                                     <textarea
                                         readOnly={isLocked}
-                                        className={`w-full min-h-[100px] text-text-body bg-light/5 border-2 border-light/10 rounded-2xl p-4 transition-all duration-300 placeholder:text-text-muted font-bold ${isLocked ? 'cursor-not-allowed opacity-80' : 'focus:border-primary focus:text-primary outline-none resize-none'}`}
+                                        className={`w-full min-h-25 text-text-body bg-light/5 border-2 border-light/10 rounded-2xl p-4 transition-all duration-300 placeholder:text-text-muted font-bold ${isLocked ? 'cursor-not-allowed opacity-80' : 'focus:border-primary focus:text-primary outline-none resize-none'}`}
                                         value={currentQuestion?.question_text || ''}
                                         onChange={(e) => updateField('question_text', e.target.value)}
                                         placeholder="Enter Question Prompt"
@@ -431,11 +431,11 @@ export const ManageQuiz = ({
                                 </div>
 
                                 {/* Choices Grid */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 gap-3">
                                     {currentQuestion?.choices?.map((choice, cIdx) => (
                                         <div 
                                             key={cIdx} 
-                                            className={`relative flex items-start gap-3 p-3 rounded-xl border-2 transition-all group min-h-[4rem] ${
+                                            className={`relative flex items-start gap-3 p-3 rounded-xl border-2 transition-all group ${
                                                 choice.is_correct 
                                                 ? 'bg-primary/10 border-primary shadow-sm shadow-primary/20' 
                                                 : 'bg-light/3 border-light/10 hover:border-primary/40'
@@ -491,48 +491,45 @@ export const ManageQuiz = ({
                                         label="Allocate Point" 
                                         type="number"
                                         min="1"
-                                        value={currentQuestion?.points_override === undefined || currentQuestion?.points_override === null ? "" : currentQuestion?.points_override} 
+                                        value={currentQuestion?.points_override ?? ''} 
                                         onChange={(e: any) => {
                                             const val = e.target.value;
                                             if (val === "") {
                                                 updateField('points_override', null);
                                             } else {
                                                 const numVal = Number(val);
-                                                updateField('points_override', isNaN(numVal) ? 1 : Math.max(0, numVal));
+                                                updateField('points_override', isNaN(numVal) ? 1 : Math.max(1, numVal));
                                             }
                                         }} 
                                         onBlur={() => {
-                                            const val = currentQuestion?.points_override;
-                                            if (val !== null && val !== undefined && Number(val) < 1) {
-                                                updateField('points_override', 1);
+                                            if (!currentQuestion?.points_override || currentQuestion.points_override < 1) {
+                                                updateField('points_override', currentQuiz.default_points_per_question || 1);
                                             }
                                         }}
                                         roleColor="primary"
-                                        placeholder="Min 1"
+                                        placeholder={`Current Default: ${currentQuiz.default_points_per_question}`}
                                     />
                                     <CustomInput 
                                         disabled={isLocked}
                                         label="Time Override (Sec) for this question" 
                                         type="number"
                                         min="30"
-                                        value={currentQuestion?.time_override_seconds === undefined || currentQuestion?.time_override_seconds === null ? "" : currentQuestion?.time_override_seconds} 
+                                        value={currentQuestion?.time_override_seconds ?? ''} 
                                         onChange={(e: any) => {
                                             const val = e.target.value;
                                             if (val === "") {
                                                 updateField('time_override_seconds', null);
                                             } else {
-                                                const numVal = Number(val);
-                                                updateField('time_override_seconds', isNaN(numVal) ? 30 : Math.max(0, numVal));
+                                                updateField('time_override_seconds', Number(val));
                                             }
                                         }} 
                                         onBlur={() => {
-                                            const val = currentQuestion?.time_override_seconds;
-                                            if (val !== null && val !== undefined && Number(val) < 30) {
+                                            if (currentQuestion?.time_override_seconds && currentQuestion.time_override_seconds < 30) {
                                                 updateField('time_override_seconds', 30);
                                             }
                                         }}
                                         roleColor="primary"
-                                        placeholder="Min 30"
+                                        placeholder={`Default: ${currentQuiz.default_time_per_question}s`}
                                     />
                                 </div>
                             </div>

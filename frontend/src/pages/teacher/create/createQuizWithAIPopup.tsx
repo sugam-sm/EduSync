@@ -7,19 +7,20 @@ import { FormButton } from '../../../components/Buttons/formButton';
 import { Button } from '../../../components/Buttons/customButton';
 import { DecisionPopup } from '../../../components/decision popup';
 import { addToast } from '../../../features/toasts/toastSlice';
-import { resetQuizState } from '../../../features/learning/quizSllice';
+import { resetQuizState } from '../../../features/learning/quizSlice';
 import { Portal } from '../../../components/Portal';
-import { ResourcePickerPopup } from '../../../components/Custom/resourcePickerPopup';
-import { CustomDateTimePicker } from '../../../components/Custom/customDateTimePicker';
+import { ResourcePickerPopup } from '../../../components/resourcePickerPopup';
 import type { Resource } from '../../../features/learning/resourceSlice';
 import api from '../../../api';
 
 interface CreateQuizWithAIPopupProps {
     isOpen: boolean;
     onClose: () => void;
-    gradeId: string | number;
+    grade: string | number;
+    subject: string | number;
     initialTitle?: string;
     initialTime?: number | string;
+    initialPoints?: number | string;
     initialStart?: string;
     initialEnd?: string;
     onBack?: () => void;
@@ -29,9 +30,11 @@ interface CreateQuizWithAIPopupProps {
 export const CreateQuizWithAIPopup = ({
     isOpen,
     onClose,
-    gradeId,
+    grade,
+    subject,
     initialTitle = '',
     initialTime = 30,
+    initialPoints = 1,
     initialStart = '',
     initialEnd = '',
     onBack,
@@ -48,18 +51,21 @@ export const CreateQuizWithAIPopup = ({
     const [selectedFile, setSelectedFile] = useState<File | Resource | null>(null);
     const [questionCount, setQuestionCount] = useState<number>(10);
     const [defaultTime, setDefaultTime] = useState<number | string>(initialTime);
+    const [defaultPoints, setDefaultPoints] = useState<number | string>(initialPoints);
     const [startTime, setStartTime] = useState(initialStart);
     const [endTime, setEndTime] = useState(initialEnd);
     const [isPickerOpen, setIsPickerOpen] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
             setTitle(initialTitle);
             setDefaultTime(initialTime);
+            setDefaultPoints(initialPoints);
             setStartTime(initialStart);
             setEndTime(initialEnd);
         }
-    }, [isOpen, initialTitle, initialTime, initialStart, initialEnd]);
+    }, [isOpen, initialTitle, initialTime, initialPoints, initialStart, initialEnd]);
 
     useEffect(() => {
         if (isError && message && isOpen) {
@@ -85,6 +91,7 @@ export const CreateQuizWithAIPopup = ({
         setSelectedFile(null);
         setQuestionCount(10);
         setDefaultTime(30);
+        setDefaultPoints(1);
         setStartTime('');
         setEndTime('');
 
@@ -129,46 +136,46 @@ export const CreateQuizWithAIPopup = ({
             confirmText: "Yes, Generate",
             cancelText: "Cancel",
             variant: "secondary",
-            onConfirm: async () => {
-                const formData = new FormData();
-                formData.append('title', title);
-                formData.append('grade_id', String(gradeId));
-                formData.append('prompt', prompt);
-                formData.append('question_count', String(questionCount));
-                formData.append('default_time_per_question', String(defaultTime));
-                formData.append('start_datetime', new Date(startTime).toISOString());
-                formData.append('end_datetime', new Date(endTime).toISOString());
-                formData.append('creation_mode', 'ai');
+                onConfirm: async () => {
+                    setIsGenerating(true);
+                    const formData = new FormData();
+                    formData.append('title', title);
+                    formData.append('grade', String(grade));
+                    formData.append('subject', String(subject));
+                    formData.append('prompt', prompt);
+                    formData.append('question_count', String(questionCount));
+                    formData.append('default_time_per_question', String(defaultTime));
+                    formData.append('default_points_per_question', String(defaultPoints));
+                    formData.append('start_datetime', new Date(startTime).toISOString());
+                    formData.append('end_datetime', new Date(endTime).toISOString());
+                    formData.append('creation_mode', 'ai');
 
-                if (selectedFile) {
-                    if (selectedFile instanceof File) {
-                        formData.append('file', selectedFile);
-                    } else {
-                        formData.append('resource_id', String(selectedFile.id));
+                    if (selectedFile) {
+                        if (selectedFile instanceof File) {
+                            formData.append('file', selectedFile);
+                        } else {
+                            formData.append('resource_id', String(selectedFile.id));
+                        }
                     }
-                }
 
-                try {
-                    const response = await api.post('/api/learning/quizzes/', formData);
-                    if (response.status === 201 || response.status === 202 || response.status === 200) {
+                    try {
+                        const response = await api.post('/api/learning/quizzes/', formData);
+                        if (response.status === 201 || response.status === 202 || response.status === 200) {
+                            dispatch(addToast({
+                                message: 'Quiz generation started in the background.',
+                                type: 'success'
+                            }));
+                            handleClose(true);
+                        }
+                    } catch (err: any) {
                         dispatch(addToast({
-                            message: 'AI Quiz generation has been queued. Page will refresh in 5 seconds...',
-                            type: 'success'
+                            message: err.response?.data?.error || 'Failed to start AI generation. try again',
+                            type: 'failure'
                         }));
-                        handleClose(true);
-
-                        // Reload page after 5 seconds to show newly generated content
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 5000);
+                    } finally {
+                        setIsGenerating(false);
                     }
-                } catch (err: any) {
-                    dispatch(addToast({
-                        message: err.response?.data?.error || 'Failed to start AI generation.',
-                        type: 'failure'
-                    }));
                 }
-            }
         });
     };
 
@@ -193,18 +200,6 @@ export const CreateQuizWithAIPopup = ({
                     </div>
 
                     <div className="px-8 pb-8 space-y-6 overflow-y-auto flex-1 thin-scrollbar">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-50">
-                            <CustomDateTimePicker
-                                label="Start Time"
-                                value={startTime}
-                                onChange={setStartTime}
-                            />
-                            <CustomDateTimePicker
-                                label="End Time"
-                                value={endTime}
-                                onChange={setEndTime}
-                            />
-                        </div>
 
                         <div className="space-y-1">
                             <label className="text-[11px] uppercase font-bold text-text-muted tracking-wider ml-1">
@@ -224,7 +219,7 @@ export const CreateQuizWithAIPopup = ({
                                 <button
                                     type="button"
                                     onClick={() => setIsPickerOpen(true)}
-                                    className={`w-full h-[52px] flex items-center gap-3 px-4 rounded-xl border-2 transition-all ${selectedFile
+                                    className={`w-full h-13 flex items-center gap-3 px-4 rounded-xl border-2 transition-all ${selectedFile
                                             ? "bg-primary/5 border-primary/40 text-primary"
                                             : "bg-light/5 border-light/10 text-text-muted hover:border-primary/30"
                                         }`}
@@ -248,10 +243,55 @@ export const CreateQuizWithAIPopup = ({
                             />
                         </div>
 
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <CustomInput
+                                label="Timer (sec) per question"
+                                type="number"
+                                min="30"
+                                value={defaultTime}
+                                onChange={(e: any) => {
+                                    const val = e.target.value;
+                                    if (val === "") {
+                                        setDefaultTime("");
+                                    } else {
+                                        const numVal = Number(val);
+                                        setDefaultTime(isNaN(numVal) ? 30 : Math.max(0, numVal));
+                                    }
+                                }}
+                                onBlur={() => {
+                                    if (defaultTime !== "" && Number(defaultTime) < 30) {
+                                        setDefaultTime(30);
+                                    }
+                                }}
+                                roleColor="primary"
+                            />
+                            <CustomInput
+                                label="Points per question"
+                                type="number"
+                                min="1"
+                                value={defaultPoints}
+                                onChange={(e: any) => {
+                                    const val = e.target.value;
+                                    if (val === "") {
+                                        setDefaultPoints("");
+                                    } else {
+                                        const numVal = Number(val);
+                                        setDefaultPoints(isNaN(numVal) ? 1 : Math.max(1, numVal));
+                                    }
+                                }}
+                                onBlur={() => {
+                                    if (defaultPoints !== "" && Number(defaultPoints) < 1) {
+                                        setDefaultPoints(1);
+                                    }
+                                }}
+                                roleColor="primary"
+                            />
+                        </div>
+
                         <div className="flex flex-col justify-center bg-primary/5 p-4 rounded-xl border border-primary/10">
                             <p className="text-sm text-text-muted font-medium">
                                 <span className="font-bold text-primary mr-2 uppercase tracking-tight">Configuration:</span>
-                                Timer: {defaultTime}s per question
+                                Timer: {defaultTime}s per question • Points: {defaultPoints}
                             </p>
                             <p className="text-[10px] text-text-muted italic mt-1 font-bold uppercase tracking-widest opacity-60">
                                 AI will craft diverse questions (MCQs, T/F) based on the content provided.
@@ -261,7 +301,7 @@ export const CreateQuizWithAIPopup = ({
 
                     <div className="p-6 border-light/10 flex gap-4 pt-1 bg-transparent">
                         <Button label="Back" onClick={onBack || (() => handleClose())} variant='failure' className='flex-1 py-3' />
-                        <FormButton type="submit" isLoading={isLoading} variant='primary' className='flex-2 py-3'>
+                        <FormButton type="submit" isLoading={isLoading || isGenerating} variant='primary' className='flex-2 py-3'>
                             Generate Quiz
                         </FormButton>
                     </div>
@@ -270,7 +310,7 @@ export const CreateQuizWithAIPopup = ({
                 <ResourcePickerPopup
                     isOpen={isPickerOpen}
                     onClose={() => setIsPickerOpen(false)}
-                    gradeId={gradeId}
+                    gradeId={grade}
                     onFileSelect={handleFileSelect}
                 />
             </div>

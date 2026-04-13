@@ -7,7 +7,7 @@ import { FormButton } from '../../../components/Buttons/formButton';
 import { Button } from '../../../components/Buttons/customButton';
 import { DecisionPopup } from '../../../components/decision popup';
 import { addToast } from '../../../features/toasts/toastSlice';
-import { type Quiz, updateQuiz, resetQuizState } from '../../../features/learning/quizSllice';
+import { type Quiz, updateQuiz, resetQuizState } from '../../../features/learning/quizSlice';
 import { Portal } from '../../../components/Portal';
 import { CustomDateTimePicker } from '../../../components/Custom/customDateTimePicker';
 
@@ -25,6 +25,7 @@ export const UpdateQuizPopup = ({ isOpen, onClose, quiz }: UpdateQuizPopupProps)
 
     const [title, setTitle] = useState("");
     const [timeLimit, setTimeLimit] = useState<number | string>("");
+    const [defaultPoints, setDefaultPoints] = useState<number | string>("");
     const [isActive, setIsActive] = useState(false);
     const [startTime, setStartTime] = useState("");
     const [endTime, setEndTime] = useState("");
@@ -42,6 +43,7 @@ export const UpdateQuizPopup = ({ isOpen, onClose, quiz }: UpdateQuizPopupProps)
         if (quiz) {
             setTitle(quiz.title);
             setTimeLimit(quiz.default_time_per_question || 0);
+            setDefaultPoints(quiz.default_points_per_question || 1);
             setIsActive(quiz.is_published || false);
             setStartTime(formatForInput(quiz.start_datetime));
             setEndTime(formatForInput(quiz.end_datetime));
@@ -59,6 +61,7 @@ export const UpdateQuizPopup = ({ isOpen, onClose, quiz }: UpdateQuizPopupProps)
         if (quiz) {
             setTitle(quiz.title);
             setTimeLimit(quiz.default_time_per_question || 0);
+            setDefaultPoints(quiz.default_points_per_question || 1);
             setIsActive(quiz.is_published || false);
             setStartTime(formatForInput(quiz.start_datetime));
             setEndTime(formatForInput(quiz.end_datetime));
@@ -93,6 +96,7 @@ export const UpdateQuizPopup = ({ isOpen, onClose, quiz }: UpdateQuizPopupProps)
         const noChanges = 
             title === quiz.title && 
             timeLimit === (quiz.default_time_per_question || 0) && 
+            defaultPoints === (quiz.default_points_per_question || 1) &&
             isActive === quiz.is_published &&
             startTime === formatForInput(quiz.start_datetime) &&
             endTime === formatForInput(quiz.end_datetime);
@@ -113,6 +117,7 @@ export const UpdateQuizPopup = ({ isOpen, onClose, quiz }: UpdateQuizPopupProps)
                     data: {
                         title,
                         default_time_per_question: Number(timeLimit),
+                        default_points_per_question: Number(defaultPoints),
                         is_published: isActive,
                         start_datetime: startTime ? new Date(startTime).toISOString() : null,
                         end_datetime: endTime ? new Date(endTime).toISOString() : null,
@@ -156,15 +161,26 @@ export const UpdateQuizPopup = ({ isOpen, onClose, quiz }: UpdateQuizPopupProps)
                             className="opacity-70 cursor-not-allowed"
                         />
                         
-                        <CustomInput 
-                            label="Time Limit (Seconds)" 
-                            type="number"
-                            value={timeLimit} 
-                            onChange={(e: any) => setTimeLimit(e.target.value === "" ? "" : Number(e.target.value))} 
-                            roleColor="primary"
-                            readOnly={true}
-                            className="opacity-70 cursor-not-allowed"
-                        />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <CustomInput 
+                                label="Time Limit (Seconds)" 
+                                type="number"
+                                value={timeLimit} 
+                                onChange={(e: any) => setTimeLimit(e.target.value === "" ? "" : Number(e.target.value))} 
+                                roleColor="primary"
+                                readOnly={true}
+                                className="opacity-70 cursor-not-allowed"
+                            />
+                            <CustomInput 
+                                label="Points per question" 
+                                type="number"
+                                value={defaultPoints} 
+                                onChange={(e: any) => setDefaultPoints(e.target.value === "" ? "" : Number(e.target.value))} 
+                                roleColor="primary"
+                                readOnly={true}
+                                className="opacity-70 cursor-not-allowed"
+                            />
+                        </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-50">
                             <CustomDateTimePicker

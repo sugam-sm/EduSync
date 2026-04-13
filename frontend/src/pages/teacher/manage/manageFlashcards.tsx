@@ -157,7 +157,7 @@ export const ManageFlashcards = ({ isOpen, onClose, deck, onBack, onComplete, is
             if (!targetDeckId) {
                 const deckResponse = await dispatch(createFlashcardDeck({
                     title: deck.title,
-                    grade_id: (deck as any).grade_id as any 
+                    grade: (deck as any).grade as any 
                 } as any));
                 
                 if (createFlashcardDeck.fulfilled.match(deckResponse)) {
