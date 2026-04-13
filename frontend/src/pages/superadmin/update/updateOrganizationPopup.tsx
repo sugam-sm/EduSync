@@ -23,7 +23,7 @@ export const UpdateOrganizationPopup = () => {
     useEffect(() => {
         const fetchOrg = async () => {
             try {
-                const res = await api.get(`/api/organizations/list/${id}/`);
+                const res = await api.get(`/api/organizations/${id}/`);
                 setFormData({
                     name: res.data.name,
                     email: res.data.email,
@@ -52,7 +52,7 @@ export const UpdateOrganizationPopup = () => {
         }
 
         try {
-            await api.patch(`/api/organizations/list/${id}/`, formData);
+            await api.patch(`/api/organizations/${id}/`, formData);
             dispatch(addToast({message: "Organization updated successfully", type: "success"}));
             navigate('/superadmin/manage/organizations');
         } catch (error) {

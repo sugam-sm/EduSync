@@ -122,7 +122,7 @@ export const CreateOrganizationPopup = ({ isOpen, onClose, editOrg }: CreateOrga
                                     {editOrg ? 'Update Organization' : 'New Organization'}
                                 </h2>
                                 <p className="text-text-muted mt-1 font-medium">
-                                    {editOrg ? `Updating ${editOrg.name}` : 'Please enter the details to register'}
+                                    {editOrg ? `Updating ${editOrg.name}` : 'Please enter the details to register. * means required.'}
                                 </p>
                             </div>
                             <button type="button" onClick={() => handleClose()} className="p-2 hover:bg-failure/20 hover:text-failure rounded-full text-text-muted transition-all hover:rotate-90 duration-300 hover:cursor-pointer">
@@ -135,22 +135,20 @@ export const CreateOrganizationPopup = ({ isOpen, onClose, editOrg }: CreateOrga
                         <div className="space-y-4 pt-2">
                             <h3 className="text-sm uppercase tracking-widest font-bold text-text-muted/70 pl-1">Organization Details</h3>
                             <CustomInput 
-                                label="Organization Name" 
+                                label="Organization Name *" 
                                 value={name} 
                                 onChange={(e: any) => setName(e.target.value)} 
-                                placeholder="e.g. Neo Tokyo Institute"
-                                Icon={Building2}
+                                placeholder="Institute Name"
+                                icon={Building2}
                             />
                             <CustomInput 
-                                label="Email Address" 
+                                label="Email Address *" 
                                 value={email} 
                                 onChange={(e: any) => setEmail(e.target.value)} 
                                 placeholder="contact@domain.com"
-                                Icon={Mail}
+                                icon={Mail}
                             />
                         </div>
-
-
 
                         <div className="flex items-center gap-4 py-4 pt-6">
                             <label className="text-xs font-black text-text-muted uppercase tracking-wider">Status:</label>

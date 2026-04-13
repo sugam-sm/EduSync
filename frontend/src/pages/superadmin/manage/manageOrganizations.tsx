@@ -71,28 +71,25 @@ export const ManageOrganizations = () => {
     }, [searchTerm, statusFilter]);
 
     return (
-        <div className='flex flex-col items-center justify-center align-middle h-full w-full relative'>
-            <div className="flex flex-col mx-auto mb-5 items-center justify-center sm:justify-start w-[90%] sm:w-[80%] md:w-[73%]">
-                <h1 className="w-full text-primary text-3xl font-bold text-center sm:text-left shadow-primary drop-shadow-sm">Manage Organizations</h1>
-            </div>
+        <div className='flex flex-col items-center justify-start h-full w-full relative overflow-hidden p-4'>
             
-            <section className="w-[90%] sm:w-[80%] md:w-[75%] mx-auto relative">
-                <div className="bg-surface border-2 border-light/3 rounded-2xl mb-2 flex items-center justify-between p-3 gap-1 h-auto">
-                    <div className="hidden sm:flex w-[15%] items-center gap-2 px-2 text-primary">
-                        <Building2 size={30} strokeWidth={3}/>
+            <section className="w-[90%] sm:w-[85%] md:w-[80%] lg:w-[75%] mx-auto flex-1 flex flex-col overflow-hidden relative">
+                <div className="bg-surface border-2 border-light/3 rounded-2xl mb-2 flex flex-col md:flex-row items-center p-3 gap-3">
+                    <div className="flex items-center gap-4 flex-1 w-full text-primary">
+                        <Building2 size={30} strokeWidth={3} className="shrink-0" />
+                        <div className="group flex items-center flex-1 h-[45px] text-text-heading border-2 border-light/20 rounded-2xl focus-within:border-primary font-semibold text-md transition-all duration-400 bg-light/5">
+                            <input 
+                                type="text" 
+                                placeholder="Search Organizations..." 
+                                className="w-full pl-5 outline-none bg-transparent placeholder-text-muted/40" 
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                            <Search size={20} className="mr-3 text-light/30 group-focus-within:text-primary" />
+                        </div>
                     </div>
-                    <div className="group flex items-center w-[80%] sm:w-[60%] text-text-heading border-2 border-light/20 rounded-2xl focus-within:border-primary font-semibold text-md transition-all duration-400">
-                        <input 
-                            type="text" 
-                            placeholder="Search Organizations..." 
-                            className="w-full pl-5 py-2 outline-none placeholder-text-muted/40 bg-transparent rounded-2xl" 
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                        <Search size={20} className="mr-3 text-light/30 group-focus-within:text-primary" />
-                    </div>
-                    <div className="relative w-[15%] h-auto">
-                        <Button label="" Icon={Filter} onClick={() => setIsFilterOpen(!isFilterOpen)} variant="primary" className="w-full h-full min-h-[44px]">
+                    <div className="relative w-auto h-[45px] shrink-0">
+                        <Button label="" Icon={Filter} onClick={() => setIsFilterOpen(!isFilterOpen)} variant="primary" className="h-full px-4 min-w-[45px]">
                             <span className="hidden lg:block ml-2">Filter</span>
                         </Button>
                         
@@ -125,7 +122,7 @@ export const ManageOrganizations = () => {
                 
                 <div 
                     ref={scrollRef}
-                    className="sm:p-5 p-2 border-2 border-light/3 bg-surface max-w-full h-[65vh] lg:h-[70vh] overflow-auto rounded-2xl mx-auto text-white scroll-smooth"
+                    className="sm:p-5 p-2 border-2 border-light/3 bg-surface max-w-full flex-1 h-0 overflow-y-auto rounded-2xl mx-auto scroll-smooth custom-scrollbar w-full"
                 >
                      {isLoading ? (
                         <div className="flex flex-col items-center h-full gap-3 text-text-muted justify-center">
@@ -133,7 +130,7 @@ export const ManageOrganizations = () => {
                             <p className="font-bold">Syncing Organizations...</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 w-full pb-20">
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 w-full pb-20">
                             {(!isAnyFilterActive || filteredOrgs.length > 0) && (
                                 <CardButton 
                                     Icon={Plus} 

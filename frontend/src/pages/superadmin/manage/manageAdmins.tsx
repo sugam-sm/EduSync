@@ -3,7 +3,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { type AppDispatch, type RootState } from '../../../store';
 import { fetchUsers } from '../../../features/organization/userSlice';
 import { fetchOrganizations } from '../../../features/organization/organizationSlice';
-import { fetchRoles } from '../../../features/organization/roleSlice';
 import { Search, Plus, Loader2, X, Filter, Users2 } from 'lucide-react';
 import { UserCard } from '../../../components/Cards/userCard';
 import { UserDetailCard } from '../../../components/Cards/detailUserCard';
@@ -39,7 +38,6 @@ export const ManageAdmins = ({ type, excludeAdmins }: ManageAdminsProps) => {
     useEffect(() => {
         dispatch(fetchUsers());
         dispatch(fetchOrganizations());
-        dispatch(fetchRoles());
     }, [dispatch]);
 
     const filteredUsers = useMemo(() => {
@@ -85,79 +83,73 @@ export const ManageAdmins = ({ type, excludeAdmins }: ManageAdminsProps) => {
     }, [searchTerm, selectedOrgId, selectedStatus]);
 
     return (
-        <div className='flex flex-col items-center justify-center align-middle h-full w-full relative'>
-            {/* Header */}
-            <div className="flex flex-col mx-auto mb-5 items-center justify-center sm:justify-start w-[90%] sm:w-[80%] md:w-[73%]">
-                <h1 className="w-full text-primary text-3xl font-bold text-center sm:text-left shadow-primary drop-shadow-sm">
-                    {type === 'admin' ? 'Domain Admins' : (type || (excludeAdmins ? 'Global Clusters' : 'Identity Clusters'))}
-                </h1>
-            </div>
-
-            <section className="w-[90%] sm:w-[80%] md:w-[75%] mx-auto">
-                {/* Filter Bar */}
-                <div className="bg-surface border-2 border-light/3 rounded-2xl mb-2 flex items-center justify-between p-3 gap-1 h-auto relative z-20">
-                    <div className="hidden sm:flex w-[15%] items-center gap-2 px-2 text-primary">
-                        <Users2 size={30} strokeWidth={3} />
-                    </div>
-                    <div className="group flex items-center w-[80%] sm:w-[60%] text-text-heading border-2 border-light/20 rounded-2xl focus-within:border-primary font-semibold text-md transition-all duration-400">
-                        <input
-                            type="text"
-                            placeholder="Search identity registry pools..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-5 py-2 outline-none placeholder-text-muted/40 bg-transparent rounded-2xl"
-                        />
-                        <Search size={20} className="mr-3 text-light/30 group-focus-within:text-primary" />
+        <div className='flex flex-col items-center justify-start h-full w-full relative overflow-hidden p-4'>
+            <section className="w-[90%] sm:w-[85%] md:w-[80%] lg:w-[75%] mx-auto flex-1 flex flex-col overflow-hidden relative">
+                <div className="bg-surface border-2 border-light/3 rounded-2xl mb-2 flex flex-col md:flex-row items-center p-3 gap-3">
+                    <div className="flex items-center gap-4 flex-1 w-full text-primary">
+                        <Users2 size={30} strokeWidth={3} className="shrink-0" />
+                        <div className="group flex items-center flex-1 h-[45px] text-text-heading border-2 border-light/20 rounded-2xl focus-within:border-primary font-semibold text-md transition-all duration-400 bg-light/5">
+                            <input
+                                type="text"
+                                placeholder="Search identity registry pools..."
+                                className="w-full pl-5 outline-none bg-transparent placeholder-text-muted/40"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                            <Search size={20} className="mr-3 text-light/30 group-focus-within:text-primary" />
+                        </div>
                     </div>
 
-                    <div className="relative w-[15%] h-auto">
-                        <Button label="" Icon={Filter} onClick={() => setIsFilterOpen(!isFilterOpen)} variant="primary" className="w-full h-full min-h-[44px]">
-                            <span className="hidden lg:block ml-2">Filter</span>
-                        </Button>
+                    <div className="flex items-center gap-3 w-full md:w-auto shrink-0">
+                        <div className="relative w-auto h-[45px]">
+                            <Button label="" Icon={Filter} onClick={() => setIsFilterOpen(!isFilterOpen)} variant="primary" className="h-full px-4 min-w-[45px]">
+                                <span className="hidden lg:block ml-2">Filter</span>
+                            </Button>
 
-                        {isFilterOpen && (
-                            <div className="absolute top-full right-0 mt-2 w-72 bg-surface border-2 border-light/10 p-6 rounded-2xl shadow-xl z-50">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="font-bold text-lg text-primary">Filters</h3>
-                                    <button onClick={() => setIsFilterOpen(false)}>
-                                        <X size={25} strokeWidth={3} className="text-failure hover:rotate-90 transition-all duration-300 hover:bg-failure/20 rounded-full p-1 hover:cursor-pointer" />
-                                    </button>
+                            {isFilterOpen && (
+                                <div className="absolute top-full right-0 mt-2 w-72 bg-surface border-2 border-light/10 p-6 rounded-2xl shadow-xl z-50">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="font-bold text-lg text-primary">Filters</h3>
+                                        <button onClick={() => setIsFilterOpen(false)}>
+                                            <X size={25} strokeWidth={3} className="text-failure hover:rotate-90 transition-all duration-300 hover:bg-failure/20 rounded-full p-1 hover:cursor-pointer" />
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <CustomDropdown
+                                            label="Domain Binding"
+                                            options={[
+                                                { label: 'All Domains', value: 'All' },
+                                                ...organizations.map(org => ({ label: org.name, value: org.id }))
+                                            ]}
+                                            value={selectedOrgId}
+                                            onChange={(val: any) => setSelectedOrgId(val)}
+                                            className="w-full"
+                                        />
+
+                                        <CustomDropdown
+                                            label="Access Status"
+                                            options={[
+                                                { label: 'All Protocols', value: 'All' },
+                                                { label: 'Active Sessions', value: 'Active' },
+                                                { label: 'Locked Access', value: 'Inactive' },
+                                            ]}
+                                            value={selectedStatus}
+                                            onChange={(val: any) => setSelectedStatus(val)}
+                                            className="w-full"
+                                        />
+                                    </div>
+
+                                    <Button label="Reset" onClick={() => { setSearchTerm(""); setSelectedOrgId("All"); setSelectedStatus("All"); setIsFilterOpen(false); }} variant="failure" className="w-full mt-4" />
                                 </div>
-
-                                <div className="space-y-4">
-                                    <CustomDropdown
-                                        label="Domain Binding"
-                                        options={[
-                                            { label: 'All Domains', value: 'All' },
-                                            ...organizations.map(org => ({ label: org.name, value: org.id }))
-                                        ]}
-                                        value={selectedOrgId}
-                                        onChange={(val: any) => setSelectedOrgId(val)}
-                                        className="w-full"
-                                    />
-
-                                    <CustomDropdown
-                                        label="Access Status"
-                                        options={[
-                                            { label: 'All Protocols', value: 'All' },
-                                            { label: 'Active Sessions', value: 'Active' },
-                                            { label: 'Locked Access', value: 'Inactive' },
-                                        ]}
-                                        value={selectedStatus}
-                                        onChange={(val: any) => setSelectedStatus(val)}
-                                        className="w-full"
-                                    />
-                                </div>
-
-                                <Button label="Reset" onClick={() => { setSearchTerm(""); setSelectedOrgId("All"); setSelectedStatus("All"); setIsFilterOpen(false); }} variant="failure" className="w-full mt-4" />
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                 </div>
 
                 <div
                     ref={scrollRef}
-                    className="sm:p-5 p-2 border-2 border-light/3 bg-surface max-w-full h-[65vh] lg:h-[70vh] overflow-auto rounded-2xl mx-auto text-white scroll-smooth"
+                    className="sm:p-5 p-2 border-2 border-light/3 bg-surface max-w-full flex-1 h-0 overflow-y-auto rounded-2xl mx-auto scroll-smooth custom-scrollbar w-full"
                 >
                     {isLoading ? (
                         <div className="flex flex-col items-center h-full gap-3 text-text-muted justify-center">
@@ -165,7 +157,7 @@ export const ManageAdmins = ({ type, excludeAdmins }: ManageAdminsProps) => {
                             <p className="font-bold">Syncing Identities...</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 w-full pb-20">
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 w-full pb-20">
                             {(!isAnyFilterActive || filteredUsers.length > 0) && (
                                 <CardButton
                                     Icon={Plus}
