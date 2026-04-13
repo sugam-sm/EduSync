@@ -9,12 +9,13 @@ import { addToast } from '../features/toasts/toastSlice';
 import { type AppDispatch, type RootState } from '../store';
 import { loginUser, reset } from '../features/login/loginSlice';
 import { FormButton } from '../components/Buttons/formButton';
+import { CustomInput } from '../components/Custom/customInput';
 
 export const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  
+
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
@@ -22,7 +23,7 @@ export const Login = () => {
     (state: RootState) => state.login
   );
 
-  useEffect( () => {
+  useEffect(() => {
     // handle login failure
     if (isError) {
       dispatch(addToast({
@@ -41,7 +42,7 @@ export const Login = () => {
       navigate('/');
       dispatch(reset());
     }
- }, [isError, isSuccess, user, message, dispatch, navigate]);
+  }, [isError, isSuccess, user, message, dispatch, navigate]);
 
   const handleLogin = (e: React.SyntheticEvent) => {
     // prevents the screen from reloading
@@ -101,7 +102,7 @@ export const Login = () => {
         <div className="pt-8 border-t-2 border-light/20 flex items-center gap-3">
           <div className="w-2 h-2 bg-primary rounded-full animate-pulse shadow-[0_0_10px_var(--color-primary)]" />
           <p className="text-text-muted text-xs tracking-widest uppercase opacity-60">
-            Systems Operational • v2.0 Interim Build
+            Systems Operational • Build v3.0
           </p>
         </div>
       </div>
@@ -117,42 +118,39 @@ export const Login = () => {
             <p className="text-text-muted">Access your organizational dashboard.</p>
           </div>
           <form onSubmit={handleLogin} className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-text-heading uppercase tracking-widest ml-1 opacity-70">Username</label>
-              <div className="relative group">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-primary transition-colors" size={20} />
-                <input 
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Username"
-                  className="w-full bg-surface border-2 border-light/20 rounded-2xl py-4.5 pl-12 pr-4 text-text-heading placeholder:text-text-muted/40 outline-none  focus:border-primary focus:text-primary transition-all duration-450"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-text-heading uppercase tracking-widest ml-1 opacity-70">Password</label>
-              <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-primary transition-colors" size={20} />
-                <input 
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full bg-surface border-2 border-light/20 rounded-2xl py-4.5 pl-12 pr-12 text-text-heading placeholder:text-text-muted/40 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary focus:text-primary transition-all duration-450"
-                />
+            <CustomInput
+              label="Username"
+              icon={User}
+              value={username}
+              name="username"
+              onChange={(e: any) => setUsername(e.target.value)}
+              placeholder="Username"
+              containerClassName="transition-all duration-450"
+            />
+
+            <CustomInput
+              label="Password"
+              icon={Lock}
+              type={showPassword ? "text" : "password"}
+              value={password}
+              name="password"
+              onChange={(e: any) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              containerClassName="transition-all duration-450"
+              suffix={
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-primary cursor-pointer transition-colors outline-none"
+                  className="p-1 text-text-muted hover:text-primary cursor-pointer transition-colors outline-none"
                 >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  {showPassword ? <EyeOff size={18} strokeWidth={2.5} /> : <Eye size={18} strokeWidth={2.5} />}
                 </button>
-              </div>
-            </div>
-            <FormButton 
-              type="submit" 
-              isLoading={isLoading} 
+              }
+            />
+
+            <FormButton
+              type="submit"
+              isLoading={isLoading}
               className="mt-10 w-full"
             >
               Log Into EduSync
