@@ -25,8 +25,8 @@ export const DecisionPopup = () => {
 
     return (
       <Portal>
-        <div className="fixed inset-0 h-auto flex items-center justify-center bg-surface/40 backdrop-blur-sm z-1000 p-4">
-          <div className="bg-light/10 rounded-xl p-6 border-light/10 border-3 w-full max-w-md shadow-2xl">
+        <div className="fixed inset-0 z-1000 flex items-center justify-center p-4 bg-surface/60 backdrop-blur-sm">
+          <div className="bg-surface/50 rounded-3xl p-6 border-light/10 border-2 w-full max-w-md shadow-2xl">
             <p className="text-lg text-text-heading font-semibold mb-6 wrap-break-words whitespace-normal">
               {options.question}
             </p>
