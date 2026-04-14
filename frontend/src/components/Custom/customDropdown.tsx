@@ -39,7 +39,7 @@ export const CustomDropdown = ({
 
       {isOpen && (
         <div
-          className={`absolute top-full mt-1 z-[999] bg-surface/80 border-2 border-light/10 rounded-xl backdrop-blur-md overflow-hidden duration-300 ${className}`} >
+          className="absolute top-full mt-1 w-full z-999 bg-surface/80 border-2 border-light/10 rounded-xl backdrop-blur-md overflow-hidden duration-300" >
           <div className="max-h-33 overflow-y-auto">
             {options.length > 0 ? (
               options.map((opt: any, index: number) => {

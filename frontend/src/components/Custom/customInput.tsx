@@ -12,6 +12,7 @@ export const CustomInput = ({
   name,
   value,
   onChange,
+  suffix,
   ...props
 }: any) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -71,6 +72,9 @@ export const CustomInput = ({
             {...props}
           />
         )}
+
+        {/* SUFFIX CONTENT */}
+        {suffix && <div className="flex items-center shrink-0">{suffix}</div>}
 
         {/* NUMBER CONTROLS */}
         {isNumber && !props.disabled && !props.readOnly && (

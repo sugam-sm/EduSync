@@ -208,7 +208,7 @@ export const CustomDateTimePicker = ({ label, value, onChange, roleColor = "prim
           <select 
             value={hr12} 
             onChange={(e) => handleTimeChange("hr", parseInt(e.target.value))}
-            className="bg-light/10 text-text-body font-bold text-sm px-2 py-1.5 rounded-lg outline-none cursor-pointer hover:bg-light/20 appearance-none text-center min-w-[2.5rem]"
+            className="bg-light/10 text-text-body font-bold text-sm px-2 py-1.5 rounded-lg outline-none cursor-pointer hover:bg-light/20 appearance-none text-center min-w-10"
           >
             {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
               <option key={h} value={h} className="bg-surface text-text-body">
@@ -220,7 +220,7 @@ export const CustomDateTimePicker = ({ label, value, onChange, roleColor = "prim
           <select 
             value={min} 
             onChange={(e) => handleTimeChange("min", parseInt(e.target.value))}
-            className="bg-light/10 text-text-body font-bold text-sm px-2 py-1.5 rounded-lg outline-none cursor-pointer hover:bg-light/20 appearance-none text-center min-w-[2.5rem]"
+            className="bg-light/10 text-text-body font-bold text-sm px-2 py-1.5 rounded-lg outline-none cursor-pointer hover:bg-light/20 appearance-none text-center min-w-10"
           >
             {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => (
               <option key={m} value={m} className="bg-surface text-text-body">
@@ -252,18 +252,18 @@ export const CustomDateTimePicker = ({ label, value, onChange, roleColor = "prim
 
   return (
     <div className="relative w-full" ref={dropdownRef}>
-      <label className="block text-sm font-semibold text-text-muted mb-1.5 ml-1 flex items-center gap-2">
+      <label className="block text-sm font-semibold text-text-muted mb-1.5 ml-1 items-center gap-2">
         {label}
       </label>
 
       {/* Input Display */}
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center justify-between px-4 py-3 rounded-2xl border-2 transition-all cursor-pointer bg-light/5 hover:border-light/20 h-[50px] ${
+        className={`flex items-center justify-between px-4 py-3 rounded-2xl border-2 transition-all cursor-pointer bg-light/5 hover:border-light/20 h-12.5 ${
           isOpen ? activeBorderColors[roleColor] : "border-light/10"
         }`}
       >
-        <div className="flex items-center h-5 gap-3 min-w-[180px] sm:min-w-[200px] flex-1">
+        <div className="flex items-center h-5 gap-3 min-w-45 sm:min-w-50 flex-1">
           <CalendarIcon size={18} strokeWidth={3} className="text-primary shrink-0" />
           <span className={`text-sm font-bold tracking-wide truncate mt-0.5 ${value ? "text-text-body" : "text-text-muted"}`}>
             {displayFormat()}
@@ -292,8 +292,8 @@ export const CustomDateTimePicker = ({ label, value, onChange, roleColor = "prim
       {/* Dropdown Popover */}
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-[9998] bg-surface/60 backdrop-blur-sm rounded-4xl" onClick={(e) => { e.stopPropagation(); setIsOpen(false); }} />
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] p-6 bg-surface/95 backdrop-blur-xl border-2 border-light/10 rounded-3xl w-[340px] max-w-[90vw] shadow-2xl">
+          <div className="fixed inset-0 z-9998 bg-surface/60 backdrop-blur-sm rounded-4xl" onClick={(e) => { e.stopPropagation(); setIsOpen(false); }} />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-9999 p-6 bg-surface/95 backdrop-blur-xl border-2 border-light/10 rounded-3xl w-85 max-w-[90vw] shadow-2xl">
             {renderCalendar()}
           {renderTimePicker()}
           
