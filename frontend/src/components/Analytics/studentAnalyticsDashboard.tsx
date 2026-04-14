@@ -7,12 +7,28 @@ interface Props {
 }
 
 export const StudentAnalyticsDashboard = ({ data }: Props) => {
+    const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+    const [tick, setTick] = useState(0);
     const [activeRemark, setActiveRemark] = useState<any>(null);
+
+    useEffect(() => {
+        const observer = new MutationObserver(() => {
+            const darkNow = document.documentElement.classList.contains('dark');
+            setIsDark(darkNow);
+            setTick(t => t + 1);
+        });
+
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+        return () => observer.disconnect();
+    }, []);
+
+    const theme = isDark ? 'dark' : 'light';
     const [overallOffset, setOverallOffset] = useState(0);
     const [quizOffset, setQuizOffset] = useState(0);
     const [sentimentOffset, setSentimentOffset] = useState(0);
 
     const getThemeColor = (varName: string) => {
+        if (typeof window === 'undefined') return "";
         return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
     };
 
@@ -21,7 +37,7 @@ export const StudentAnalyticsDashboard = ({ data }: Props) => {
         setOverallOffset(0);
         setQuizOffset(0);
         setSentimentOffset(0);
-    }, [data.student_id, data.active_subject_id]);
+    }, [data.student_id, data.active_subject]);
 
     const handleScroll = (offset: number, setOffset: any, total: number, direction: 'left' | 'right') => {
         const step = 6;
@@ -46,10 +62,10 @@ export const StudentAnalyticsDashboard = ({ data }: Props) => {
     };
 
     const tooltipStyle = {
-        backgroundColor: 'rgba(22, 22, 26, 0.95)',
-        titleColor: getThemeColor('--color-primary'),
-        bodyColor: getThemeColor('--color-text-heading'),
-        borderColor: getThemeColor('--color-primary'),
+        backgroundColor: getThemeColor('--app-surface'),
+        titleColor: getThemeColor('--app-primary'),
+        bodyColor: getThemeColor('--app-text-heading'),
+        borderColor: getThemeColor('--app-primary'),
         borderWidth: 2,
         padding: 20,
         titleFont: { size: 16, weight: 'bold' },
@@ -66,16 +82,16 @@ export const StudentAnalyticsDashboard = ({ data }: Props) => {
             {
                 label: 'EduSync Index',
                 data: (data.overall_performance || []).map((d: any) => d.index),
-                borderColor: getThemeColor('--color-primary'),
+                borderColor: getThemeColor('--app-primary'),
                 fill: false,
                 tension: 0.4,
                 pointRadius: 5,
-                pointBackgroundColor: getThemeColor('--color-primary'),
+                pointBackgroundColor: getThemeColor('--app-primary'),
             },
             {
                 label: 'Class Avg',
                 data: (data.overall_performance || []).map((d: any) => d.class_avg_index),
-                borderColor: getThemeColor('--color-text-body'),
+                borderColor: getThemeColor('--app-text-body'),
                 borderDash: [5, 5],
                 pointRadius: 0,
                 fill: false,
@@ -90,16 +106,16 @@ export const StudentAnalyticsDashboard = ({ data }: Props) => {
             {
                 label: 'Score %',
                 data: (data.quiz_scores || []).map((q: any) => q.percentage),
-                borderColor: getThemeColor('--color-success'),
+                borderColor: getThemeColor('--app-success'),
                 fill: false,
                 tension: 0.3,
                 pointRadius: 5,
-                pointBackgroundColor: getThemeColor('--color-success'),
+                pointBackgroundColor: getThemeColor('--app-success'),
             },
             {
                 label: 'Class Avg',
                 data: (data.quiz_scores || []).map((q: any) => q.class_avg_percentage),
-                borderColor: getThemeColor('--color-text-body'),
+                borderColor: getThemeColor('--app-text-body'),
                 borderDash: [5, 5],
                 pointRadius: 0,
                 fill: false,
@@ -115,13 +131,13 @@ export const StudentAnalyticsDashboard = ({ data }: Props) => {
             {
                 label: 'Sentiment Score',
                 data: (data.sentiment || []).map((s: any) => s.sentiment_score),
-                borderColor: getThemeColor('--color-warning'),
+                borderColor: getThemeColor('--app-warning'),
                 fill: false,
                 tension: 0.3,
                 pointRadius: 6,
                 pointBackgroundColor: (data.sentiment || []).map((s: any) =>
-                    s.sentiment_label === 'Positive' ? getThemeColor('--color-success') :
-                        s.sentiment_label === 'Negative' ? getThemeColor('--color-failure') : getThemeColor('--color-warning')
+                    s.sentiment_label === 'Positive' ? getThemeColor('--app-success') :
+                        s.sentiment_label === 'Negative' ? getThemeColor('--app-failure') : getThemeColor('--app-warning')
                 ),
             }
         ]
@@ -136,11 +152,12 @@ export const StudentAnalyticsDashboard = ({ data }: Props) => {
             intersect: false,
         },
         plugins: {
-            legend: { position: 'top', labels: { color: getThemeColor('--color-text-body'), font: { weight: 'bold', size: 11 }, boxWidth: 12 } },
+            legend: { position: 'top', labels: { color: getThemeColor('--app-text-body'), font: { weight: 'bold', size: 11 }, boxWidth: 12 } },
             tooltip: tooltipStyle
         },
         scales: {
-            y: { min: 0, max: 100, grid: { color: 'rgba(184,193,236,0.05)' }, ticks: { color: getThemeColor('--color-text-body'), font: { size: 11 } } },
+            y: { min: 0, max: 100, grid: { color: 'rgba(184,193,236,0.05)' }, ticks: { color: getThemeColor('--app-text-body'), font: { size: 11 } } },
+            x: { grid: { display: false }, ticks: { color: getThemeColor('--app-text-body'), font: { size: 10 } } }
         }
     };
 
@@ -181,7 +198,12 @@ export const StudentAnalyticsDashboard = ({ data }: Props) => {
                         )}
                     </div>
                     <div className="flex-1 min-h-0">
-                        <Line data={overallChartData} options={{ ...commonOptions, scales: { ...commonOptions.scales, x: getXScale(data.overall_performance?.length || 0, overallOffset) } }} />
+                        <Line
+                            key={`overall-${theme}-${tick}`}
+                            redraw={true}
+                            data={overallChartData}
+                            options={{ ...commonOptions, scales: { ...commonOptions.scales, x: getXScale(data.overall_performance?.length || 0, overallOffset) } }}
+                        />
                     </div>
                 </div>
 
@@ -197,7 +219,12 @@ export const StudentAnalyticsDashboard = ({ data }: Props) => {
                         )}
                     </div>
                     <div className="flex-1 min-h-0">
-                        <Line data={quizChartData} options={{ ...commonOptions, scales: { ...commonOptions.scales, x: getXScale(data.quiz_scores?.length || 0, quizOffset) } }} />
+                        <Line
+                            key={`quiz-${theme}-${tick}`}
+                            redraw={true}
+                            data={quizChartData}
+                            options={{ ...commonOptions, scales: { ...commonOptions.scales, x: getXScale(data.quiz_scores?.length || 0, quizOffset) } }}
+                        />
                     </div>
                 </div>
 
@@ -215,6 +242,8 @@ export const StudentAnalyticsDashboard = ({ data }: Props) => {
                     </div>
                     <div className="flex-1 min-h-0">
                         <Line
+                            key={`sentiment-${theme}-${tick}`}
+                            redraw={true}
                             data={sentimentChartData}
                             options={{
                                 ...commonOptions,
@@ -237,7 +266,7 @@ export const StudentAnalyticsDashboard = ({ data }: Props) => {
                                     <X size={20} strokeWidth={3} />
                                 </button>
                             </div>
-                            <p className="text-xs text-text-muted mb-3">{activeRemark.teacher_name} • {new Date(activeRemark.date).toLocaleDateString()}</p>
+                            <p className="text-xs text-text-muted mb-3">{activeRemark.teacher_name} â€¢ {new Date(activeRemark.date).toLocaleDateString()}</p>
                             <div className="bg-light/5 p-4 rounded-xl border border-light/10 flex-1 overflow-y-auto italic text-light text-sm leading-relaxed">
                                 "{activeRemark.remark_text}"
                             </div>
@@ -250,12 +279,14 @@ export const StudentAnalyticsDashboard = ({ data }: Props) => {
                     <h3 className="text-sm font-black text-text-muted uppercase tracking-wider mb-2">Attendance Distribution</h3>
                     <div className="flex-1 min-h-0">
                         <Doughnut
+                            key={`attendance-${theme}-${tick}`}
+                            redraw={true}
                             data={{
                                 labels: ['Present', 'Late', 'Absent'],
                                 datasets: [{
-                                    data: [data.attendance.donut.present, data.attendance.donut.late, data.attendance.donut.absent],
-                                    backgroundColor: [getThemeColor('--color-success'), getThemeColor('--color-warning'), getThemeColor('--color-failure')],
-                                    borderColor: getThemeColor('--color-surface'),
+                                    data: [data.attendance?.donut?.present ?? 0, data.attendance?.donut?.late ?? 0, data.attendance?.donut?.absent ?? 0],
+                                    backgroundColor: [getThemeColor('--app-success'), getThemeColor('--app-warning'), getThemeColor('--app-failure')],
+                                    borderColor: getThemeColor('--app-surface'),
                                     borderWidth: 2,
                                     borderRadius: 10,
                                     hoverOffset: 15,
@@ -264,9 +295,9 @@ export const StudentAnalyticsDashboard = ({ data }: Props) => {
                             options={{
                                 responsive: true,
                                 maintainAspectRatio: false,
-                                cutout: '70%',
+                                cutout: '0%',
                                 layout: { padding: 30 },
-                                plugins: { legend: { position: 'right', labels: { color: getThemeColor('--color-text-body'), font: { weight: 'bold' } } } }
+                                plugins: { legend: { position: 'right', labels: { color: getThemeColor('--app-text-body'), font: { weight: 'bold' } } } }
                             }}
                         />
                     </div>
