@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Mail, Edit, Trash2, ShieldCheck, MoreVertical, X } from "lucide-react";
+import { Mail, Edit, Trash2, MoreVertical, X } from "lucide-react";
 import { ActionButton } from "../../Buttons/actionButton";
 
 interface OrganizationCardProps {
@@ -25,7 +25,7 @@ export const OrganizationCard = ({ organization, onEdit, onDelete }: Organizatio
 
       <div className="flex justify-between items-start mb-4">
         <div className="space-y-2">
-          <h3 className="uppercase font-bold text-lg leading-tight transition-all duration-300 text-primary truncate max-w-[200px] sm:max-w-[250px]">
+          <h3 className="uppercase font-bold text-lg leading-tight transition-all duration-300 text-primary truncate max-w-70 sm:max-w-90 xl:max-w-72.5 2xl:max-w-full">
             {organization.name}
           </h3>
           
@@ -64,11 +64,6 @@ export const OrganizationCard = ({ organization, onEdit, onDelete }: Organizatio
         <div className="flex items-center gap-3 text-[14px] text-text-muted">
           <Mail size={15} className="shrink-0 opacity-70" />
           <span className="font-medium truncate tracking-wide">{organization.email}</span>
-        </div>
-
-        <div className="flex items-center gap-3 text-[14px] text-text-muted">
-          <ShieldCheck size={15} className="shrink-0 opacity-70" />
-          <span className="font-medium tracking-wide">Domain Hub Registered</span>
         </div>
         
       </div>

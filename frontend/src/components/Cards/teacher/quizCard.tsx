@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { Edit2, Settings2, Clock, HelpCircle, MoreVertical, X, Trash2, ClipboardCheck } from "lucide-react";
 import { useDispatch } from "react-redux";
-import { type Quiz, deleteQuiz } from "../../../features/learning/quizSllice";
+import { type Quiz, deleteQuiz } from "../../../features/learning/quizSlice";
 import { type AppDispatch } from "../../../store";
 import { addToast } from "../../../features/toasts/toastSlice";
 import { DecisionPopup } from '../../decision popup';

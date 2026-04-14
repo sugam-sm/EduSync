@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Play, Eye, Clock, HelpCircle, MoreVertical, X } from "lucide-react";
-import { type Quiz, type QuizResultType } from "../../../features/learning/quizSllice";
+import { type Quiz, type QuizResultType } from "../../../features/learning/quizSlice";
 import { ActionButton } from '../../Buttons/actionButton';
 import { useDispatch } from 'react-redux';
 import { addToast } from '../../../features/toasts/toastSlice';
