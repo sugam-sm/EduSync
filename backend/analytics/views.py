@@ -3,13 +3,15 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils import timezone
+from django.db import transaction
 from django.db.models import Sum, Count
 from collections import defaultdict
 import datetime
 
 from .models import Session, Attendance, TeacherQuizRemark, QuizAttempt, StudentResponse
 from .serializers import (
-    SessionSerializer, AttendanceSerializer, TeacherQuizRemarkSerializer, QuizAttemptSerializer, StudentResponseSerializer
+    SessionSerializer, AttendanceSerializer, TeacherQuizRemarkSerializer, 
+    QuizAttemptSerializer, StudentResponseSerializer, BulkRemarkSerializer
 )
 from users.models import Student
 from learning.models import Quiz
@@ -28,10 +30,14 @@ class SessionViewSet(viewsets.ModelViewSet):
         else:
             return Session.objects.none()
         
-        grade_id = self.request.query_params.get('grade_id')
-        if grade_id:
-            queryset = queryset.filter(grade_id=grade_id)
+        grade = self.request.query_params.get('grade')
+        if grade:
+            queryset = queryset.filter(grade=grade)
             
+        subject = self.request.query_params.get('subject')
+        if subject and subject != 'All':
+            queryset = queryset.filter(subject=subject)
+
         return queryset
 
     def perform_create(self, serializer):
@@ -53,7 +59,7 @@ class SessionViewSet(viewsets.ModelViewSet):
         
         absent_attendances = []
         for student in students:
-            if student.id not in marked_student_ids:
+            if student.pk not in marked_student_ids:
                 absent_attendances.append(Attendance(
                     session=session,
                     student=student,
@@ -70,7 +76,14 @@ class AttendanceViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if hasattr(user, 'role') and user.role.role_name == 'teacher':
-            return Attendance.objects.filter(session__teacher__user=user)
+            queryset = Attendance.objects.filter(session__teacher__user=user)
+            grade = self.request.query_params.get('grade')
+            if grade:
+                queryset = queryset.filter(session__grade=grade)
+            subject = self.request.query_params.get('subject')
+            if subject and subject != 'All':
+                queryset = queryset.filter(session__subject=subject)
+            return queryset
         elif hasattr(user, 'role') and user.role.role_name == 'student':
             return Attendance.objects.filter(student=user.student_profile)
         return Attendance.objects.none()
@@ -82,13 +95,48 @@ class TeacherQuizRemarkViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if hasattr(user, 'teacher_profile'):
-            return TeacherQuizRemark.objects.filter(teacher=user.teacher_profile)
+            queryset = TeacherQuizRemark.objects.filter(teacher=user.teacher_profile)
+            grade = self.request.query_params.get('grade')
+            if grade:
+                queryset = queryset.filter(student__grade=grade)
+            subject = self.request.query_params.get('subject')
+            if subject and subject != 'All':
+                queryset = queryset.filter(quiz__sub_assign__subject=subject)
+            return queryset
         elif hasattr(user, 'student_profile'):
             return TeacherQuizRemark.objects.filter(student=user.student_profile)
         return TeacherQuizRemark.objects.none()
 
     def perform_create(self, serializer):
         serializer.save(teacher=self.request.user.teacher_profile)
+
+    @action(detail=False, methods=['post'])
+    def bulk_submit(self, request):
+        quiz_id = request.query_params.get('quiz_id')
+        if not quiz_id:
+            return Response({"error": "quiz_id is required parameters"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        serializer = BulkRemarkSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+        teacher = request.user.teacher_profile
+        remarks_data = serializer.validated_data['remarks']
+        
+        saved_remarks = []
+        with transaction.atomic():
+            for item in remarks_data:
+                remark, created = TeacherQuizRemark.objects.update_or_create(
+                    quiz_id=quiz_id,
+                    student_id=item['student_id'],
+                    defaults={
+                        'teacher': teacher,
+                        'remark_text': item['remark_text']
+                    }
+                )
+                saved_remarks.append(remark)
+                
+        return Response(TeacherQuizRemarkSerializer(saved_remarks, many=True).data)
 
 class QuizAttemptViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -99,6 +147,96 @@ class QuizAttemptViewSet(viewsets.ModelViewSet):
         if hasattr(user, 'student_profile'):
             return QuizAttempt.objects.filter(student=user.student_profile)
         return QuizAttempt.objects.all()
+
+    @action(detail=False, methods=['post'])
+    def start_quiz(self, request):
+        quiz_id = request.data.get('quiz')
+        student = request.user.student_profile
+        
+        try:
+            quiz = Quiz.objects.get(id=quiz_id)
+        except Quiz.DoesNotExist:
+            return Response({"error": "Quiz not found."}, status=status.HTTP_404_NOT_FOUND)
+            
+        attempt, created = QuizAttempt.objects.get_or_create(
+            quiz=quiz,
+            student=student,
+            defaults={'status': 'in-progress'}
+        )
+        
+        if not created and attempt.status != 'in-progress':
+            return Response({"error": "You have already completed this quiz."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        return Response(QuizAttemptSerializer(attempt).data)
+
+    @action(detail=False, methods=['post'])
+    def submit_answer(self, request):
+        quiz_id = request.data.get('quiz')
+        question_id = request.data.get('question')
+        choice_id = request.data.get('selected_choice')
+        time_taken = request.data.get('time_taken_seconds', 0)
+        
+        student = request.user.student_profile
+        
+        try:
+            attempt = QuizAttempt.objects.get(quiz_id=quiz_id, student=student, status='in-progress')
+        except QuizAttempt.DoesNotExist:
+            return Response({"error": "Active quiz attempt not found."}, status=status.HTTP_404_NOT_FOUND)
+            
+        response, created = StudentResponse.objects.update_or_create(
+            attempt=attempt,
+            question_id=question_id,
+            defaults={
+                'selected_choice_id': choice_id,
+                'time_taken_seconds': time_taken
+            }
+        )
+        
+        return Response(StudentResponseSerializer(response).data)
+
+    @action(detail=False, methods=['post'])
+    def finish_quiz(self, request):
+        quiz_id = request.data.get('quiz')
+        auto_submitted = request.data.get('auto_submitted', False)
+        student = request.user.student_profile
+        
+        try:
+            attempt = QuizAttempt.objects.get(quiz_id=quiz_id, student=student, status='in-progress')
+        except QuizAttempt.DoesNotExist:
+            return Response({"error": "Active quiz attempt not found."}, status=status.HTTP_404_NOT_FOUND)
+            
+        # Calculate score
+        score = 0
+        responses = attempt.responses.select_related('question', 'selected_choice')
+        for resp in responses:
+            if resp.selected_choice and resp.selected_choice.is_correct:
+                score += resp.question.points_override
+                
+        attempt.total_score = score
+        attempt.status = 'auto-submitted' if auto_submitted else 'completed'
+        attempt.completed_at = timezone.now()
+        attempt.save()
+        
+        return Response(QuizAttemptSerializer(attempt).data)
+
+    @action(detail=False, methods=['get'])
+    def quiz_results(self, request):
+        quiz_id = request.query_params.get('quiz_id')
+        if not quiz_id:
+            return Response({"error": "quiz_id is required parameters"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user = request.user
+        if not hasattr(user, 'teacher_profile') and getattr(user.role, 'role_name', '') != 'admin':
+            return Response({"error": "Only teachers and admins can view quiz results."}, status=status.HTTP_403_FORBIDDEN)
+            
+        attempts = QuizAttempt.objects.filter(quiz_id=quiz_id).select_related('student__user', 'quiz')
+        
+        # Ensure teachers can only see results for quizzes they created
+        if hasattr(user, 'teacher_profile') and getattr(user.role, 'role_name', '') != 'admin':
+            attempts = attempts.filter(quiz__created_by=user.teacher_profile)
+            
+        serializer = self.get_serializer(attempts, many=True)
+        return Response(serializer.data)
 
 class StudentResponseViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -118,53 +256,53 @@ class AnalyticsDashboardView(APIView):
     def get(self, request):
         user = request.user
         role = user.role.role_name
-        subject_id = request.query_params.get('subject_id')
+        subject = request.query_params.get('subject')
 
         if role == 'student':
-            return self._student_dashboard(user.student_profile, subject_id, user)
+            return self._student_dashboard(user.student_profile, subject, user)
 
         if role in ('teacher', 'admin'):
             student_id = request.query_params.get('student_id')
-            grade_id = request.query_params.get('grade_id')
+            grade = request.query_params.get('grade')
 
             if student_id and student_id != 'All':
                 try:
                     student = Student.objects.select_related('user', 'grade').get(pk=student_id)
                 except Student.DoesNotExist:
                     return Response({"error": "Student not found."}, status=status.HTTP_404_NOT_FOUND)
-                return self._student_dashboard(student, subject_id, user)
+                return self._student_dashboard(student, subject, user)
 
-            if grade_id:
+            if grade:
                 from organizations.models import Grade
                 try:
-                    grade = Grade.objects.get(pk=grade_id)
+                    grade = Grade.objects.get(pk=grade)
                 except Grade.DoesNotExist:
                     return Response({"error": "Grade not found."}, status=status.HTTP_404_NOT_FOUND)
-                return self._grade_overview(request, grade, subject_id)
+                return self._grade_overview(request, grade, subject)
 
             return Response(
-                {"error": "Provide grade_id for class overview or student_id for student drill-down."},
+                {"error": "Provide grade for class overview or student_id for student drill-down."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         return Response({"error": "Unauthorized."}, status=status.HTTP_403_FORBIDDEN)
 
-    def _student_dashboard(self, student, subject_id, requesting_user):
+    def _student_dashboard(self, student, subject, requesting_user):
         subjects = list(Subject.objects.filter(
             assignsubject__grade=student.grade
         ).distinct().values('id', 'name'))
 
-        assigned_subject_ids = None
-        if not subject_id and hasattr(requesting_user, 'teacher_profile'):
-            assigned_subject_ids = list(AssignSubject.objects.filter(
+        assigned_subjects = None
+        if not subject and hasattr(requesting_user, 'teacher_profile'):
+            assigned_subjects = list(AssignSubject.objects.filter(
                 teacher=requesting_user.teacher_profile, 
                 grade=student.grade
-            ).values_list('subject_id', flat=True))
+            ).values_list('subject', flat=True))
 
-        class_avg = self._get_class_averages(student.grade, subject_id)
-        quiz_data = self._get_quiz_data(student, subject_id, assigned_subject_ids, grade=student.grade)
-        attendance_data = self._get_attendance_data(student, subject_id, assigned_subject_ids)
-        sentiment_data = self._get_sentiment_data(student, subject_id, assigned_subject_ids)
+        class_avg = self._get_class_averages(student.grade, subject)
+        quiz_data = self._get_quiz_data(student, subject, assigned_subjects, grade=student.grade)
+        attendance_data = self._get_attendance_data(student, subject, assigned_subjects)
+        sentiment_data = self._get_sentiment_data(student, subject, assigned_subjects)
         overall_data = self._compute_edusync_index(quiz_data, attendance_data, sentiment_data, class_avg.get("avg_edusync_index", 0))
 
         # Compute student's own summary stats
@@ -177,7 +315,7 @@ class AnalyticsDashboardView(APIView):
             "student_id": student.pk,
             "grade_name": f"{student.grade.name} {student.grade.section}",
             "subjects": subjects,
-            "active_subject_id": int(subject_id) if (subject_id and str(subject_id).isdigit()) else None,
+            "active_subject": int(subject) if (subject and str(subject).isdigit()) else None,
             "overall_performance": overall_data,
             "quiz_scores": quiz_data,
             "attendance": attendance_data,
@@ -197,22 +335,22 @@ class AnalyticsDashboardView(APIView):
             "class_averages": class_avg,
         })
 
-    def _grade_overview(self, request, grade, subject_id):
+    def _grade_overview(self, request, grade, subject):
         user = request.user
         students = Student.objects.filter(grade=grade).select_related('user')
         subjects = Subject.objects.filter(assignsubject__grade=grade).distinct().values('id', 'name')
 
-        quiz_summary = self._get_quiz_summary(grade, subject_id, user)
-        attendance_summary = self._get_attendance_summary(grade, subject_id)
-        sentiment_summary = self._get_sentiment_summary(grade, subject_id)
-        resource_stats = self._get_resource_stats(grade, subject_id)
-        class_avg = self._get_class_averages(grade, subject_id)
-        student_rankings = self._get_student_rankings(grade, subject_id)
+        quiz_summary = self._get_quiz_summary(grade, subject, user)
+        attendance_summary = self._get_attendance_summary(grade, subject)
+        sentiment_summary = self._get_sentiment_summary(grade, subject)
+        resource_stats = self._get_resource_stats(grade, subject)
+        class_avg = self._get_class_averages(grade, subject)
+        student_rankings = self._get_student_rankings(grade, subject)
 
         return Response({
             "view": "grade",
             "grade_name": f"{grade.name} {grade.section}",
-            "grade_id": grade.pk,
+            "grade": grade.pk,
             "total_students": students.count(),
             "subjects": list(subjects),
             "quiz_summary": quiz_summary,
@@ -223,10 +361,10 @@ class AnalyticsDashboardView(APIView):
             "student_rankings": student_rankings,
         })
 
-    def _get_quiz_summary(self, grade, subject_id, user):
+    def _get_quiz_summary(self, grade, subject, user):
         quiz_qs = Quiz.objects.filter(sub_assign__grade=grade)
-        if subject_id:
-            quiz_qs = quiz_qs.filter(sub_assign__subject_id=subject_id)
+        if subject:
+            quiz_qs = quiz_qs.filter(sub_assign__subject=subject)
         
         if hasattr(user, 'teacher_profile'):
             quiz_qs = quiz_qs.filter(created_by=user.teacher_profile)
@@ -265,10 +403,10 @@ class AnalyticsDashboardView(APIView):
             "total_attempts": attempts.count()
         }
 
-    def _get_attendance_summary(self, grade, subject_id):
+    def _get_attendance_summary(self, grade, subject):
         sessions = Session.objects.filter(grade=grade, is_active=False)
-        if subject_id:
-            sessions = sessions.filter(subject_id=subject_id)
+        if subject:
+            sessions = sessions.filter(subject=subject)
         
         total_sessions = sessions.count()
         if total_sessions == 0:
@@ -289,10 +427,10 @@ class AnalyticsDashboardView(APIView):
             "donut": donut
         }
 
-    def _get_sentiment_summary(self, grade, subject_id):
+    def _get_sentiment_summary(self, grade, subject):
         remarks = TeacherQuizRemark.objects.filter(student__grade=grade)
-        if subject_id:
-            remarks = remarks.filter(quiz__sub_assign__subject_id=subject_id)
+        if subject:
+            remarks = remarks.filter(quiz__sub_assign__subject=subject)
         
         total = remarks.count()
         if total == 0:
@@ -313,23 +451,23 @@ class AnalyticsDashboardView(APIView):
             "negative": neg
         }
 
-    def _get_resource_stats(self, grade, subject_id):
+    def _get_resource_stats(self, grade, subject):
         from learning.models import Resource, FlashcardDeck, Flashcard
         res_qs = Resource.objects.filter(folder__sub_assign__grade=grade)
         deck_qs = FlashcardDeck.objects.filter(sub_assign__grade=grade)
-        if subject_id:
-            res_qs = res_qs.filter(folder__sub_assign__subject_id=subject_id)
-            deck_qs = deck_qs.filter(sub_assign__subject_id=subject_id)
+        if subject:
+            res_qs = res_qs.filter(folder__sub_assign__subject=subject)
+            deck_qs = deck_qs.filter(sub_assign__subject=subject)
             
         return {
             "total_resources": res_qs.count(),
             "total_flashcards": Flashcard.objects.filter(deck__in=deck_qs).count(),
         }
 
-    def _get_class_averages(self, grade, subject_id):
-        quiz_summary = self._get_quiz_summary(grade, subject_id, None)
-        att_summary = self._get_attendance_summary(grade, subject_id)
-        sent_summary = self._get_sentiment_summary(grade, subject_id)
+    def _get_class_averages(self, grade, subject):
+        quiz_summary = self._get_quiz_summary(grade, subject, None)
+        att_summary = self._get_attendance_summary(grade, subject)
+        sent_summary = self._get_sentiment_summary(grade, subject)
         
         avg_index = (0.5 * quiz_summary["avg_accuracy"]) + (0.4 * att_summary["attendance_rate"]) + (0.1 * sent_summary["positive_pct"])
         return {
@@ -338,7 +476,7 @@ class AnalyticsDashboardView(APIView):
             "avg_edusync_index": round(avg_index, 1)
         }
 
-    def _get_student_rankings(self, grade, subject_id):
+    def _get_student_rankings(self, grade, subject):
         students = Student.objects.filter(grade=grade).select_related('user')
         student_ids = [s.pk for s in students]
 
@@ -347,8 +485,8 @@ class AnalyticsDashboardView(APIView):
             student_id__in=student_ids,
             status__in=['completed', 'auto-submitted', 'missed']
         )
-        if subject_id:
-            attempt_qs = attempt_qs.filter(quiz__sub_assign__subject_id=subject_id)
+        if subject:
+            attempt_qs = attempt_qs.filter(quiz__sub_assign__subject=subject)
 
         attempts_list = list(attempt_qs)
         quiz_ids = set(a.quiz_id for a in attempts_list)
@@ -364,8 +502,8 @@ class AnalyticsDashboardView(APIView):
 
         # Batch attendance data
         att_qs = Attendance.objects.filter(student_id__in=student_ids, session__is_active=False)
-        if subject_id:
-            att_qs = att_qs.filter(session__subject_id=subject_id)
+        if subject:
+            att_qs = att_qs.filter(session__subject=subject)
 
         student_att = defaultdict(lambda: {'present': 0, 'late': 0, 'total': 0})
         for att in att_qs:
@@ -377,8 +515,8 @@ class AnalyticsDashboardView(APIView):
 
         # Batch sentiment data
         remarks_qs = TeacherQuizRemark.objects.filter(student_id__in=student_ids)
-        if subject_id:
-            remarks_qs = remarks_qs.filter(quiz__sub_assign__subject_id=subject_id)
+        if subject:
+            remarks_qs = remarks_qs.filter(quiz__sub_assign__subject=subject)
 
         student_sent = defaultdict(lambda: {'positive': 0, 'total': 0})
         for r in remarks_qs:
@@ -417,12 +555,12 @@ class AnalyticsDashboardView(APIView):
 
         return rankings
 
-    def _get_quiz_data(self, student, subject_id, teacher_subject_ids=None, grade=None):
+    def _get_quiz_data(self, student, subject, teacher_subjects=None, grade=None):
         attempts = QuizAttempt.objects.filter(student=student, status__in=['completed', 'auto-submitted', 'missed'])
-        if subject_id:
-            attempts = attempts.filter(quiz__sub_assign__subject_id=subject_id)
-        elif teacher_subject_ids:
-            attempts = attempts.filter(quiz__sub_assign__subject_id__in=teacher_subject_ids)
+        if subject:
+            attempts = attempts.filter(quiz__sub_assign__subject=subject)
+        elif teacher_subjects:
+            attempts = attempts.filter(quiz__sub_assign__subject__in=teacher_subjects)
             
         attempts = attempts.select_related('quiz', 'quiz__sub_assign__subject').prefetch_related('quiz__questions').order_by('-completed_at')
 
@@ -457,12 +595,12 @@ class AnalyticsDashboardView(APIView):
         result.sort(key=lambda x: x["date"])
         return result
 
-    def _get_attendance_data(self, student, subject_id, teacher_subject_ids=None):
+    def _get_attendance_data(self, student, subject, teacher_subjects=None):
         attendances = Attendance.objects.filter(student=student, session__is_active=False)
-        if subject_id:
-            attendances = attendances.filter(session__subject_id=subject_id)
-        elif teacher_subject_ids:
-            attendances = attendances.filter(session__subject_id__in=teacher_subject_ids)
+        if subject:
+            attendances = attendances.filter(session__subject=subject)
+        elif teacher_subjects:
+            attendances = attendances.filter(session__subject__in=teacher_subjects)
             
         attendances = attendances.select_related('session', 'session__subject')
         timeline = []
@@ -490,12 +628,12 @@ class AnalyticsDashboardView(APIView):
             "timeline": timeline
         }
 
-    def _get_sentiment_data(self, student, subject_id, teacher_subject_ids=None):
+    def _get_sentiment_data(self, student, subject, teacher_subjects=None):
         remarks = TeacherQuizRemark.objects.filter(student=student)
-        if subject_id:
-            remarks = remarks.filter(quiz__sub_assign__subject_id=subject_id)
-        elif teacher_subject_ids:
-            remarks = remarks.filter(quiz__sub_assign__subject_id__in=teacher_subject_ids)
+        if subject:
+            remarks = remarks.filter(quiz__sub_assign__subject=subject)
+        elif teacher_subjects:
+            remarks = remarks.filter(quiz__sub_assign__subject__in=teacher_subjects)
             
         remarks = remarks.select_related('quiz', 'quiz__sub_assign__subject', 'teacher__user').order_by('-created_at')
         result = []
@@ -549,9 +687,15 @@ class AnalyticsDashboardView(APIView):
             avg_att = sum(relevant_att) / len(relevant_att) if relevant_att else 0
             
             relevant_sent = [s["sentiment_score"] for s in sorted_sent if parse_dt(s["date"]) <= q_date]
-            avg_sent = sum(relevant_sent) / len(relevant_sent) if relevant_sent else 50
             
-            index = (0.5 * avg_quiz) + (0.4 * avg_att) + (0.1 * avg_sent)
+            # Revised Logic: If no sentiment exists, split 10% weight between Quiz and Attendance
+            # This ensures that 100% Quiz + 100% Att = 100% Index
+            if relevant_sent:
+                avg_sent = sum(relevant_sent) / len(relevant_sent)
+                index = (0.5 * avg_quiz) + (0.4 * avg_att) + (0.1 * avg_sent)
+            else:
+                index = (0.55 * avg_quiz) + (0.45 * avg_att)
+
             result.append({
                 "date": q["date"],
                 "quiz_title": q["quiz_title"],

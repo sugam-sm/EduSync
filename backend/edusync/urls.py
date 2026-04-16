@@ -37,8 +37,6 @@ urlpatterns = [
     path('api/learning/', include('learning.urls')),
     # adding the analytics urls
     path('api/analytics/', include('analytics.urls')),
-    # adding the notifications urls
-    path('api/', include('notifications.urls')),
 ]
 
 if settings.DEBUG:
