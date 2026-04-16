@@ -109,7 +109,14 @@ class TeacherQuizRemarkViewSet(viewsets.ModelViewSet):
                 
             return queryset
         elif hasattr(user, 'student_profile'):
-            return TeacherQuizRemark.objects.filter(student=user.student_profile)
+            queryset = TeacherQuizRemark.objects.filter(student=user.student_profile)
+            subject = self.request.query_params.get('subject')
+            if subject and subject != 'All':
+                queryset = queryset.filter(quiz__sub_assign__subject=subject)
+            quiz_id = self.request.query_params.get('quiz_id')
+            if quiz_id:
+                queryset = queryset.filter(quiz_id=quiz_id)
+            return queryset
         return TeacherQuizRemark.objects.none()
 
     def perform_create(self, serializer):
