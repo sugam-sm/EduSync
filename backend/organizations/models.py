@@ -17,7 +17,7 @@ class Grade(models.Model):
     academic_year = models.CharField(max_length=20)
     is_active = models.BooleanField(default=True)
     organization = models.ForeignKey('Organization', on_delete=models.CASCADE)
-    class_teacher = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
+    class_teacher = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta:
         unique_together = ('name', 'section', 'academic_year', 'organization')

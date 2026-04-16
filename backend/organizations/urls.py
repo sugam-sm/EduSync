@@ -10,7 +10,7 @@ router.register(r'assignments', AssignSubjectViewSet, basename='assignment')
 
 urlpatterns = [
     path('me/', OrganizationDetailView.as_view(), name='organization-detail'),
-    path('list/', OrganizationListView.as_view(), name='organization-list'),
-    path('list/<int:pk>/', OrganizationSuperAdminManageView.as_view(), name='organization-superadmin-manage'),
+    path('', OrganizationListView.as_view(), name='organization-list'),
+    path('<int:pk>/', OrganizationSuperAdminManageView.as_view(), name='organization-superadmin-manage'),
     path('', include(router.urls)),
 ]
