@@ -8,10 +8,12 @@ class Role(models.Model):
         return f"{self.id} {self.role_name}"
 
 class User(AbstractUser):
+    first_name = models.CharField(max_length=150, blank=False)
+    last_name = models.CharField(max_length=150, blank=False)
     organization = models.ForeignKey(
         'organizations.Organization', 
         on_delete=models.CASCADE, 
-        null=True, blank=False,
+        null=False, blank=False,
         related_name='organization_users'
     )
     role = models.ForeignKey(
@@ -21,14 +23,15 @@ class User(AbstractUser):
         related_name='role_users'
     )
     middle_name = models.CharField(max_length=255, null=True, blank=True)
-    email = models.EmailField(unique=False, null=True, blank=True)
+    email = models.EmailField(unique=False, null=False, blank=False)
     
     GENDER_CHOICES = [
         ('Male', 'Male'),
         ('Female', 'Female'),
         ('Other', 'Other'),
     ]
-    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, null=True, blank=True)
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, null=False, blank=False)
+    needs_password_change = models.BooleanField(default=False)
 
     @property
     def full_name(self):
