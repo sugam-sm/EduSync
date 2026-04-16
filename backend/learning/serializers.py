@@ -22,25 +22,37 @@ class ResourceSerializer(serializers.ModelSerializer):
 
 class ResourceFolderSerialzer(serializers.ModelSerializer):
     resources = ResourceSerializer(many=True, read_only=True)
-    grade_id = serializers.IntegerField(write_only=True, required=False)
+    grade = serializers.IntegerField(write_only=True, required=True)
+    subject = serializers.IntegerField(write_only=True, required=True)
     subject_name = serializers.CharField(source='sub_assign.subject.name', read_only=True)
     grade_info = serializers.CharField(source='sub_assign.grade.name', read_only=True)
     uploaded_by_name = serializers.CharField(source='uploaded_by.user.full_name', read_only=True)
 
     class Meta:
         model = ResourceFolder
-        fields = ['id', 'name', 'sub_assign', 'uploaded_by', 'uploaded_at', 'resources', 'grade_id', 'subject_name', 'grade_info', 'uploaded_by_name']
+        fields = ['id', 'name', 'sub_assign', 'uploaded_by', 'uploaded_at', 'resources', 'grade', 'subject', 'subject_name', 'grade_info', 'uploaded_by_name']
         read_only_fields = ['id', 'sub_assign', 'uploaded_by', 'uploaded_at']
 
     def validate(self, data):
-        grade_id = data.get('grade_id')
+        user = self.context['request'].user
+        if user.role.role_name == 'admin':
+            raise serializers.ValidationError({"detail": "Admins cannot create learning content."})
+            
+        grade = data.get('grade')
+        subject = data.get('subject')
         user = self.context['request'].user
         
-        # Only validate if a new grade_id is provided
-        if grade_id:
-            sub_assign = AssignSubject.objects.filter(teacher__user=user, grade_id=grade_id).first()
+        if grade and subject:
+            sub_assign = AssignSubject.objects.filter(
+                teacher__user=user, 
+                grade=grade,
+                subject=subject
+            ).first()
+            
             if not sub_assign:
-                raise serializers.ValidationError({"grade_id": "You are not assigned to this grade."})
+                raise serializers.ValidationError({
+                    "error": "You are not assigned to teach this subject in this grade."
+                })
             
             data['sub_assign'] = sub_assign
         
@@ -48,11 +60,9 @@ class ResourceFolderSerialzer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         with transaction.atomic():
-            if 'grade_id' not in validated_data:
-                raise serializers.ValidationError({"grade_id": "This field is required for creation."})
-                
             validated_data['uploaded_by'] = self.context['request'].user.teacher_profile
-            validated_data.pop('grade_id', None)
+            validated_data.pop('grade', None)
+            validated_data.pop('subject', None)
             return super().create(validated_data)
 
 class FlashcardSerializer(serializers.ModelSerializer):
@@ -73,7 +83,8 @@ class FlashcardSerializer(serializers.ModelSerializer):
 
 class FlashcardDeckSerializer(serializers.ModelSerializer):
     cards = FlashcardSerializer(many=True, read_only=True)
-    grade_id = serializers.IntegerField(write_only=True, required=False)
+    grade = serializers.IntegerField(write_only=True, required=True)
+    subject = serializers.IntegerField(write_only=True, required=True)
     subject_name = serializers.CharField(source='sub_assign.subject.name', read_only=True)
     grade_info = serializers.CharField(source='sub_assign.grade.name', read_only=True)
     created_by_name = serializers.CharField(source='created_by.user.full_name', read_only=True)
@@ -83,27 +94,37 @@ class FlashcardDeckSerializer(serializers.ModelSerializer):
         model = FlashcardDeck
         fields = [
             'id', 'title', 'sub_assign', 'created_by', 'created_at', 'cards', 
-            'grade_id', 'subject_name', 'grade_info', 'created_by_name', 
+            'grade', 'subject', 'subject_name', 'grade_info', 'created_by_name', 
             'card_count', 'is_ai_generated'
         ]
         read_only_fields = ['id', 'sub_assign', 'created_by', 'created_at', 'is_ai_generated']
 
     def validate(self, data):
-        grade_id = data.get('grade_id')
         user = self.context['request'].user
-        if grade_id:
-            sub_assign = AssignSubject.objects.filter(teacher__user=user, grade_id=grade_id).first()
+        if user.role.role_name == 'admin':
+            raise serializers.ValidationError({"detail": "Admins cannot create learning content."})
+
+        grade = data.get('grade')
+        subject = data.get('subject')
+        user = self.context['request'].user
+        if grade and subject:
+            sub_assign = AssignSubject.objects.filter(
+                teacher__user=user, 
+                grade=grade,
+                subject=subject
+            ).first()
             if not sub_assign:
-                raise serializers.ValidationError({"grade_id": "You are not assigned to this grade."})
+                raise serializers.ValidationError({
+                    "error": "You are not assigned to teach this subject in this grade."
+                })
             data['sub_assign'] = sub_assign
         return data
 
     def create(self, validated_data):
         with transaction.atomic():
-            if 'grade_id' not in validated_data:
-                raise serializers.ValidationError({"grade_id": "This field is required for creation."})
             validated_data['created_by'] = self.context['request'].user.teacher_profile
-            validated_data.pop('grade_id', None)
+            validated_data.pop('grade', None)
+            validated_data.pop('subject', None)
             return super().create(validated_data)
     
 
@@ -150,7 +171,8 @@ class QuestionSerializer(serializers.ModelSerializer):
 
 class QuizSerializer(serializers.ModelSerializer):
     questions = QuestionSerializer(many=True, read_only=True)
-    grade_id = serializers.IntegerField(write_only=True, required=False)
+    grade = serializers.IntegerField(write_only=True, required=True)
+    subject = serializers.IntegerField(write_only=True, required=True)
     questions_count = serializers.IntegerField(source='questions.count', read_only=True)
     subject_name = serializers.CharField(source='sub_assign.subject.name', read_only=True)
     grade_info = serializers.CharField(source='sub_assign.grade.name', read_only=True)
@@ -161,31 +183,42 @@ class QuizSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'sub_assign', 'created_by', 
             'is_active', 'is_published', 'start_datetime', 'end_datetime', 
-            'default_time_per_question', 'created_at', 'grade_id', 'questions', 'questions_count',
+            'default_time_per_question', 'default_points_per_question', 'created_at', 'grade', 'subject', 'questions', 'questions_count',
             'subject_name', 'grade_info', 'created_by_name', 'is_ai_generated'
         ]
         read_only_fields = ['id', 'sub_assign', 'created_by', 'created_at', 'is_ai_generated']
 
     def validate(self, data):
-        grade_id = data.get('grade_id')
         user = self.context['request'].user
-        if grade_id:
-            sub_assign = AssignSubject.objects.filter(teacher__user=user, grade_id=grade_id).first()
+        if user.role.role_name == 'admin':
+            raise serializers.ValidationError({"detail": "Admins cannot create learning content."})
+
+        grade = data.get('grade')
+        subject = data.get('subject')
+        user = self.context['request'].user
+        if grade and subject:
+            sub_assign = AssignSubject.objects.filter(
+                teacher__user=user, 
+                grade=grade,
+                subject=subject
+            ).first()
             if not sub_assign:
-                raise serializers.ValidationError({"grade_id": "You are not assigned to this grade."})
+                raise serializers.ValidationError({
+                    "error": "You are not assigned to teach this subject in this grade."
+                })
             data['sub_assign'] = sub_assign
         return data
 
     def create(self, validated_data):
         with transaction.atomic():
-            if 'grade_id' not in validated_data:
-                raise serializers.ValidationError({"grade_id": "This field is required for creation."})
             validated_data['created_by'] = self.context['request'].user.teacher_profile
-            validated_data.pop('grade_id', None)
+            validated_data.pop('grade', None)
+            validated_data.pop('subject', None)
             return super().create(validated_data)
 
     def update(self, instance, validated_data):
-        validated_data.pop('grade_id', None)
+        validated_data.pop('grade', None)
+        validated_data.pop('subject', None)
         return super().update(instance, validated_data)
 
-
+

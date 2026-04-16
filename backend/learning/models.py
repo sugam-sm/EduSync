@@ -64,10 +64,11 @@ class Quiz(models.Model):
     is_published = models.BooleanField(default=False)
     
     # Availability window
-    start_datetime = models.DateTimeField(null=True, blank=True)
-    end_datetime = models.DateTimeField(null=True, blank=True)
+    start_datetime = models.DateTimeField()
+    end_datetime = models.DateTimeField()
     
     default_time_per_question = models.PositiveIntegerField(default=60, help_text="In seconds")
+    default_points_per_question = models.PositiveIntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)
     is_ai_generated = models.BooleanField(default=False)
     
@@ -96,7 +97,7 @@ class Question(models.Model):
         choices=[('MCQ', 'Multiple Choice')],
         default='MCQ'
     )
-    points_override = models.PositiveIntegerField(default=1)
+    points_override = models.PositiveIntegerField(null=True, blank=True, help_text="Overrides quiz default points")
     time_override_seconds = models.PositiveIntegerField(null=True, blank=True, help_text="Overrides quiz default timer")
     image = models.ImageField(upload_to='quiz_questions/', null=True, blank=True)
     order = models.PositiveIntegerField(default=0)

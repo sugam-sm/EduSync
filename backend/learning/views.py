@@ -9,7 +9,6 @@ from .serializers import (
     FlashcardSerializer, QuizSerializer, QuestionSerializer, ChoiceSerializer,
 )
 from users.models import Student
-from notifications.utils import notify_students_in_grade
 
 class ResourcePermissions(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -30,51 +29,30 @@ class ResourceFolderViewSet(viewsets.ModelViewSet):
 
         if user.role and user.role.role_name == 'teacher':
             queryset = base_query.filter(sub_assign__teacher__user=user, uploaded_by=user.teacher_profile)
-            selected_grade = self.request.query_params.get('grade_id')
+            selected_grade = self.request.query_params.get('grade')
             if selected_grade:
-                queryset = queryset.filter(sub_assign__grade_id=selected_grade)
+                queryset = queryset.filter(sub_assign__grade=selected_grade)
+            selected_subject = self.request.query_params.get('subject')
+            if selected_subject and selected_subject != 'All':
+                queryset = queryset.filter(sub_assign__subject=selected_subject)
             return queryset.select_related('sub_assign', 'sub_assign__subject').distinct()
         
         elif user.role and user.role.role_name == 'student':
             queryset = base_query.filter(sub_assign__grade=user.student_profile.grade)
-            selected_subject = self.request.query_params.get('subject_id')
+            selected_subject = self.request.query_params.get('subject')
             if selected_subject and selected_subject != 'All':
-                queryset = queryset.filter(sub_assign__subject_id=selected_subject)
+                queryset = queryset.filter(sub_assign__subject=selected_subject)
             return queryset.select_related('sub_assign', 'sub_assign__subject').distinct()
 
         return base_query.none()
 
     def perform_create(self, serializer):
-        folder = serializer.save()
-        grade = folder.sub_assign.grade
-        subject_name = folder.sub_assign.subject.name
-        teacher_name = self.request.user.full_name
-        notify_students_in_grade(
-            grade=grade,
-            title="New Resource Folder",
-            message=f"{teacher_name} added a new resource folder '{folder.name}' for {subject_name}.",
-            notif_type='RESOURCE',
-            action_url='/resources'
-        )
+        serializer.save()
 
     def perform_update(self, serializer):
-        folder = serializer.save()
-        notify_students_in_grade(
-            grade=folder.sub_assign.grade,
-            title="Resource Folder Updated",
-            message=f"The resource folder '{folder.name}' for {folder.sub_assign.subject.name} was updated.",
-            notif_type='RESOURCE',
-            action_url='/resources'
-        )
+        serializer.save()
 
     def perform_destroy(self, instance):
-        notify_students_in_grade(
-            grade=instance.sub_assign.grade,
-            title="Resource Folder Deleted",
-            message=f"The resource folder '{instance.name}' for {instance.sub_assign.subject.name} was removed.",
-            notif_type='RESOURCE',
-            action_url='/resources'
-        )
         instance.delete()
 
 class ResourceViewSet(viewsets.ModelViewSet):
@@ -93,9 +71,12 @@ class ResourceViewSet(viewsets.ModelViewSet):
             return base_query.distinct()
         if user.role and user.role.role_name == 'teacher':
             queryset = base_query.filter(folder__sub_assign__teacher__user=user, folder__uploaded_by=user.teacher_profile)
-            selected_grade = self.request.query_params.get('grade_id')
+            selected_grade = self.request.query_params.get('grade')
             if selected_grade:
-                queryset = queryset.filter(folder__sub_assign__grade_id=selected_grade)
+                queryset = queryset.filter(folder__sub_assign__grade=selected_grade)
+            selected_subject = self.request.query_params.get('subject')
+            if selected_subject and selected_subject != 'All':
+                queryset = queryset.filter(folder__sub_assign__subject=selected_subject)
             return queryset.distinct()
         elif user.role and user.role.role_name == 'student':
             return base_query.filter(folder__sub_assign__grade=user.student_profile.grade).distinct()
@@ -107,33 +88,31 @@ class ResourceViewSet(viewsets.ModelViewSet):
             from .tasks import process_resource_to_text
             transaction.on_commit(lambda: process_resource_to_text.delay(resource.id))
 
-        # Notify students in the grade about the new resource
-        grade = resource.folder.sub_assign.grade
-        subject_name = resource.folder.sub_assign.subject.name
-        teacher_name = self.request.user.full_name
-        notify_students_in_grade(
-            grade=grade,
-            title="New Resource Uploaded",
-            message=f"{teacher_name} uploaded '{resource.title}' for {subject_name}.",
-            notif_type='RESOURCE',
-            action_url='/resources'
-        )
-
     def perform_destroy(self, instance):
-        notify_students_in_grade(
-            grade=instance.folder.sub_assign.grade,
-            title="Resource Deleted",
-            message=f"The resource '{instance.title}' was removed from {instance.folder.sub_assign.subject.name}.",
-            notif_type='RESOURCE',
-            action_url='/resources'
-        )
         instance.delete()
 
     @action(detail=True, methods=['post'])
     def generate_content(self, request, pk=None):
         content_type = request.data.get('content_type', 'FLASHCARD')
+        question_count = int(request.data.get('question_count') or request.data.get('card_count') or 10)
+        prompt = request.data.get('prompt', '')
+        title = request.data.get('title', '')
+        
         from .tasks import trigger_content_generation
-        trigger_content_generation.delay(pk, content_type)
+        default_time = request.data.get('default_time_per_question', 60)
+        default_points = request.data.get('default_points_per_question', 1)
+        
+        kwargs = {'question_count': question_count} if content_type == 'QUIZ' else {'card_count': question_count}
+        
+        trigger_content_generation.delay(
+            pk, 
+            content_type, 
+            prompt_text=prompt, 
+            title=title,
+            default_time=default_time,
+            default_points=default_points,
+            **kwargs
+        )
         return Response({'status': f'{content_type} generation started'}, status=status.HTTP_202_ACCEPTED)
 
 class FlashcardDeckViewSet(viewsets.ModelViewSet):
@@ -147,15 +126,18 @@ class FlashcardDeckViewSet(viewsets.ModelViewSet):
             return base_query.distinct()
         if user.role and user.role.role_name == 'teacher':
             queryset = base_query.filter(sub_assign__teacher__user=user, created_by=user.teacher_profile)
-            selected_grade = self.request.query_params.get('grade_id')
+            selected_grade = self.request.query_params.get('grade')
             if selected_grade:
-                queryset = queryset.filter(sub_assign__grade_id=selected_grade)
+                queryset = queryset.filter(sub_assign__grade=selected_grade)
+            selected_subject = self.request.query_params.get('subject')
+            if selected_subject and selected_subject != 'All':
+                queryset = queryset.filter(sub_assign__subject=selected_subject)
             return queryset.distinct()
         elif user.role and user.role.role_name == 'student':
             queryset = base_query.filter(sub_assign__grade=user.student_profile.grade)
-            selected_subject = self.request.query_params.get('subject_id')
+            selected_subject = self.request.query_params.get('subject')
             if selected_subject and selected_subject != 'All':
-                queryset = queryset.filter(sub_assign__subject_id=selected_subject)
+                queryset = queryset.filter(sub_assign__subject=selected_subject)
             return queryset.distinct()
         return base_query.none()
 
@@ -164,17 +146,15 @@ class FlashcardDeckViewSet(viewsets.ModelViewSet):
             from organizations.models import AssignSubject
             from .tasks import trigger_content_generation, process_resource_to_text
             
-            grade_id = request.data.get('grade_id')
+            grade = request.data.get('grade')
             resource_id = request.data.get('resource_id')
             file = request.FILES.get('file')
             prompt = request.data.get('prompt', '')
             title = request.data.get('title', '')
             card_count = int(request.data.get('card_count', 10))
 
-            print(f"--- AI API REQUEST RECEIVED ---")
-            print(f"Title: {title}, Prompt Length: {len(prompt)}, Resource ID: {resource_id}, File: {'Yes' if file else 'No'}")
 
-            sub_assign = AssignSubject.objects.filter(teacher__user=request.user, grade_id=grade_id).first()
+            sub_assign = AssignSubject.objects.filter(teacher__user=request.user, grade=grade).first()
             if not sub_assign:
                 return Response({"error": "You are not assigned to this grade."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -183,7 +163,7 @@ class FlashcardDeckViewSet(viewsets.ModelViewSet):
                     int(resource_id), content_type='FLASHCARD', prompt_text=prompt,
                     title=title, sub_assign_id=sub_assign.id,
                     creator_id=request.user.teacher_profile.user_id,
-                    question_count=card_count
+                    card_count=card_count
                 )
                 return Response({"status": "AI Generation queued for resource."}, status=status.HTTP_202_ACCEPTED)
             
@@ -200,7 +180,15 @@ class FlashcardDeckViewSet(viewsets.ModelViewSet):
                     folder=folder,
                     file=file
                 )
-                process_resource_to_text.delay(resource.id, auto_generate='FLASHCARD')
+                process_resource_to_text.delay(
+                    resource.id, 
+                    auto_generate='FLASHCARD',
+                    prompt_text=prompt,
+                    title=title,
+                    sub_assign_id=sub_assign.id,
+                    creator_id=request.user.teacher_profile.user_id,
+                    card_count=card_count
+                )
                 return Response({"status": "File uploaded and AI Generation queued."}, status=status.HTTP_202_ACCEPTED)
 
             # Prompt-only generation (no file or resource)
@@ -209,48 +197,19 @@ class FlashcardDeckViewSet(viewsets.ModelViewSet):
                     None, content_type='FLASHCARD', prompt_text=prompt,
                     title=title, sub_assign_id=sub_assign.id,
                     creator_id=request.user.teacher_profile.user_id,
-                    question_count=card_count
+                    card_count=card_count
                 )
                 return Response({"status": "AI Generation started from prompt."}, status=status.HTTP_202_ACCEPTED)
 
             return Response({"error": "Please provide a prompt, file, or resource for AI generation."}, status=status.HTTP_400_BAD_REQUEST)
 
         response = super().create(request, *args, **kwargs)
-        # Notify students for manual flashcard deck creation
-        if response.status_code == 201:
-            deck_data = response.data
-            from organizations.models import AssignSubject
-            try:
-                sub_assign = AssignSubject.objects.select_related('grade', 'subject').get(pk=deck_data.get('sub_assign'))
-                notify_students_in_grade(
-                    grade=sub_assign.grade,
-                    title="New Flashcard Deck",
-                    message=f"{request.user.full_name} created a new flashcard deck '{deck_data.get('title')}' for {sub_assign.subject.name}.",
-                    notif_type='FLASHCARD',
-                    action_url='/assessments'
-                )
-            except AssignSubject.DoesNotExist:
-                pass
         return response
 
     def perform_update(self, serializer):
-        deck = serializer.save()
-        notify_students_in_grade(
-            grade=deck.sub_assign.grade,
-            title="Flashcard Deck Updated",
-            message=f"The flashcard deck '{deck.title}' for {deck.sub_assign.subject.name} was updated.",
-            notif_type='FLASHCARD',
-            action_url='/assessments'
-        )
+        serializer.save()
 
     def perform_destroy(self, instance):
-        notify_students_in_grade(
-            grade=instance.sub_assign.grade,
-            title="Flashcard Deck Deleted",
-            message=f"The flashcard deck '{instance.title}' was removed.",
-            notif_type='FLASHCARD',
-            action_url='/assessments'
-        )
         instance.delete()
 
 class FlashcardViewSet(viewsets.ModelViewSet):
@@ -268,7 +227,14 @@ class FlashcardViewSet(viewsets.ModelViewSet):
         if user.role and user.role.role_name == 'admin':
             return base_query.distinct()
         if user.role and user.role.role_name == 'teacher':
-            return base_query.filter(deck__created_by=user.teacher_profile).distinct()
+            queryset = base_query.filter(deck__created_by=user.teacher_profile)
+            selected_grade = self.request.query_params.get('grade')
+            if selected_grade:
+                queryset = queryset.filter(deck__sub_assign__grade=selected_grade)
+            selected_subject = self.request.query_params.get('subject')
+            if selected_subject and selected_subject != 'All':
+                queryset = queryset.filter(deck__sub_assign__subject=selected_subject)
+            return queryset.distinct()
         elif user.role and user.role.role_name == 'student':
             return base_query.filter(deck__sub_assign__grade=user.student_profile.grade).distinct()
         return base_query.none()
@@ -289,9 +255,12 @@ class QuizViewSet(viewsets.ModelViewSet):
             queryset = base_query.filter(
                 sub_assign__teacher__user=user, created_by=user.teacher_profile
             )
-            selected_grade = self.request.query_params.get('grade_id')
+            selected_grade = self.request.query_params.get('grade')
             if selected_grade:
-                queryset = queryset.filter(sub_assign__grade_id=selected_grade)
+                queryset = queryset.filter(sub_assign__grade=selected_grade)
+            selected_subject = self.request.query_params.get('subject')
+            if selected_subject and selected_subject != 'All':
+                queryset = queryset.filter(sub_assign__subject=selected_subject)
             return queryset.select_related('sub_assign', 'sub_assign__subject').distinct()
         
         elif user.role and user.role.role_name == 'student':
@@ -301,42 +270,16 @@ class QuizViewSet(viewsets.ModelViewSet):
                 is_active=True,
                 is_published=True
             )
-            selected_subject = self.request.query_params.get('subject_id')
+            selected_subject = self.request.query_params.get('subject')
             if selected_subject and selected_subject != 'All':
-                queryset = queryset.filter(sub_assign__subject_id=selected_subject)
+                queryset = queryset.filter(sub_assign__subject=selected_subject)
             return queryset.distinct()
         return base_query.none()
 
     def perform_update(self, serializer):
-        # Check if the quiz is transitioning to published
-        old_published = serializer.instance.is_published
-        quiz = serializer.save()
-        if not old_published and quiz.is_published:
-            # Quiz was just published - notify students
-            notify_students_in_grade(
-                grade=quiz.sub_assign.grade,
-                title="Quiz Published",
-                message=f"A quiz '{quiz.title}' for {quiz.sub_assign.subject.name} is now available to take.",
-                notif_type='QUIZ',
-                action_url='/assessments'
-            )
-        else:
-            notify_students_in_grade(
-                grade=quiz.sub_assign.grade,
-                title="Quiz Updated",
-                message=f"The quiz '{quiz.title}' for {quiz.sub_assign.subject.name} was updated.",
-                notif_type='QUIZ',
-                action_url='/assessments'
-            )
+        serializer.save()
 
     def perform_destroy(self, instance):
-        notify_students_in_grade(
-            grade=instance.sub_assign.grade,
-            title="Quiz Deleted",
-            message=f"The quiz '{instance.title}' was removed.",
-            notif_type='QUIZ',
-            action_url='/assessments'
-        )
         instance.delete()
 
     def create(self, request, *args, **kwargs):
@@ -344,17 +287,19 @@ class QuizViewSet(viewsets.ModelViewSet):
             from organizations.models import AssignSubject
             from .tasks import trigger_content_generation, process_resource_to_text
             
-            grade_id = request.data.get('grade_id')
+            grade = request.data.get('grade')
             resource_id = request.data.get('resource_id')
             file = request.FILES.get('file')
             prompt = request.data.get('prompt', '')
             title = request.data.get('title', '')
-            question_count = int(request.data.get('question_count', 10))
+            question_count = int(request.data.get('question_count') or 10)
+            default_time = int(float(request.data.get('default_time_per_question') or 60))
+            default_points = int(float(request.data.get('default_points_per_question') or 1))
+            start_dt = request.data.get('start_datetime')
+            end_dt = request.data.get('end_datetime')
 
-            print(f"--- AI API QUIZ REQUEST RECEIVED ---")
-            print(f"Title: {title}, Prompt Length: {len(prompt)}, Resource ID: {resource_id}, File: {'Yes' if file else 'No'}")
 
-            sub_assign = AssignSubject.objects.filter(teacher__user=request.user, grade_id=grade_id).first()
+            sub_assign = AssignSubject.objects.filter(teacher__user=request.user, grade=grade).first()
             if not sub_assign:
                 return Response({"error": "You are not assigned to this grade."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -363,7 +308,11 @@ class QuizViewSet(viewsets.ModelViewSet):
                     int(resource_id), content_type='QUIZ', prompt_text=prompt,
                     title=title, sub_assign_id=sub_assign.id,
                     creator_id=request.user.teacher_profile.user_id,
-                    question_count=question_count
+                    question_count=question_count,
+                    default_time=default_time,
+                    default_points=default_points,
+                    start_dt=start_dt,
+                    end_dt=end_dt
                 )
                 return Response({"status": "AI Quiz generation queued for resource."}, status=status.HTTP_202_ACCEPTED)
             
@@ -380,7 +329,19 @@ class QuizViewSet(viewsets.ModelViewSet):
                     folder=folder,
                     file=file
                 )
-                process_resource_to_text.delay(resource.id, auto_generate='QUIZ')
+                process_resource_to_text.delay(
+                    resource.id, 
+                    auto_generate='QUIZ',
+                    prompt_text=prompt,
+                    title=title,
+                    sub_assign_id=sub_assign.id,
+                    creator_id=request.user.teacher_profile.user_id,
+                    question_count=question_count,
+                    default_time=default_time,
+                    default_points=default_points,
+                    start_dt=start_dt,
+                    end_dt=end_dt
+                )
                 return Response({"status": "File uploaded and AI Quiz generation queued."}, status=status.HTTP_202_ACCEPTED)
 
             # Prompt-only generation (no file or resource)
@@ -389,28 +350,17 @@ class QuizViewSet(viewsets.ModelViewSet):
                     None, content_type='QUIZ', prompt_text=prompt,
                     title=title, sub_assign_id=sub_assign.id,
                     creator_id=request.user.teacher_profile.user_id,
-                    question_count=question_count
+                    question_count=question_count,
+                    default_time=default_time,
+                    default_points=default_points,
+                    start_dt=start_dt,
+                    end_dt=end_dt
                 )
                 return Response({"status": "AI Quiz generation started from prompt."}, status=status.HTTP_202_ACCEPTED)
 
             return Response({"error": "Please provide a prompt, file, or resource for AI generation."}, status=status.HTTP_400_BAD_REQUEST)
 
         response = super().create(request, *args, **kwargs)
-        # Notify students for manual quiz creation
-        if response.status_code == 201:
-            quiz_data = response.data
-            from organizations.models import AssignSubject
-            try:
-                sub_assign = AssignSubject.objects.select_related('grade', 'subject').get(pk=quiz_data.get('sub_assign'))
-                notify_students_in_grade(
-                    grade=sub_assign.grade,
-                    title="New Quiz Created",
-                    message=f"{request.user.full_name} created a new quiz '{quiz_data.get('title')}' for {sub_assign.subject.name}.",
-                    notif_type='QUIZ',
-                    action_url='/assessments'
-                )
-            except AssignSubject.DoesNotExist:
-                pass
         return response
 
 class QuestionViewSet(viewsets.ModelViewSet):
@@ -430,9 +380,21 @@ class QuestionViewSet(viewsets.ModelViewSet):
         if user.role and user.role.role_name == 'admin':
             return queryset.distinct()
         if user.role and user.role.role_name == 'teacher':
-            return queryset.filter(quiz__created_by=user.teacher_profile).order_by('order').distinct()
+            queryset = queryset.filter(quiz__created_by=user.teacher_profile)
+            selected_grade = self.request.query_params.get('grade')
+            if selected_grade:
+                queryset = queryset.filter(quiz__sub_assign__grade=selected_grade)
+            selected_subject = self.request.query_params.get('subject')
+            if selected_subject and selected_subject != 'All':
+                queryset = queryset.filter(quiz__sub_assign__subject=selected_subject)
+            return queryset.order_by('order').distinct()
         elif user.role and user.role.role_name == 'student':
             return queryset.filter(quiz__sub_assign__grade=user.student_profile.grade).order_by('order').distinct()
             
         return queryset.none()
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({"message": "question successfully deleted"}, status=status.HTTP_200_OK)
 
