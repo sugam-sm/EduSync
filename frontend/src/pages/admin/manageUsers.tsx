@@ -76,10 +76,10 @@ export const ManageUsers = () => {
             const matchesRole = selectedRole === "All" || user.role_name === selectedRole;
 
             const matchesGrade = selectedGrade === "All" ||
-                String(user.student_profile?.grade_name || "") === String(selectedGrade);
+                String(user.student_profile?.grade || "") === String(selectedGrade);
 
             const matchesStatus = selectedStatus === "All" ||
-                (selectedStatus === "Active" ? user.is_active : !user.is_active);
+                (selectedStatus === "true" ? user.is_active : !user.is_active);
 
             return matchesSearch && matchesRole && matchesGrade && matchesStatus;
         });

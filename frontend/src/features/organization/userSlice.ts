@@ -42,6 +42,7 @@ export interface UserSummary extends UserBase {
         contact_number: string;
     } | null;
     student_profile?: {
+        grade: number;
         grade_name: string;
         section: string;
         guardian_relation: string;
