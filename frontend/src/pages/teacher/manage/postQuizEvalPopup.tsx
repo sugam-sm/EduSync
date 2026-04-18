@@ -4,6 +4,7 @@ import { X, ClipboardCheck, Send, Loader2, User, Award, MessageCircle } from 'lu
 import { Portal } from '../../../components/Portal';
 import { FormButton } from '../../../components/Buttons/formButton';
 import { Button } from '../../../components/Buttons/customButton';
+import { DecisionPopup } from '../../../components/decision popup';
 import { type AppDispatch, type RootState } from '../../../store';
 import { fetchQuizStudentResults, fetchQuizRemarks, submitBulkRemarks, clearTeacherRemarkData } from '../../../features/learning/teacherRemarkSlice';
 import { fetchUsers } from '../../../features/organization/userSlice';
@@ -21,6 +22,7 @@ export const PostQuizEvalPopup = ({ isOpen, onClose, quizId, quizTitle, endDatet
     const dispatch = useDispatch<AppDispatch>();
     const { studentResults, existingRemarks, isLoading, isSubmitting } = useSelector((state: RootState) => state.teacherRemark);
     const { users } = useSelector((state: RootState) => state.user);
+    const { openDecidePopup, DecidePopup } = DecisionPopup();
 
     const [remarkInputs, setRemarkInputs] = useState<Record<number, string>>({});
 
@@ -69,13 +71,33 @@ export const PostQuizEvalPopup = ({ isOpen, onClose, quizId, quizTitle, endDatet
             return;
         }
 
-        const result = await dispatch(submitBulkRemarks({ quizId, remarks }));
-        if (submitBulkRemarks.fulfilled.match(result)) {
-            dispatch(addToast({ message: `${remarks.length} remark(s) submitted successfully!`, type: 'success' }));
-            onClose();
-        } else {
-            dispatch(addToast({ message: 'Failed to submit remarks. Try again.', type: 'failure' }));
+        const someChanged = remarks.some(r => {
+            const existing = existingRemarks.find(er => er.student === r.student_id);
+            return !existing || existing.remark_text !== r.remark_text;
+        });
+        
+        const countsDiffer = remarks.length !== existingRemarks.length;
+
+        if (!someChanged && !countsDiffer) {
+            dispatch(addToast({ message: "No changes detected.", type: 'info' }));
+            return;
         }
+
+        openDecidePopup({
+            question: `Submit ${remarks.length} remark(s) for this assessment?`,
+            confirmText: "Yes, Submit",
+            cancelText: "Cancel",
+            variant: "primary",
+            onConfirm: async () => {
+                const result = await dispatch(submitBulkRemarks({ quizId, remarks }));
+                if (submitBulkRemarks.fulfilled.match(result)) {
+                    dispatch(addToast({ message: `${remarks.length} remark(s) submitted successfully!`, type: 'success' }));
+                    onClose();
+                } else {
+                    dispatch(addToast({ message: 'Failed to submit remarks. Try again.', type: 'failure' }));
+                }
+            }
+        });
     };
 
     const handleClose = () => {
@@ -231,6 +253,7 @@ export const PostQuizEvalPopup = ({ isOpen, onClose, quizId, quizTitle, endDatet
                     )}
                 </div>
             </div>
+            <DecidePopup />
         </Portal>
     );
 };

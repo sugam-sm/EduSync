@@ -102,6 +102,11 @@ class TeacherQuizRemarkViewSet(viewsets.ModelViewSet):
             subject = self.request.query_params.get('subject')
             if subject and subject != 'All':
                 queryset = queryset.filter(quiz__sub_assign__subject=subject)
+                
+            quiz_id = self.request.query_params.get('quiz_id')
+            if quiz_id:
+                queryset = queryset.filter(quiz_id=quiz_id)
+                
             return queryset
         elif hasattr(user, 'student_profile'):
             return TeacherQuizRemark.objects.filter(student=user.student_profile)
@@ -293,7 +298,9 @@ class AnalyticsDashboardView(APIView):
         ).distinct().values('id', 'name'))
 
         assigned_subjects = None
-        if not subject and hasattr(requesting_user, 'teacher_profile'):
+        has_subject_filter = subject and subject != 'All'
+        
+        if not has_subject_filter and hasattr(requesting_user, 'teacher_profile'):
             assigned_subjects = list(AssignSubject.objects.filter(
                 teacher=requesting_user.teacher_profile, 
                 grade=student.grade
@@ -393,19 +400,48 @@ class AnalyticsDashboardView(APIView):
     def _get_class_quiz_stats(self, quiz):
         attempts = QuizAttempt.objects.filter(quiz=quiz, status__in=['completed', 'auto-submitted', 'missed'])
         if not attempts.exists():
-            return {"avg_percentage": 0, "avg_score": 0, "highest_score": 0, "completed_count": 0, "missed_count": 0}
+            return {"avg_percentage": 0, "avg_score": 0, "highest_score": 0, "completed_count": 0, "missed_count": 0, "avg_index": 0}
         
         scores = [a.total_score for a in attempts]
         max_possible = quiz.questions.aggregate(total=Sum('points_override'))['total'] or 1
+        avg_pct = (sum(scores) / len(scores) / max_possible) * 100
         
+        # Calculate Class Attendance up to this quiz date
+        avg_att = self._get_class_attendance_up_to(quiz.sub_assign.grade, quiz.created_at)
+        
+        # Calculate Class Sentiment for this specific quiz
+        remarks = TeacherQuizRemark.objects.filter(quiz=quiz)
+        avg_sent = None
+        if remarks.exists():
+            sent_scores = []
+            for r in remarks:
+                _, s = self._classify_sentiment(r.remark_text)
+                sent_scores.append(s)
+            avg_sent = sum(sent_scores) / len(sent_scores)
+            
+        # Unified weighted index for the class at this point in time
+        avg_index = self._calculate_weighted_index(avg_pct, avg_att, avg_sent)
+
         return {
-            "avg_percentage": round((sum(scores) / len(scores) / max_possible) * 100, 1),
+            "avg_percentage": round(avg_pct, 1),
             "avg_score": round(sum(scores) / len(scores), 1),
             "highest_score": max(scores),
             "completed_count": attempts.filter(status__in=['completed', 'auto-submitted']).count(),
             "missed_count": attempts.filter(status='missed').count(),
-            "total_attempts": attempts.count()
+            "total_attempts": attempts.count(),
+            "avg_index": round(avg_index, 1)
         }
+
+    def _get_class_attendance_up_to(self, grade, date):
+        att_qs = Attendance.objects.filter(session__grade=grade, session__start_time__lte=date, session__is_active=False)
+        if not att_qs.exists():
+            return 0
+        counts = att_qs.values('status').annotate(count=Count('id'))
+        donut = {item['status']: item['count'] for item in counts}
+        p = donut.get('PRESENT', 0)
+        l = donut.get('LATE', 0)
+        total = att_qs.count()
+        return ((p + l * 0.7) / total) * 100
 
     def _get_attendance_summary(self, grade, subject):
         sessions = Session.objects.filter(grade=grade, is_active=False)
@@ -589,7 +625,7 @@ class AnalyticsDashboardView(APIView):
             for attempt in attempts:
                 if attempt.quiz_id not in quiz_class_avgs:
                     stats = self._get_class_quiz_stats(attempt.quiz)
-                    quiz_class_avgs[attempt.quiz_id] = stats['avg_percentage']
+                    quiz_class_avgs[attempt.quiz_id] = stats
         
         result = []
         seen_quizzes = set()
@@ -607,7 +643,8 @@ class AnalyticsDashboardView(APIView):
                 "score": attempt.total_score,
                 "max_score": max_score,
                 "percentage": round(percentage, 1),
-                "class_avg_percentage": quiz_class_avgs.get(attempt.quiz_id, 0),
+                "class_avg_percentage": quiz_class_avgs.get(attempt.quiz_id, {}).get('avg_percentage', 0),
+                "class_avg_index": quiz_class_avgs.get(attempt.quiz_id, {}).get('avg_index', 0),
                 "status": attempt.status,
                 "subject": attempt.quiz.sub_assign.subject.name,
             })
@@ -649,17 +686,19 @@ class AnalyticsDashboardView(APIView):
 
     def _get_sentiment_data(self, student, subject, teacher_subjects=None):
         remarks = TeacherQuizRemark.objects.filter(student=student)
-        if subject:
+        
+        if subject and subject != 'All':
             remarks = remarks.filter(quiz__sub_assign__subject=subject)
         elif teacher_subjects:
             remarks = remarks.filter(quiz__sub_assign__subject__in=teacher_subjects)
             
-        remarks = remarks.select_related('quiz', 'quiz__sub_assign__subject', 'teacher__user').order_by('-created_at')
         result = []
         seen_quizzes = set()
-        for remark in sorted(remarks, key=lambda x: x.created_at, reverse=True):
-            if remark.quiz_id in seen_quizzes: continue
+        for remark in remarks:
+            if remark.quiz_id in seen_quizzes:
+                continue
             seen_quizzes.add(remark.quiz_id)
+            
             label, score = self._classify_sentiment(remark.remark_text)
             result.append({
                 "date": remark.created_at.isoformat(),
@@ -714,10 +753,13 @@ class AnalyticsDashboardView(APIView):
             sentiment_val = target_remark["sentiment_score"]
             index = self._calculate_weighted_index(avg_quiz, avg_att, sentiment_val)
 
+            # Discrete Class Avg Comparison
+            curr_class_avg = q.get("class_avg_index", class_avg_index)
+
             result.append({
                 "date": q["date"],
                 "quiz_title": q["quiz_title"],
                 "index": round(index, 1),
-                "class_avg_index": class_avg_index,
+                "class_avg_index": curr_class_avg,
             })
         return result
