@@ -303,6 +303,10 @@ class AnalyticsDashboardView(APIView):
         quiz_data = self._get_quiz_data(student, subject, assigned_subjects, grade=student.grade)
         attendance_data = self._get_attendance_data(student, subject, assigned_subjects)
         sentiment_data = self._get_sentiment_data(student, subject, assigned_subjects)
+        
+        remarked_quiz_ids = {s["quiz_id"] for s in sentiment_data}
+        quiz_data = [q for q in quiz_data if q["quiz_id"] in remarked_quiz_ids]
+
         overall_data = self._compute_edusync_index(quiz_data, attendance_data, sentiment_data, class_avg.get("avg_edusync_index", 0))
 
         # Compute student's own summary stats
@@ -464,12 +468,26 @@ class AnalyticsDashboardView(APIView):
             "total_flashcards": Flashcard.objects.filter(deck__in=deck_qs).count(),
         }
 
+    def _calculate_weighted_index(self, quiz_score, attendance_score, sentiment_score=None):
+        """Unified weighted logic for Student Index and Class Averages."""
+        if sentiment_score is not None:
+            return (0.5 * quiz_score) + (0.4 * attendance_score) + (0.1 * sentiment_score)
+        # 55/45 split if no sentiment exists
+        return (0.55 * quiz_score) + (0.45 * attendance_score)
+
     def _get_class_averages(self, grade, subject):
         quiz_summary = self._get_quiz_summary(grade, subject, None)
         att_summary = self._get_attendance_summary(grade, subject)
         sent_summary = self._get_sentiment_summary(grade, subject)
         
-        avg_index = (0.5 * quiz_summary["avg_accuracy"]) + (0.4 * att_summary["attendance_rate"]) + (0.1 * sent_summary["positive_pct"])
+        # Use unified logic even for class averages
+        avg_sent = sent_summary["positive_pct"] if sent_summary["total_remarks"] > 0 else None
+        avg_index = self._calculate_weighted_index(
+            quiz_summary["avg_accuracy"], 
+            att_summary["attendance_rate"], 
+            avg_sent
+        )
+
         return {
             "avg_quiz_percentage": quiz_summary["avg_accuracy"],
             "avg_attendance_score": att_summary["attendance_rate"],
@@ -536,9 +554,10 @@ class AnalyticsDashboardView(APIView):
             att_rate = ((att['present'] + att['late'] * 0.7) / att['total']) * 100 if att['total'] > 0 else 0
 
             sent = student_sent[sid]
-            pos_pct = (sent['positive'] / sent['total']) * 100 if sent['total'] > 0 else 0
+            pos_pct = (sent['positive'] / sent['total']) * 100 if sent['total'] > 0 else None
 
-            index = (0.5 * avg_quiz) + (0.4 * att_rate) + (0.1 * pos_pct)
+            # Use unified logic for rankings
+            index = self._calculate_weighted_index(avg_quiz, att_rate, pos_pct)
 
             rankings.append({
                 'student_id': sid,
@@ -644,6 +663,7 @@ class AnalyticsDashboardView(APIView):
             label, score = self._classify_sentiment(remark.remark_text)
             result.append({
                 "date": remark.created_at.isoformat(),
+                "quiz_id": remark.quiz_id,
                 "quiz_title": remark.quiz.title,
                 "teacher_name": remark.teacher.user.full_name,
                 "remark_text": remark.remark_text,
@@ -680,21 +700,19 @@ class AnalyticsDashboardView(APIView):
 
         result = []
         for q in sorted_quizzes:
+            target_remark = next((s for s in sorted_sent if s["quiz_id"] == q["quiz_id"]), None)
+            
+            if not target_remark:
+                continue
+
             q_date = parse_dt(q["date"])
             avg_quiz = q["percentage"]
             
             relevant_att = [a["score"] for a in sorted_att if parse_dt(a["date"]) <= q_date]
             avg_att = sum(relevant_att) / len(relevant_att) if relevant_att else 0
             
-            relevant_sent = [s["sentiment_score"] for s in sorted_sent if parse_dt(s["date"]) <= q_date]
-            
-            # Revised Logic: If no sentiment exists, split 10% weight between Quiz and Attendance
-            # This ensures that 100% Quiz + 100% Att = 100% Index
-            if relevant_sent:
-                avg_sent = sum(relevant_sent) / len(relevant_sent)
-                index = (0.5 * avg_quiz) + (0.4 * avg_att) + (0.1 * avg_sent)
-            else:
-                index = (0.55 * avg_quiz) + (0.45 * avg_att)
+            sentiment_val = target_remark["sentiment_score"]
+            index = self._calculate_weighted_index(avg_quiz, avg_att, sentiment_val)
 
             result.append({
                 "date": q["date"],
