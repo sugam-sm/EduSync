@@ -127,7 +127,7 @@ export const Layout = () => {
         <div className="flex-1 flex justify-start items-center gap-4">
           <button
             onClick={handleMobileToggle}
-            className="lg:hidden p-2 text-primary hover:bg-primary/10 rounded-full transition-all border border-primary/20 z-[130]"
+            className="lg:hidden p-2 text-primary hover:bg-primary/10 rounded-full transition-all border border-primary/20 z-10"
           >
             {isSidebarOpen ? <CloseIcon size={20} /> : <Menu size={20} />}
           </button>
@@ -187,12 +187,12 @@ export const Layout = () => {
         {isSidebarOpen && (
           <div
             onClick={handleMobileToggle}
-            className="lg:hidden fixed inset-0 bg-bg/60 backdrop-blur-md z-[110] transition-all duration-300"
+            className="lg:hidden fixed inset-0 bg-bg/60 backdrop-blur-md z-10 transition-all duration-300"
           />
         )}
 
         {/* Sidebar Structure Wrapper */}
-        <div className="absolute top-4 sm:top-25 bottom-4 left-4 z-[120] flex flex-col items-start gap-4 pointer-events-none">
+        <div className="absolute top-4 sm:top-25 bottom-4 left-4 z-10 flex flex-col items-start gap-4 pointer-events-none">
 
           {/* Premium Floating Dock Sidebar */}
           <aside
