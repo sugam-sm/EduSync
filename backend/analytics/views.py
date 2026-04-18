@@ -314,7 +314,7 @@ class AnalyticsDashboardView(APIView):
         remarked_quiz_ids = {s["quiz_id"] for s in sentiment_data}
         quiz_data = [q for q in quiz_data if q["quiz_id"] in remarked_quiz_ids]
 
-        overall_data = self._compute_edusync_index(quiz_data, attendance_data, sentiment_data, class_avg.get("avg_edusync_index", 0))
+        overall_data = self._compute_edusync_index(student, quiz_data, attendance_data, sentiment_data, class_avg.get("avg_edusync_index", 0))
 
         # Compute student's own summary stats
         avg_quiz = sum(q['percentage'] for q in quiz_data) / len(quiz_data) if quiz_data else 0
@@ -397,51 +397,68 @@ class AnalyticsDashboardView(APIView):
             "quizzes": quizzes
         }
 
-    def _get_class_quiz_stats(self, quiz):
-        attempts = QuizAttempt.objects.filter(quiz=quiz, status__in=['completed', 'auto-submitted', 'missed'])
-        if not attempts.exists():
-            return {"avg_percentage": 0, "avg_score": 0, "highest_score": 0, "completed_count": 0, "missed_count": 0, "avg_index": 0}
-        
-        scores = [a.total_score for a in attempts]
-        max_possible = quiz.questions.aggregate(total=Sum('points_override'))['total'] or 1
-        avg_pct = (sum(scores) / len(scores) / max_possible) * 100
-        
-        # Calculate Class Attendance up to this quiz date
-        avg_att = self._get_class_attendance_up_to(quiz.sub_assign.grade, quiz.created_at)
-        
-        # Calculate Class Sentiment for this specific quiz
-        remarks = TeacherQuizRemark.objects.filter(quiz=quiz)
-        avg_sent = None
-        if remarks.exists():
-            sent_scores = []
-            for r in remarks:
-                _, s = self._classify_sentiment(r.remark_text)
-                sent_scores.append(s)
-            avg_sent = sum(sent_scores) / len(sent_scores)
-            
-        # Unified weighted index for the class at this point in time
-        avg_index = self._calculate_weighted_index(avg_pct, avg_att, avg_sent)
-
-        return {
-            "avg_percentage": round(avg_pct, 1),
-            "avg_score": round(sum(scores) / len(scores), 1),
-            "highest_score": max(scores),
-            "completed_count": attempts.filter(status__in=['completed', 'auto-submitted']).count(),
-            "missed_count": attempts.filter(status='missed').count(),
-            "total_attempts": attempts.count(),
-            "avg_index": round(avg_index, 1)
-        }
-
-    def _get_class_attendance_up_to(self, grade, date):
-        att_qs = Attendance.objects.filter(session__grade=grade, session__start_time__lte=date, session__is_active=False)
+    def _get_student_cumulative_attendance(self, student, up_to_date):
+        """Calculates cumulative attendance score (0-100) for a student up to a specific date."""
+        att_qs = Attendance.objects.filter(
+            student=student, 
+            session__start_time__lte=up_to_date, 
+            session__is_active=False
+        )
         if not att_qs.exists():
-            return 0
+            return 100 # Default to perfect if no sessions occurred
+        
         counts = att_qs.values('status').annotate(count=Count('id'))
         donut = {item['status']: item['count'] for item in counts}
         p = donut.get('PRESENT', 0)
         l = donut.get('LATE', 0)
         total = att_qs.count()
         return ((p + l * 0.7) / total) * 100
+
+    def _get_class_quiz_stats(self, quiz):
+        # 1. Fetch all attempts and remarks for this quiz
+        attempts = QuizAttempt.objects.filter(quiz=quiz, status__in=['completed', 'auto-submitted', 'missed'])
+        remarks = TeacherQuizRemark.objects.filter(quiz=quiz)
+        
+        if not attempts.exists():
+            return {"avg_percentage": 0, "avg_score": 0, "highest_score": 0, "completed_count": 0, "missed_count": 0, "avg_index": 0}
+        
+        # Mapping attempts and remarks by student for easy lookup
+        attempt_map = {a.student_id: a for a in attempts if a.status != 'missed'}
+        remark_map = {r.student_id: r for r in remarks}
+        
+        # 2. Calculate average of individual student indices (Discrete Point Logic)
+        student_indices = []
+        max_possible = quiz.questions.aggregate(total=Sum('points_override'))['total'] or 1
+        
+        shared_students = set(attempt_map.keys()) & set(remark_map.keys())
+        for sid in shared_students:
+            a = attempt_map[sid]
+            r = remark_map[sid]
+            
+            # Purely discrete components
+            score_pct = (a.total_score / max_possible) * 100
+            att_score = self._get_student_cumulative_attendance(a.student, a.completed_at or a.started_at)
+            _, sent_score = self._classify_sentiment(r.remark_text)
+            
+            # Combine into Index for this specific student/quiz event
+            idx = self._calculate_weighted_index(score_pct, att_score, sent_score)
+            student_indices.append(idx)
+            
+        avg_index = sum(student_indices) / len(student_indices) if student_indices else 0
+        
+        # Standard quiz stats for other views
+        scores = [a.total_score for a in attempts if a.status != 'missed']
+        avg_score_pct = (sum(scores) / len(scores) / max_possible * 100) if scores else 0
+
+        return {
+            "avg_percentage": round(avg_score_pct, 1),
+            "avg_score": round(sum(scores) / len(scores), 1) if scores else 0,
+            "highest_score": max(scores) if scores else 0,
+            "completed_count": attempts.filter(status__in=['completed', 'auto-submitted']).count(),
+            "missed_count": attempts.filter(status='missed').count(),
+            "total_attempts": attempts.count(),
+            "avg_index": round(avg_index, 1)
+        }
 
     def _get_attendance_summary(self, grade, subject):
         sessions = Session.objects.filter(grade=grade, is_active=False)
@@ -727,7 +744,7 @@ class AnalyticsDashboardView(APIView):
         score_map = {"Positive": 100, "Negative": 0, "Neutral": 50}
         return prediction, score_map.get(prediction, 50)
 
-    def _compute_edusync_index(self, quiz_data, attendance_data, sentiment_data, class_avg_index=0):
+    def _compute_edusync_index(self, student_obj, quiz_data, attendance_data, sentiment_data, class_avg_index=0):
         def parse_dt(s):
             dt = datetime.datetime.fromisoformat(str(s).replace('Z', '+00:00'))
             if dt.tzinfo is None: dt = dt.replace(tzinfo=datetime.timezone.utc)
@@ -747,13 +764,13 @@ class AnalyticsDashboardView(APIView):
             q_date = parse_dt(q["date"])
             avg_quiz = q["percentage"]
             
-            relevant_att = [a["score"] for a in sorted_att if parse_dt(a["date"]) <= q_date]
-            avg_att = sum(relevant_att) / len(relevant_att) if relevant_att else 0
+            # Discrete Student Attendance: Cumulative until completion of THIS quiz
+            avg_att = self._get_student_cumulative_attendance(student_obj, q_date)
             
             sentiment_val = target_remark["sentiment_score"]
             index = self._calculate_weighted_index(avg_quiz, avg_att, sentiment_val)
 
-            # Discrete Class Avg Comparison
+            # Discrete Class Avg Comparison: Already pre-calculated as average-of-student-indices
             curr_class_avg = q.get("class_avg_index", class_avg_index)
 
             result.append({

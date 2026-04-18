@@ -236,7 +236,7 @@ export const ManageAnalytics = () => {
                                                             <td className="py-4">
                                                                 <div className="flex flex-col">
                                                                     <span className="font-bold text-text-heading group-hover:text-primary transition-colors">{rank.student_name}</span>
-                                                                    <span className="text-[10px] font-bold text-text-muted uppercase">{rank.total_quizzes} Quizzes â€¢ {rank.total_sessions} Sessions</span>
+                                                                    <span className="text-[10px] font-bold text-text-muted uppercase">{rank.total_quizzes} Quizzes & {rank.total_sessions} Sessions</span>
                                                                 </div>
                                                             </td>
                                                             <td className="py-4 text-center">

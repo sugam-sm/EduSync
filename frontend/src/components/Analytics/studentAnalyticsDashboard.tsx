@@ -266,7 +266,7 @@ export const StudentAnalyticsDashboard = ({ data }: Props) => {
                                     <X size={20} strokeWidth={3} />
                                 </button>
                             </div>
-                            <p className="text-xs text-text-muted mb-3">{activeRemark.teacher_name} â€¢ {new Date(activeRemark.date).toLocaleDateString()}</p>
+                            <p className="text-xs text-text-muted mb-3">{activeRemark.teacher_name} & {new Date(activeRemark.date).toLocaleDateString()}</p>
                             <div className="bg-light/5 p-4 rounded-xl border border-light/10 flex-1 overflow-y-auto italic text-light text-sm leading-relaxed">
                                 "{activeRemark.remark_text}"
                             </div>
